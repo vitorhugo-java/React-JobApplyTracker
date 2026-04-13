@@ -57,6 +57,7 @@ const Login = () => {
               placeholder="you@example.com"
               type="email"
               className="w-full"
+              data-testid="login-email"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -69,6 +70,7 @@ const Login = () => {
               toggleMask
               className="w-full"
               inputClassName="w-full"
+              pt={{ input: { 'data-testid': 'login-password' } }}
             />
           </div>
           <Button
@@ -76,6 +78,7 @@ const Login = () => {
             label="Sign In"
             loading={loading}
             className="w-full mt-2"
+            data-testid="login-submit"
           />
         </form>
         <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400 space-y-2">

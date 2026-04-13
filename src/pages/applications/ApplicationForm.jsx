@@ -116,12 +116,12 @@ const ApplicationForm = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1 sm:col-span-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Name *</label>
-            <InputText value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" placeholder="e.g. Frontend Engineer" />
+            <InputText value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" placeholder="e.g. Frontend Engineer" data-testid="app-vacancy-name" />
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Recruiter Name</label>
-            <InputText value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} className="w-full" placeholder="Jane Smith" />
+            <InputText value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} className="w-full" placeholder="Jane Smith" data-testid="app-recruiter-name" />
           </div>
 
           <div className="flex flex-col gap-1">
@@ -146,7 +146,7 @@ const ApplicationForm = () => {
 
           <div className="flex flex-col gap-1 sm:col-span-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-            <Dropdown value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" />
+            <Dropdown value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" pt={{ root: { 'data-testid': 'app-status' } }} />
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -169,7 +169,7 @@ const ApplicationForm = () => {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} />
+          <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
           <Button type="button" label="Cancel" outlined onClick={() => navigate(isEdit ? `/applications/${id}` : '/applications')} />
         </div>
       </form>
