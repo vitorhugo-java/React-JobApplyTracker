@@ -1,82 +1,11 @@
-version: '3.9'
-
 services:
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://backend:8080
-    ports:
-      - '5173:80'
+        - VITE_API_URL=http://job-tracker-app:8080
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
-
-  backend:
-    image: vitorhugo-java/job-apply-tracker-backend:latest
-    ports:
-      - '8080:8080'
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/jobtracker
-      - SPRING_DATASOURCE_USERNAME=jobtracker
-      - SPRING_DATASOURCE_PASSWORD=jobtracker
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8080/actuator/health']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    restart: unless-stopped
-
-  mariadb:
-    image: mariadb:11
-    ports:
-      - '3306:3306'
-    environment:
-      - MARIADB_ROOT_PASSWORD=rootpassword
-      - MARIADB_DATABASE=jobtracker
-      - MARIADB_USER=jobtracker
-      - MARIADB_PASSWORD=jobtracker
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:v2.53.3
-    ports:
-      - '9090:9090'
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:11.3.0
-    ports:
-      - '3000:3000'
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    restart: unless-stopped
-
-volumes:
-  mariadb_data:
-  prometheus_data:
-  grafana_data:
