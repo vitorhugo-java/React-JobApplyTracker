@@ -78,6 +78,7 @@ const ApplicationsList = () => {
           label="New Application"
           icon="pi pi-plus"
           onClick={() => navigate('/applications/new')}
+          data-testid="new-application-btn"
         />
       </div>
 
@@ -89,12 +90,14 @@ const ApplicationsList = () => {
             onChange={(e) => setFilters({ ...filters, status: e.value })}
             placeholder="Filter by status"
             className="w-full"
+            pt={{ root: { 'data-testid': 'filter-status' } }}
           />
           <InputText
             value={filters.recruiterName}
             onChange={(e) => setFilters({ ...filters, recruiterName: e.target.value })}
             placeholder="Search recruiter..."
             className="w-full"
+            data-testid="filter-recruiter"
           />
           <Calendar
             value={filters.startDate}
@@ -138,6 +141,7 @@ const ApplicationsList = () => {
                 {apps.map((app) => (
                   <tr
                     key={app.id}
+                    data-testid="app-row"
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
                     onClick={() => navigate(`/applications/${app.id}`)}
                   >

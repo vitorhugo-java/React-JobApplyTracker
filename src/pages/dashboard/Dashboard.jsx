@@ -7,12 +7,12 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 
-const MetricCard = ({ icon: Icon, label, value, color }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+const MetricCard = ({ icon: Icon, label, value, color, testId }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700" data-testid={testId}>
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value ?? 0}</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1" data-testid={testId && `${testId}-value`}>{value ?? 0}</p>
       </div>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
         <Icon className="w-6 h-6 text-white" />
@@ -67,11 +67,11 @@ const Dashboard = () => {
   }, [])
 
   const metrics = [
-    { icon: BarChart2, label: 'Total Applications', value: summary?.totalApplications, color: 'bg-indigo-500' },
-    { icon: Clock, label: 'Waiting Responses', value: summary?.waitingResponses, color: 'bg-yellow-500' },
-    { icon: TrendingUp, label: 'Interviews Scheduled', value: summary?.interviewsScheduled, color: 'bg-green-500' },
-    { icon: AlertTriangle, label: 'Overdue Follow-ups', value: summary?.overdueFollowUps, color: 'bg-red-500' },
-    { icon: MessageCircle, label: 'DM Reminders Enabled', value: summary?.dmRemindersEnabled, color: 'bg-purple-500' },
+    { icon: BarChart2, label: 'Total Applications', value: summary?.totalApplications, color: 'bg-indigo-500', testId: 'metric-total' },
+    { icon: Clock, label: 'Waiting Responses', value: summary?.waitingResponses, color: 'bg-yellow-500', testId: 'metric-waiting' },
+    { icon: TrendingUp, label: 'Interviews Scheduled', value: summary?.interviewsScheduled, color: 'bg-green-500', testId: 'metric-interviews' },
+    { icon: AlertTriangle, label: 'Overdue Follow-ups', value: summary?.overdueFollowUps, color: 'bg-red-500', testId: 'metric-overdue' },
+    { icon: MessageCircle, label: 'DM Reminders Enabled', value: summary?.dmRemindersEnabled, color: 'bg-purple-500', testId: 'metric-reminders' },
   ]
 
   return (
