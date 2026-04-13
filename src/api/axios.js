@@ -1,8 +1,11 @@
 import axios from 'axios'
 import useAuthStore from '../store/authStore'
+import logger from '../utils/logger'
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: `${BASE_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -11,6 +14,7 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  config._startTime = performance.now()
   return config
 })
 
@@ -29,9 +33,27 @@ const processQueue = (error, token = null) => {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config._startTime) {
+      const elapsed = Math.round(performance.now() - response.config._startTime)
+      logger.info(`API ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        durationMs: elapsed,
+      })
+    }
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
+
+    // Log API errors
+    if (!error.response) {
+      // Network error / backend down
+      logger.error('Backend unreachable', { url: originalRequest?.url, message: error.message })
+      return Promise.reject(error)
+    }
+
+    logger.apiError(originalRequest?.url, error)
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -51,6 +73,7 @@ api.interceptors.response.use(
       const { refreshToken, setTokens, logout } = useAuthStore.getState()
 
       if (!refreshToken) {
+        logger.authFailure('No refresh token available')
         logout()
         window.location.href = '/login'
         return Promise.reject(error)
@@ -58,7 +81,7 @@ api.interceptors.response.use(
 
       try {
         const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`,
+          `${BASE_URL}/api/auth/refresh`,
           { refreshToken }
         )
         const { accessToken: newAccess, refreshToken: newRefresh } =
@@ -68,6 +91,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api(originalRequest)
       } catch (refreshError) {
+        logger.authFailure('Token refresh failed')
         processQueue(refreshError, null)
         logout()
         window.location.href = '/login'
