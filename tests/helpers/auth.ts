@@ -26,7 +26,10 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<void> {
-  await page.goto('/login')
+  if (!page.url().includes('/login')) {
+    await page.goto('/login')
+  }
+  await page.waitForURL(/\/login/, { timeout: 10_000 })
   await page.locator('[data-testid="login-email"]').fill(email)
   await page.locator('[data-testid="login-password"]').fill(password)
   await page.locator('[data-testid="login-submit"]').click()

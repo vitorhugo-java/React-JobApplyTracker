@@ -9,7 +9,7 @@ test.describe('Auth flow', () => {
     await registerUser(page, email, PASSWORD)
 
     await expect(page).toHaveURL(/\/dashboard/)
-    await expect(page.getByText('Dashboard')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   })
 
   test('login with valid credentials', async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe('Auth flow', () => {
     await loginUser(page, email, PASSWORD)
 
     await expect(page).toHaveURL(/\/dashboard/)
-    await expect(page.getByText('Dashboard')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   })
 
   test('persist session after page reload', async ({ page }) => {
