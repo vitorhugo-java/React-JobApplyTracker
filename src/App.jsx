@@ -13,6 +13,7 @@ import ApplicationForm from './pages/applications/ApplicationForm'
 import ApplicationDetail from './pages/applications/ApplicationDetail'
 import Reminders from './pages/reminders/Reminders'
 import Developer from './pages/developer/Developer'
+import About from './pages/about/About'
 import useAuthStore from './store/authStore'
 import { me as meApi, refresh as refreshApi } from './api/auth'
 
@@ -125,6 +126,7 @@ const App = () => {
           <Route path="/applications/:id/edit" element={<ApplicationForm />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/developer" element={<Developer />} />
+          <Route path="/about" element={<About />} />
         </Route>
       </Routes>
     </PrimeReactProvider>
