@@ -3,6 +3,7 @@ import useAuthStore from '../store/authStore'
 import logger from '../utils/logger'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const AUTH_FAILURE_STATUSES = new Set([401, 403])
 
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -55,7 +56,7 @@ api.interceptors.response.use(
 
     logger.apiError(originalRequest?.url, error)
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (AUTH_FAILURE_STATUSES.has(error.response?.status) && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -97,7 +98,7 @@ api.interceptors.response.use(
 
         // Keep session on transient failures (backend restart / network issues).
         // Clear session only when refresh token is definitively invalid.
-        if (status === 401 || status === 403) {
+        if (AUTH_FAILURE_STATUSES.has(status)) {
           logout()
           window.location.href = '/login'
         }
