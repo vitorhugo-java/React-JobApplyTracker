@@ -85,14 +85,12 @@ test.describe('Application flow', () => {
 
     await createApplication(page, original)
 
-    // Find and click the edit button for the created row
     const row = page.locator('[data-testid="app-row"]').filter({ hasText: original })
-    await row.getByRole('button').nth(1).click() // Edit button (2nd action icon)
-    await page.waitForURL(/\/applications\/.*\/edit/)
+    await row.locator('[data-testid="inline-edit"]').click()
 
-    await page.locator('[data-testid="app-vacancy-name"]').fill(updated)
-    await page.locator('[data-testid="app-submit"]').click()
-    await page.waitForURL(/\/applications\/\d+$/, { timeout: 15_000 })
+    await row.locator('[data-testid="inline-edit-vacancy"]').fill(updated)
+    await row.locator('[data-testid="inline-save"]').click()
+    await page.waitForTimeout(600)
 
     await expect(page.getByText(updated)).toBeVisible()
   })
@@ -102,15 +100,13 @@ test.describe('Application flow', () => {
     await createApplication(page, vacancy)
 
     const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    await row.getByRole('button').nth(1).click()
-    await page.waitForURL(/\/applications\/.*\/edit/)
+    await row.locator('[data-testid="inline-edit"]').click()
 
-    // Open the status dropdown and select a different status
-    await page.locator('[data-testid="app-status"]').click()
+    await row.locator('[data-testid="inline-edit-status"]').click()
     await page.locator('.p-dropdown-item').filter({ hasText: 'Teste Técnico' }).first().click()
 
-    await page.locator('[data-testid="app-submit"]').click()
-    await page.waitForURL(/\/applications\/\d+$/, { timeout: 15_000 })
+    await row.locator('[data-testid="inline-save"]').click()
+    await page.waitForTimeout(600)
 
     await expect(page.getByText('Teste Técnico')).toBeVisible()
   })

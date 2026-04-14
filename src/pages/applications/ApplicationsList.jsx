@@ -7,8 +7,8 @@ import { Calendar } from 'primereact/calendar'
 import { Paginator } from 'primereact/paginator'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
-import { Plus, Edit, Trash2, Eye } from 'lucide-react'
-import { getApplications, deleteApplication, APPLICATION_STATUSES } from '../../api/applications'
+import { Edit, Trash2, Eye, Check, X } from 'lucide-react'
+import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
@@ -24,6 +24,9 @@ const ApplicationsList = () => {
   const [page, setPage] = useState(0)
   const [size] = useState(10)
   const [filters, setFilters] = useState({ status: null, recruiterName: '', startDate: null, endDate: null })
+  const [editingId, setEditingId] = useState(null)
+  const [editDraft, setEditDraft] = useState(null)
+  const [savingId, setSavingId] = useState(null)
 
   const fetchApps = async () => {
     setLoading(true)
@@ -46,6 +49,49 @@ const ApplicationsList = () => {
 
   useEffect(() => { fetchApps() }, [page, filters])
 
+  const startInlineEdit = async (app) => {
+    try {
+      const res = await getApplication(app.id)
+      const full = res.data
+      setEditDraft({
+        ...full,
+        vacancyName: full.vacancyName ?? '',
+        recruiterName: full.recruiterName ?? '',
+        status: full.status ?? APPLICATION_STATUSES[0],
+      })
+      setEditingId(app.id)
+    } catch (_) {
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application for editing.' })
+    }
+  }
+
+  const cancelInlineEdit = () => {
+    setEditingId(null)
+    setEditDraft(null)
+  }
+
+  const saveInlineEdit = async () => {
+    if (!editingId || !editDraft) return
+
+    setSavingId(editingId)
+    try {
+      const payload = {
+        ...editDraft,
+        vacancyName: editDraft.vacancyName?.trim() || null,
+      }
+
+      await updateApplication(editingId, payload)
+      setApps((prev) => prev.map((app) => (app.id === editingId ? { ...app, ...payload } : app)))
+      toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Application updated.' })
+      cancelInlineEdit()
+    } catch (err) {
+      const detail = err.response?.data?.message || 'Failed to save application.'
+      toast.current?.show({ severity: 'error', summary: 'Error', detail })
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const handleDelete = (id) => {
     confirmDialog({
       message: 'Are you sure you want to delete this application?',
@@ -65,6 +111,8 @@ const ApplicationsList = () => {
   }
 
   const statusOptions = [{ label: 'All Statuses', value: null }, ...APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))]
+  const editStatusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
+  const actionButtonBaseClass = 'inline-flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent text-gray-400 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-gray-700'
 
   return (
     <div className="space-y-4">
@@ -143,14 +191,49 @@ const ApplicationsList = () => {
                   <tr
                     key={app.id}
                     data-testid="app-row"
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
-                    onClick={() => navigate(`/applications/${app.id}`)}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${editingId === app.id ? 'cursor-default' : 'cursor-pointer'}`}
+                    onClick={() => {
+                      if (editingId !== app.id) navigate(`/applications/${app.id}`)
+                    }}
                   >
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</p>
+                      {editingId === app.id ? (
+                        <InputText
+                          value={editDraft?.vacancyName ?? ''}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, vacancyName: e.target.value }))}
+                          className="w-full"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid="inline-edit-vacancy"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</p>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{app.recruiterName || '-'}</td>
-                    <td className="px-4 py-3"><StatusBadge status={app.status} /></td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {editingId === app.id ? (
+                        <InputText
+                          value={editDraft?.recruiterName ?? ''}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, recruiterName: e.target.value }))}
+                          className="w-full"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid="inline-edit-recruiter"
+                        />
+                      ) : (app.recruiterName || '-')}
+                    </td>
+                    <td className="px-4 py-3">
+                      {editingId === app.id ? (
+                        <Dropdown
+                          value={editDraft?.status ?? APPLICATION_STATUSES[0]}
+                          options={editStatusOptions}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, status: e.value }))}
+                          className="w-full"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid="inline-edit-status"
+                        />
+                      ) : (
+                        <StatusBadge status={app.status} />
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {app.applicationDate ? new Date(app.applicationDate).toLocaleDateString() : '-'}
                     </td>
@@ -160,20 +243,52 @@ const ApplicationsList = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
+                          type="button"
                           onClick={() => navigate(`/applications/${app.id}`)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className={`${actionButtonBaseClass} hover:text-gray-600 dark:hover:text-gray-200`}
+                          aria-label="View application"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {editingId === app.id ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={saveInlineEdit}
+                              disabled={savingId === app.id}
+                              className={`${actionButtonBaseClass} hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50`}
+                              aria-label="Save inline edit"
+                              data-testid="inline-save"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelInlineEdit}
+                              disabled={savingId === app.id}
+                              className={`${actionButtonBaseClass} hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50`}
+                              aria-label="Cancel inline edit"
+                              data-testid="inline-cancel"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startInlineEdit(app)}
+                            className={`${actionButtonBaseClass} hover:text-indigo-600 dark:hover:text-indigo-400`}
+                            aria-label="Edit application inline"
+                            data-testid="inline-edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => navigate(`/applications/${app.id}/edit`)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
+                          type="button"
                           onClick={() => handleDelete(app.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className={`${actionButtonBaseClass} hover:text-red-600 dark:hover:text-red-400`}
+                          aria-label="Delete application"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
