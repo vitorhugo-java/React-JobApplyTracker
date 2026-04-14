@@ -18,18 +18,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: {
-        name: 'Job Apply Tracker',
-        short_name: 'JobTracker',
-        description: 'Track your job applications',
-        theme_color: '#6366f1',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
-        ]
-      }
+      includeAssets: ['favicon.svg', 'icons.svg', 'manifest.webmanifest'],
+      manifest: false,
     })
   ]
 })

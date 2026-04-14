@@ -7,8 +7,10 @@ import './index.css'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { measurePageLoad } from './utils/performance'
+import { registerSW } from 'virtual:pwa-register'
 
 measurePageLoad()
+registerSW({ immediate: true })
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
