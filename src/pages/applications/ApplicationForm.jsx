@@ -63,10 +63,10 @@ const ApplicationForm = () => {
         const d = res.data
         setForm({
           ...d,
-          applicationDate: d.applicationDate ? new Date(d.applicationDate) : null,
+          applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
         })
-      } catch (_) {
+      } catch {
         toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application.' })
       } finally {
         setFetching(false)
@@ -91,8 +91,8 @@ const ApplicationForm = () => {
     try {
       const payload = {
         ...form,
-        applicationDate: form.applicationDate?.toISOString(),
-        nextStepDateTime: form.nextStepDateTime?.toISOString() || null,
+        applicationDate: formatDateOnly(form.applicationDate),
+        nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
       }
       if (isEdit) {
         await updateApplication(id, payload)
