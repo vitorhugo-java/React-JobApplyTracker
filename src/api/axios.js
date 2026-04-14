@@ -91,10 +91,16 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api(originalRequest)
       } catch (refreshError) {
+        const status = refreshError.response?.status
         logger.authFailure('Token refresh failed')
         processQueue(refreshError, null)
-        logout()
-        window.location.href = '/login'
+
+        // Keep session on transient failures (backend restart / network issues).
+        // Clear session only when refresh token is definitively invalid.
+        if (status === 401 || status === 403) {
+          logout()
+          window.location.href = '/login'
+        }
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

@@ -18,40 +18,78 @@ import { me as meApi, refresh as refreshApi } from './api/auth'
 
 const App = () => {
   const [appReady, setAppReady] = useState(false)
-  const accessToken = useAuthStore((s) => s.accessToken)
-  const refreshToken = useAuthStore((s) => s.refreshToken)
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
   const initTheme = useAuthStore((s) => s.initTheme)
 
   useEffect(() => {
-    initTheme()
+    let cancelled = false
     const restoreSession = async () => {
+      // Ensure persisted auth state is loaded before making any auth decision.
+      await useAuthStore.persist.rehydrate()
+
+      // Theme update uses store.set, so it must run after auth hydration.
+      initTheme()
+
+      const { accessToken, refreshToken } = useAuthStore.getState()
+
+      if (!accessToken && !refreshToken) {
+        if (!cancelled) setAppReady(true)
+        return
+      }
+
       if (accessToken) {
         try {
           const res = await meApi()
           setUser(res.data)
-          setAppReady(true)
+          if (!cancelled) setAppReady(true)
           return
-        } catch (_) {}
+        } catch (err) {
+          // Network error (backend unreachable) — keep persisted session intact
+          if (!err.response) {
+            if (!cancelled) setAppReady(true)
+            return
+          }
+        }
       }
-      if (refreshToken) {
+
+      const latestState = useAuthStore.getState()
+      const latestRefreshToken = latestState.refreshToken
+      if (latestRefreshToken) {
         try {
-          const res = await refreshApi({ refreshToken })
+          const res = await refreshApi({ refreshToken: latestRefreshToken })
           const { accessToken: newAccess, refreshToken: newRefresh } = res.data
           setTokens(newAccess, newRefresh)
           const userRes = await meApi()
           setUser(userRes.data)
-          setAppReady(true)
+          if (!cancelled) setAppReady(true)
           return
-        } catch (_) {}
+        } catch (err) {
+          // Network error — keep persisted session intact
+          if (!err.response) {
+            if (!cancelled) setAppReady(true)
+            return
+          }
+
+          // Only clear persisted session for definitive auth failures.
+          if (err.response.status === 401 || err.response.status === 403) {
+            logout()
+          }
+          if (!cancelled) setAppReady(true)
+          return
+        }
       }
-      logout()
-      setAppReady(true)
+
+      if (!cancelled) setAppReady(true)
     }
+
     restoreSession()
-  }, [])
+
+    return () => {
+      cancelled = true
+    }
+  }, [initTheme, setTokens, setUser, logout])
 
   if (!appReady) {
     return (
