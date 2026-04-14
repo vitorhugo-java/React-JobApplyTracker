@@ -27,6 +27,29 @@ const defaultForm = {
   recruiterDmReminderEnabled: false,
 }
 
+const getDraftKey = (id) => `jobtracker:application-form-draft:${id || 'new'}`
+
+const toStoragePayload = (form) => ({
+  ...form,
+  applicationDate: form.applicationDate ? form.applicationDate.toISOString() : null,
+  nextStepDateTime: form.nextStepDateTime ? form.nextStepDateTime.toISOString() : null,
+})
+
+const fromStoragePayload = (raw) => {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    return {
+      ...defaultForm,
+      ...parsed,
+      applicationDate: parsed.applicationDate ? new Date(parsed.applicationDate) : null,
+      nextStepDateTime: parsed.nextStepDateTime ? new Date(parsed.nextStepDateTime) : null,
+    }
+  } catch {
+    return null
+  }
+}
+
 const pad2 = (value) => String(value).padStart(2, '0')
 
 const parseDateOnlyAsLocalDate = (dateString) => {
@@ -55,6 +78,20 @@ const ApplicationForm = () => {
   const [form, setForm] = useState(defaultForm)
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(isEdit)
+  const [draftReady, setDraftReady] = useState(false)
+  const draftRef = useRef(null)
+  const draftKey = getDraftKey(id)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    draftRef.current = fromStoragePayload(window.localStorage.getItem(draftKey))
+
+    if (!isEdit && draftRef.current) {
+      setForm(draftRef.current)
+      toast.current?.show({ severity: 'info', summary: 'Draft restored', detail: 'Unsaved form data was restored.' })
+    }
+    setDraftReady(true)
+  }, [draftKey, isEdit])
 
   useEffect(() => {
     if (!isEdit) return
@@ -72,6 +109,10 @@ const ApplicationForm = () => {
           applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
         })
+        if (draftRef.current) {
+          setForm((serverData) => ({ ...serverData, ...draftRef.current }))
+          toast.current?.show({ severity: 'info', summary: 'Draft restored', detail: 'Local unsaved changes were restored.' })
+        }
       } catch {
         toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application.' })
       } finally {
@@ -80,6 +121,11 @@ const ApplicationForm = () => {
     }
     fetchApp()
   }, [id, isEdit])
+
+  useEffect(() => {
+    if (!draftReady || fetching || typeof window === 'undefined') return
+    window.localStorage.setItem(draftKey, JSON.stringify(toStoragePayload(form)))
+  }, [draftKey, draftReady, fetching, form])
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
@@ -98,10 +144,26 @@ const ApplicationForm = () => {
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
       }
       if (isEdit) {
-        await updateApplication(id, payload)
+        const response = await updateApplication(id, payload)
+        window.localStorage.removeItem(draftKey)
+        if (response.data?.queuedOffline) {
+          toast.current.show({
+            severity: 'info',
+            summary: 'Saved offline',
+            detail: 'No internet. Changes were queued and will sync automatically when online.',
+          })
+        }
         navigate(`/applications/${id}`)
       } else {
-        await createApplication(payload)
+        const response = await createApplication(payload)
+        window.localStorage.removeItem(draftKey)
+        if (response.data?.queuedOffline) {
+          toast.current.show({
+            severity: 'info',
+            summary: 'Saved offline',
+            detail: 'No internet. Creation was queued and will sync automatically when online.',
+          })
+        }
         navigate('/applications')
       }
     } catch (err) {
