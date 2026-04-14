@@ -2,6 +2,13 @@ import { test, expect } from '@playwright/test'
 import { registerUser, loginUser, uniqueEmail } from './helpers/auth'
 
 const PASSWORD = 'Test1234!'
+const DASHBOARD_FIXTURE = {
+  totalApplications: 7,
+  waitingResponses: 3,
+  interviewsScheduled: 2,
+  overdueFollowUps: 1,
+  dmRemindersEnabled: 4,
+}
 
 test.describe('Auth flow', () => {
   test('register a new user', async ({ page }) => {
@@ -68,6 +75,79 @@ test.describe('Auth flow', () => {
     // Tokens are invalid — app must redirect to /login
     await page.waitForURL('**/login', { timeout: 15_000 })
     await expect(page).toHaveURL(/\/login/)
+  })
+
+  test('refresh expired access token when protected endpoints return 403', async ({ page }) => {
+    const email = uniqueEmail('expired_403')
+    await registerUser(page, email, PASSWORD)
+
+    let refreshCalls = 0
+    let summaryCalls = 0
+    let upcomingCalls = 0
+    let overdueCalls = 0
+
+    await page.route('**/api/auth/refresh', async (route) => {
+      refreshCalls += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'refreshed-access-token',
+          refreshToken: 'refreshed-refresh-token',
+        }),
+      })
+    })
+
+    await page.route('**/api/dashboard/summary', async (route) => {
+      summaryCalls += 1
+      if (summaryCalls === 1) {
+        await route.fulfill({ status: 403, body: '' })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(DASHBOARD_FIXTURE),
+      })
+    })
+
+    await page.route('**/api/applications/upcoming', async (route) => {
+      upcomingCalls += 1
+      if (upcomingCalls === 1) {
+        await route.fulfill({ status: 403, body: '' })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    })
+
+    await page.route('**/api/applications/overdue', async (route) => {
+      overdueCalls += 1
+      if (overdueCalls === 1) {
+        await route.fulfill({ status: 403, body: '' })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    })
+
+    await page.reload()
+    await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
+
+    await expect(page.getByTestId('metric-total-value')).toHaveText('7')
+    await expect.poll(() => refreshCalls).toBe(1)
+    await expect.poll(() => summaryCalls >= 2).toBe(true)
+    await expect.poll(() => upcomingCalls >= 2).toBe(true)
+    await expect.poll(() => overdueCalls >= 2).toBe(true)
   })
 
   test('logout redirects to login', async ({ page }) => {
