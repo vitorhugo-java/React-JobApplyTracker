@@ -37,8 +37,9 @@ const Layout = () => {
               <span className="hidden sm:block">{user?.name || user?.email || 'User'}</span>
             </div>
             <button
+              type="button"
               onClick={handleLogout}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-label="Logout"
             >
               <LogOut className="w-5 h-5" />
