@@ -62,7 +62,12 @@ const ApplicationForm = () => {
         const res = await getApplication(id)
         const d = res.data
         setForm({
+          ...defaultForm,
           ...d,
+          vacancyName: d.vacancyName ?? '',
+          recruiterName: d.recruiterName ?? '',
+          vacancyOpenedBy: d.vacancyOpenedBy ?? '',
+          vacancyLink: d.vacancyLink ?? '',
           applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
         })
@@ -79,10 +84,6 @@ const ApplicationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.vacancyName.trim()) {
-      toast.current.show({ severity: 'warn', summary: 'Validation', detail: 'Vacancy name is required.' })
-      return
-    }
     if (!form.applicationDate) {
       toast.current.show({ severity: 'warn', summary: 'Validation', detail: 'Application date is required.' })
       return
@@ -91,6 +92,7 @@ const ApplicationForm = () => {
     try {
       const payload = {
         ...form,
+        vacancyName: form.vacancyName.trim() || null,
         applicationDate: formatDateOnly(form.applicationDate),
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
       }
@@ -134,7 +136,7 @@ const ApplicationForm = () => {
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1 sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Name *</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Name</label>
             <InputText value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" placeholder="e.g. Frontend Engineer" data-testid="app-vacancy-name" />
           </div>
 
