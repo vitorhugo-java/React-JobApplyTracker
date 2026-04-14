@@ -136,39 +136,53 @@ const ApplicationForm = () => {
 
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Name</label>
-            <InputText value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" placeholder="e.g. Frontend Engineer" data-testid="app-vacancy-name" />
+          <div className="sm:col-span-2 pt-2">
+            <FloatLabel className="w-full">
+              <InputText inputId="vacancyName" value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" data-testid="app-vacancy-name" />
+              <label htmlFor="vacancyName">Vacancy Name</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Recruiter Name</label>
-            <InputText value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} className="w-full" placeholder="Jane Smith" data-testid="app-recruiter-name" />
+          <div className="pt-2">
+            <FloatLabel className="w-full">
+              <InputText inputId="recruiterName" value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} className="w-full" data-testid="app-recruiter-name" />
+              <label htmlFor="recruiterName">Recruiter Name</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Opened By</label>
-            <InputText value={form.vacancyOpenedBy} onChange={(e) => setField('vacancyOpenedBy', e.target.value)} className="w-full" placeholder="Company name or recruiter" />
+          <div className="pt-2">
+            <FloatLabel className="w-full">
+              <InputText inputId="vacancyOpenedBy" value={form.vacancyOpenedBy} onChange={(e) => setField('vacancyOpenedBy', e.target.value)} className="w-full" />
+              <label htmlFor="vacancyOpenedBy">Vacancy Opened By</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Vacancy Link</label>
-            <InputText value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} className="w-full" placeholder="https://..." type="url" />
+          <div className="sm:col-span-2 pt-2">
+            <FloatLabel className="w-full">
+              <InputText inputId="vacancyLink" value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} className="w-full" type="url" />
+              <label htmlFor="vacancyLink">Vacancy Link</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Application Date *</label>
-            <Calendar value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="mm/dd/yy" placeholder="Select date" />
+          <div className="pt-2">
+            <FloatLabel className="w-full">
+              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="mm/dd/yy" />
+              <label htmlFor="applicationDate">Application Date *</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Next Step Date &amp; Time</label>
-            <Calendar value={form.nextStepDateTime} onChange={(e) => setField('nextStepDateTime', e.value)} className="w-full" showTime dateFormat="mm/dd/yy" placeholder="Select date &amp; time" />
+          <div className="pt-2">
+            <FloatLabel className="w-full">
+              <Calendar inputId="nextStepDateTime" value={form.nextStepDateTime} onChange={(e) => setField('nextStepDateTime', e.value)} className="w-full" showTime dateFormat="mm/dd/yy" />
+              <label htmlFor="nextStepDateTime">Next Step Date &amp; Time</label>
+            </FloatLabel>
           </div>
 
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-            <Dropdown value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" pt={{ root: { 'data-testid': 'app-status' } }} />
+          <div className="sm:col-span-2 pt-2">
+            <FloatLabel className="w-full">
+              <Dropdown inputId="status" value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" pt={{ root: { 'data-testid': 'app-status' } }} />
+              <label htmlFor="status">Status</label>
+            </FloatLabel>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
