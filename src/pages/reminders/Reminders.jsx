@@ -7,11 +7,12 @@ import { getUpcoming, getOverdue, patchReminder } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import { getVacancyLabel } from '../../utils/applicationDisplay'
 
 const ReminderCard = ({ app, onToggle }) => (
   <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors">
     <Link to={`/applications/${app.id}`} className="flex-1 min-w-0">
-      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{app.vacancyName}</p>
+      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{app.recruiterName || 'No recruiter'}</p>
       <div className="flex items-center gap-3 mt-2">
         <StatusBadge status={app.status} />

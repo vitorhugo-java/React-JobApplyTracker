@@ -12,6 +12,7 @@ import { getApplications, deleteApplication, APPLICATION_STATUSES } from '../../
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import { getVacancyLabel } from '../../utils/applicationDisplay'
 
 const ApplicationsList = () => {
   const navigate = useNavigate()
@@ -146,7 +147,7 @@ const ApplicationsList = () => {
                     onClick={() => navigate(`/applications/${app.id}`)}
                   >
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{app.vacancyName}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</p>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{app.recruiterName || '-'}</td>
                     <td className="px-4 py-3"><StatusBadge status={app.status} /></td>

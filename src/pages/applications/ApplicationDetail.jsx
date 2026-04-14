@@ -7,6 +7,7 @@ import { Edit, Trash2, ExternalLink, Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
+import { getVacancyLabel } from '../../utils/applicationDisplay'
 
 const Field = ({ label, value }) => (
   <div>
@@ -67,7 +68,7 @@ const ApplicationDetail = () => {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{app.vacancyName}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</h1>
           <div className="flex items-center gap-3 mt-2">
             <StatusBadge status={app.status} />
             {app.applicationDate && (

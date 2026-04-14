@@ -6,6 +6,7 @@ import { getUpcoming, getOverdue } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import { getVacancyLabel } from '../../utils/applicationDisplay'
 
 const MetricCard = ({ icon: Icon, label, value, color, testId }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700" data-testid={testId}>
@@ -27,7 +28,7 @@ const AppRow = ({ app }) => (
     className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
   >
     <div>
-      <p className="text-sm font-medium text-gray-900 dark:text-white">{app.vacancyName}</p>
+      <p className="text-sm font-medium text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400">{app.recruiterName}</p>
     </div>
     <div className="flex items-center gap-3">
