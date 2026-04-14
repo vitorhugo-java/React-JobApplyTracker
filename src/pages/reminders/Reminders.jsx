@@ -9,30 +9,36 @@ import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 
-const ReminderCard = ({ app, onToggle }) => (
-  <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors">
-    <Link to={`/applications/${app.id}`} className="flex-1 min-w-0">
-      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{app.recruiterName || 'No recruiter'}</p>
-      <div className="flex items-center gap-3 mt-2">
-        <StatusBadge status={app.status} />
-        {app.nextStepDateTime && (
-          <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {new Date(app.nextStepDateTime).toLocaleString()}
-          </span>
-        )}
+const ReminderCard = ({ app, onToggle }) => {
+  const reminderAt = app.createdAt
+    ? new Date(new Date(app.createdAt).getTime() + (6 * 60 * 60 * 1000))
+    : null
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors">
+      <Link to={`/applications/${app.id}`} className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{app.recruiterName || 'No recruiter'}</p>
+        <div className="flex items-center gap-3 mt-2">
+          <StatusBadge status={app.status} />
+          {reminderAt && (
+            <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {reminderAt.toLocaleString()}
+            </span>
+          )}
+        </div>
+      </Link>
+      <div className="flex items-center gap-2 ml-4 shrink-0">
+        <Bell className={`w-4 h-4 ${app.recruiterDmReminderEnabled ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'}`} />
+        <InputSwitch
+          checked={app.recruiterDmReminderEnabled}
+          onChange={() => onToggle(app)}
+        />
       </div>
-    </Link>
-    <div className="flex items-center gap-2 ml-4 shrink-0">
-      <Bell className={`w-4 h-4 ${app.recruiterDmReminderEnabled ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'}`} />
-      <InputSwitch
-        checked={app.recruiterDmReminderEnabled}
-        onChange={() => onToggle(app)}
-      />
     </div>
-  </div>
-)
+  )
+}
 
 const Section = ({ title, items, loading, onToggle }) => (
   <div>
@@ -63,7 +69,7 @@ const Reminders = () => {
         const [upRes, ovRes] = await Promise.all([getUpcoming(), getOverdue()])
         setUpcoming(upRes.data || [])
         setOverdue(ovRes.data || [])
-      } catch (_) {
+      } catch {
         toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load reminders.' })
       } finally {
         setLoading(false)
@@ -80,7 +86,7 @@ const Reminders = () => {
     setOverdue(update)
     try {
       await patchReminder(app.id, newVal)
-    } catch (_) {
+    } catch {
       const revert = (list) =>
         list.map((a) => (a.id === app.id ? { ...a, recruiterDmReminderEnabled: app.recruiterDmReminderEnabled } : a))
       setUpcoming(revert)
