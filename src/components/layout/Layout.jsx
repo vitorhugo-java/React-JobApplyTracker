@@ -4,6 +4,7 @@ import { LogOut, User } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import ThemeToggle from '../ui/ThemeToggle'
+import SyncStatusIndicator from '../ui/SyncStatusIndicator'
 import useAuthStore from '../../store/authStore'
 import { logout as logoutApi } from '../../api/auth'
 
@@ -13,9 +14,9 @@ const Layout = () => {
   const logoutStore = useAuthStore((s) => s.logout)
 
   const handleLogout = async () => {
-    try {
-      if (refreshToken) await logoutApi({ refreshToken })
-    } catch (_) {}
+    if (refreshToken) {
+      await logoutApi({ refreshToken }).catch(() => null)
+    }
     logoutStore()
     window.location.href = '/login'
   }
@@ -31,6 +32,7 @@ const Layout = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <SyncStatusIndicator />
             <ThemeToggle />
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <User className="w-4 h-4" />
