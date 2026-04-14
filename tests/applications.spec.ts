@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { registerUser, uniqueEmail } from './helpers/auth'
+import { loginUser, registerUser, uniqueEmail } from './helpers/auth'
 
 const PASSWORD = 'Test1234!'
 
@@ -18,8 +18,8 @@ async function createApplication(
     await page.locator('[data-testid="app-recruiter-name"]').fill(recruiterName)
   }
 
-  // Fill the application date by typing into the Calendar input
-  const dateInput = page.getByPlaceholder('Select date')
+  // Fill the application date by typing into the Calendar input.
+  const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
   await dateInput.fill('01/15/2025')
   await dateInput.press('Escape')
 
@@ -124,5 +124,99 @@ test.describe('Application flow', () => {
     await page.waitForTimeout(1000)
 
     await expect(page.getByText(vacancy)).not.toBeVisible()
+  })
+
+  test('queue changes while offline and sync when back online', async ({ page }) => {
+    test.setTimeout(90_000)
+
+    const vacancy = `Offline Sync ${Date.now()}`
+    const mockedApplications: Array<Record<string, unknown>> = []
+    let apiOffline = false
+
+    await loginUser(page, sharedEmail, PASSWORD)
+
+    await page.route(/\/api\/applications(?:\?.*)?$/, async (route) => {
+      const request = route.request()
+      const method = request.method()
+
+      if (method === 'POST') {
+        if (apiOffline) {
+          await route.abort('internetdisconnected')
+          return
+        }
+
+        const payload = request.postDataJSON() as Record<string, unknown>
+        mockedApplications.push({
+          id: mockedApplications.length + 1,
+          ...payload,
+        })
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify(mockedApplications[mockedApplications.length - 1]),
+        })
+        return
+      }
+
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockedApplications),
+        })
+        return
+      }
+
+      await route.continue()
+    })
+
+    apiOffline = true
+    await page.goto('/applications')
+    await page.waitForURL('**/applications', { timeout: 15_000 })
+
+    await page.evaluate((vacancyName) => {
+      const key = 'jobtracker:offline-request-queue'
+      const queue = [
+        {
+          id: `test-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          request: {
+            url: '/applications',
+            method: 'POST',
+            data: {
+              vacancyName,
+              recruiterName: 'Offline Recruiter',
+              applicationDate: '2025-01-15',
+              status: 'RH',
+              recruiterDmReminderEnabled: false,
+              rhAcceptedConnection: false,
+              interviewScheduled: false,
+              nextStepDateTime: null,
+              vacancyOpenedBy: null,
+              vacancyLink: null,
+            },
+            params: null,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        },
+      ]
+      window.localStorage.setItem(key, JSON.stringify(queue))
+    }, vacancy)
+
+    await page.reload()
+    await page.waitForURL('**/applications', { timeout: 15_000 })
+
+    await expect(page.locator('[data-testid="sync-status-text"]')).toContainText('1 alteracoes pendentes')
+
+    apiOffline = false
+    await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    await expect(page.locator('[data-testid="sync-status-text"]')).toHaveText('Sincronizado', {
+      timeout: 20_000,
+    })
+
+    await page.goto('/applications')
+    await expect(page.getByText(vacancy)).toBeVisible({ timeout: 15_000 })
   })
 })

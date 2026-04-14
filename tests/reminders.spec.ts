@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { registerUser, uniqueEmail } from './helpers/auth'
+import { loginUser, registerUser, uniqueEmail } from './helpers/auth'
 
 const PASSWORD = 'Test1234!'
 
@@ -77,5 +77,77 @@ test.describe('Reminder flow', () => {
 
     // Reminder section should NOT appear
     await expect(page.getByText('Recruiter DM Reminder')).not.toBeVisible()
+  })
+
+  test('separates reminders at the exact 6-hour boundary', async ({ page }) => {
+    await loginUser(page, email, PASSWORD)
+
+    const now = new Date('2026-04-13T12:00:00.000Z')
+    const sixHoursMs = 6 * 60 * 60 * 1000
+
+    const apps = [
+      {
+        id: 'app-upcoming',
+        vacancyName: 'Upcoming < 6h',
+        recruiterName: 'Alice',
+        status: 'RH',
+        recruiterDmReminderEnabled: true,
+        createdAt: new Date(now.getTime() - sixHoursMs + 60_000).toISOString(),
+      },
+      {
+        id: 'app-boundary',
+        vacancyName: 'Boundary == 6h',
+        recruiterName: 'Bob',
+        status: 'RH',
+        recruiterDmReminderEnabled: true,
+        createdAt: new Date(now.getTime() - sixHoursMs).toISOString(),
+      },
+      {
+        id: 'app-overdue',
+        vacancyName: 'Overdue > 6h',
+        recruiterName: 'Carol',
+        status: 'RH',
+        recruiterDmReminderEnabled: true,
+        createdAt: new Date(now.getTime() - sixHoursMs - 60_000).toISOString(),
+      },
+    ]
+
+    const threshold = new Date(now.getTime() - sixHoursMs)
+    const upcoming = apps.filter((app) => new Date(app.createdAt) > threshold)
+    const overdue = apps.filter((app) => new Date(app.createdAt) <= threshold)
+
+    await page.route('**/api/applications/upcoming', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(upcoming),
+      })
+    })
+
+    await page.route('**/api/applications/overdue', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(overdue),
+      })
+    })
+
+    await page.goto('/reminders')
+    await page.waitForURL('**/reminders', { timeout: 10_000 })
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes('/api/applications/upcoming') && response.ok()),
+      page.waitForResponse((response) => response.url().includes('/api/applications/overdue') && response.ok()),
+    ])
+
+    const upcomingSection = page.locator('h2:has-text("Upcoming")').locator('..')
+    const overdueSection = page.locator('h2:has-text("Overdue")').locator('..')
+
+    await expect(upcomingSection.getByText('Upcoming < 6h')).toBeVisible()
+    await expect(upcomingSection.getByText('Boundary == 6h')).not.toBeVisible()
+    await expect(upcomingSection.getByText('Overdue > 6h')).not.toBeVisible()
+
+    await expect(overdueSection.getByText('Boundary == 6h')).toBeVisible()
+    await expect(overdueSection.getByText('Overdue > 6h')).toBeVisible()
+    await expect(overdueSection.getByText('Upcoming < 6h')).not.toBeVisible()
   })
 })

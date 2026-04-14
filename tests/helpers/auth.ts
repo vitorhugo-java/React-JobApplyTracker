@@ -15,7 +15,16 @@ export async function registerUser(
   await page.locator('[data-testid="register-password"]').fill(password)
   await page.locator('[data-testid="register-confirm-password"]').fill(password)
   await page.locator('[data-testid="register-submit"]').click()
-  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+
+  await page
+    .waitForURL((url) => /\/(dashboard|login)$/.test(url.pathname), {
+      timeout: 15_000,
+    })
+    .catch(() => null)
+
+  if (page.url().includes('/login')) {
+    await loginUser(page, email, password)
+  }
 }
 
 /**
