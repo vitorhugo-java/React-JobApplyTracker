@@ -33,7 +33,41 @@ test.describe('Auth flow', () => {
     await page.reload()
     await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
 
-    await expect(page.getByText('Dashboard')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  })
+
+  test('persist session when backend is unreachable on reload (F5 scenario)', async ({ page }) => {
+    const email = uniqueEmail('persist_offline')
+    await registerUser(page, email, PASSWORD)
+
+    // Simulate backend going down (e.g. pressing F5 in VS Code to restart Spring Boot)
+    await page.route('**/api/auth/me', (route) => route.abort('failed'))
+    await page.route('**/api/auth/refresh', (route) => route.abort('failed'))
+
+    await page.reload()
+
+    // App should not redirect to /login — session must be preserved
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  })
+
+  test('clear session when backend returns 401 on reload', async ({ page }) => {
+    const email = uniqueEmail('persist_401')
+    await registerUser(page, email, PASSWORD)
+
+    // Simulate both /me and /refresh returning 401 (e.g. revoked/expired tokens)
+    await page.route('**/api/auth/me', (route) =>
+      route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
+    )
+    await page.route('**/api/auth/refresh', (route) =>
+      route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
+    )
+
+    await page.reload()
+
+    // Tokens are invalid — app must redirect to /login
+    await page.waitForURL('**/login', { timeout: 15_000 })
+    await expect(page).toHaveURL(/\/login/)
   })
 
   test('logout redirects to login', async ({ page }) => {
