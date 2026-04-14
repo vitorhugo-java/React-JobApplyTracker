@@ -1,11 +1,12 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Bell, Code2, CircleUserRound } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Bell, Code2, CircleUserRound, Settings } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/applications', label: 'Applications', icon: Briefcase },
   { to: '/reminders', label: 'Reminders', icon: Bell },
+  { to: '/account', label: 'Account', icon: Settings },
   { to: '/developer', label: 'Developer', icon: Code2 },
   { to: '/about', label: 'Sobre', icon: CircleUserRound },
 ]
