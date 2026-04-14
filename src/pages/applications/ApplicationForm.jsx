@@ -26,6 +26,25 @@ const defaultForm = {
   recruiterDmReminderEnabled: false,
 }
 
+const pad2 = (value) => String(value).padStart(2, '0')
+
+const parseDateOnlyAsLocalDate = (dateString) => {
+  if (!dateString) return null
+  const [year, month, day] = dateString.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+const formatDateOnly = (date) => {
+  if (!date) return null
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+}
+
+const formatLocalDateTime = (date) => {
+  if (!date) return null
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
+}
+
 const ApplicationForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
