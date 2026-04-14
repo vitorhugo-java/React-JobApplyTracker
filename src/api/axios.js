@@ -1,13 +1,30 @@
 import axios from 'axios'
 import useAuthStore from '../store/authStore'
 import logger from '../utils/logger'
+import {
+  enqueueRequest,
+  flushOfflineQueue,
+  shouldQueueRequest,
+} from './offlineQueue'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 const AUTH_FAILURE_STATUSES = new Set([401, 403])
 
 const api = axios.create({
-  baseURL: `${BASE_URL}/api`,
+  baseURL: `${BASE_URL}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
+})
+
+const createQueuedOfflineResponse = (config, queuedItem) => ({
+  data: {
+    queuedOffline: true,
+    queuedAt: queuedItem.createdAt,
+  },
+  status: 202,
+  statusText: 'Queued Offline',
+  headers: {},
+  config,
+  request: null,
 })
 
 api.interceptors.request.use((config) => {
@@ -50,6 +67,10 @@ api.interceptors.response.use(
     // Log API errors
     if (!error.response) {
       // Network error / backend down
+      if (shouldQueueRequest(originalRequest)) {
+        const queuedItem = enqueueRequest(originalRequest)
+        return Promise.resolve(createQueuedOfflineResponse(originalRequest, queuedItem))
+      }
       logger.error('Backend unreachable', { url: originalRequest?.url, message: error.message })
       return Promise.reject(error)
     }
@@ -111,5 +132,30 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+const initOfflineQueueSync = () => {
+  if (typeof window === 'undefined') return
+
+  if (window.__JOBTRACKER_OFFLINE_QUEUE_INIT__) return
+  window.__JOBTRACKER_OFFLINE_QUEUE_INIT__ = true
+
+  window.addEventListener('online', () => {
+    flushOfflineQueue(api)
+      .then(({ processed, remaining }) => {
+        if (processed > 0) {
+          logger.info('Offline queue flushed successfully', { processed, remaining })
+        }
+      })
+      .catch((err) => {
+        logger.error('Failed to flush offline queue', { message: err?.message })
+      })
+  })
+
+  flushOfflineQueue(api).catch((err) => {
+    logger.error('Initial offline queue flush failed', { message: err?.message })
+  })
+}
+
+initOfflineQueueSync()
 
 export default api
