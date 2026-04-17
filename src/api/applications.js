@@ -7,6 +7,9 @@ export const APPLICATION_STATUSES = [
   'Teste Técnico',
   'Fiz teste Técnico - aguardando atualização',
   'RH (Negociação)',
+  'Rejeitado',
+  'Tarde demais',
+  'Ghosting',
 ]
 
 export const TO_SEND_LATER_STATUS = 'TO_SEND_LATER'

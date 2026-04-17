@@ -81,7 +81,7 @@ const ApplicationDetail = () => {
             )}
           </div>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap justify-end gap-2 shrink-0">
           <Button
             icon="pi pi-pencil"
             label="Edit"
@@ -111,7 +111,7 @@ const ApplicationDetail = () => {
       )}
 
       {app.vacancyLink && (
-        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl space-y-3">
+        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl space-y-3 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vacancy Link</p>
@@ -127,19 +127,22 @@ const ApplicationDetail = () => {
               Open
             </a>
           </div>
-          <iframe
-            title="Vacancy preview"
-            src={app.vacancyLink}
-            className="w-full h-72 rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
+          <div className="w-full max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white aspect-[4/3] sm:aspect-video">
+            <iframe
+              title="Vacancy preview"
+              src={app.vacancyLink}
+              className="w-full h-full"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
         </div>
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Recruiter Name" value={app.recruiterName} />
         <Field label="Organization" value={app.organization} />
+        <Field label="Previous Status" value={app.previousStatus} />
         <Field
           label="RH Accepted Connection"
           value={app.rhAcceptedConnection ? 'Yes' : 'No'}

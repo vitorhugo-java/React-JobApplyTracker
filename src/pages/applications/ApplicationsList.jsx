@@ -251,11 +251,11 @@ const ApplicationsList = () => {
                       {app.nextStepDateTime ? new Date(app.nextStepDateTime).toLocaleString('pt-BR') : '-'}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-1 sm:flex-nowrap" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => navigate(`/applications/${app.id}`)}
-                          className={`${actionButtonBaseClass} hover:text-gray-600 dark:hover:text-gray-200`}
+                          className={`${actionButtonBaseClass} shrink-0 hover:text-gray-600 dark:hover:text-gray-200`}
                           aria-label="View application"
                         >
                           <Eye className="w-4 h-4" />
@@ -266,7 +266,7 @@ const ApplicationsList = () => {
                               type="button"
                               onClick={saveInlineEdit}
                               disabled={savingId === app.id}
-                              className={`${actionButtonBaseClass} hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50`}
+                              className={`${actionButtonBaseClass} shrink-0 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50`}
                               aria-label="Save inline edit"
                               data-testid="inline-save"
                             >
@@ -276,7 +276,7 @@ const ApplicationsList = () => {
                               type="button"
                               onClick={cancelInlineEdit}
                               disabled={savingId === app.id}
-                              className={`${actionButtonBaseClass} hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50`}
+                              className={`${actionButtonBaseClass} shrink-0 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50`}
                               aria-label="Cancel inline edit"
                               data-testid="inline-cancel"
                             >
@@ -287,7 +287,7 @@ const ApplicationsList = () => {
                           <button
                             type="button"
                             onClick={() => startInlineEdit(app)}
-                            className={`${actionButtonBaseClass} hover:text-indigo-600 dark:hover:text-indigo-400`}
+                            className={`${actionButtonBaseClass} shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400`}
                             aria-label="Edit application inline"
                             data-testid="inline-edit"
                           >
@@ -297,7 +297,7 @@ const ApplicationsList = () => {
                         <button
                           type="button"
                           onClick={() => handleDelete(app.id)}
-                          className={`${actionButtonBaseClass} hover:text-red-600 dark:hover:text-red-400`}
+                          className={`${actionButtonBaseClass} shrink-0 hover:text-red-600 dark:hover:text-red-400`}
                           aria-label="Delete application"
                         >
                           <Trash2 className="w-4 h-4" />

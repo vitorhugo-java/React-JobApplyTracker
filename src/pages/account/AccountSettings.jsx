@@ -15,6 +15,7 @@ const AccountSettings = () => {
   const logout = useAuthStore((s) => s.logout)
 
   const [name, setName] = useState(user?.name || '')
+  const [reminderTime, setReminderTime] = useState((user?.reminderTime || '19:00:00').slice(0, 5))
   const [savingName, setSavingName] = useState(false)
 
   const [passwordForm, setPasswordForm] = useState({
@@ -35,9 +36,11 @@ const AccountSettings = () => {
 
     setSavingName(true)
     try {
-      const res = await updateProfileApi({ name: trimmedName })
+      const timePayload = reminderTime?.trim() ? `${reminderTime}:00` : null
+      const res = await updateProfileApi({ name: trimmedName, reminderTime: timePayload })
       setUser(res.data)
       setName(res.data.name)
+      setReminderTime((res.data.reminderTime || '19:00:00').slice(0, 5))
       toast.current.show({ severity: 'success', summary: 'Success', detail: 'Profile updated successfully.' })
     } catch (err) {
       const detail = err.response?.data?.message || 'Failed to update profile.'
@@ -108,6 +111,17 @@ const AccountSettings = () => {
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
             <InputText id="email" value={user?.email || ''} className="w-full" disabled />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="reminderTime" className="text-sm font-medium text-gray-700 dark:text-gray-300">Daily Reminder Time</label>
+            <InputText
+              id="reminderTime"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className="w-full"
+              type="time"
+            />
           </div>
 
           <Button type="submit" label="Save Profile" loading={savingName} />

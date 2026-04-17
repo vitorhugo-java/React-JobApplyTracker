@@ -7,6 +7,9 @@ const STATUS_COLORS = {
   'Teste Técnico': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   'Fiz teste Técnico - aguardando atualização': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
   'RH (Negociação)': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  'Rejeitado': 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200',
+  'Tarde demais': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  'Ghosting': 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100',
   'TO_SEND_LATER': 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200',
 }
 

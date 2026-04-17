@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send } from 'lucide-react'
+import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost } from 'lucide-react'
 import { getDashboardSummary } from '../../api/dashboard'
 import { getUpcoming, getOverdue } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -77,6 +77,8 @@ const Dashboard = () => {
     { icon: AlertTriangle, label: 'Overdue Follow-ups', value: summary?.overdueFollowUps, color: 'bg-red-500', testId: 'metric-overdue' },
     { icon: MessageCircle, label: 'DM Reminders Enabled', value: summary?.dmRemindersEnabled, color: 'bg-purple-500', testId: 'metric-reminders' },
     { icon: Send, label: 'To Send Later', value: summary?.toSendLater, color: 'bg-slate-500', testId: 'metric-to-send-later' },
+    { icon: XCircle, label: 'Rejeitado', value: summary?.rejectedCount, color: 'bg-rose-500', testId: 'metric-rejected' },
+    { icon: Ghost, label: 'Ghosting', value: summary?.ghostingCount, color: 'bg-zinc-500', testId: 'metric-ghosting' },
   ]
 
   return (
@@ -89,7 +91,7 @@ const Dashboard = () => {
       {loading ? (
         <LoadingSkeleton rows={2} />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-8 gap-4">
           {metrics.map((m) => (
             <MetricCard key={m.label} {...m} />
           ))}
