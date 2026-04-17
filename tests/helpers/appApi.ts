@@ -4,7 +4,7 @@ type AppRecord = {
   id: number
   vacancyName: string | null
   recruiterName: string | null
-  vacancyOpenedBy: string | null
+  organization: string | null
   vacancyLink: string | null
   applicationDate: string | null
   rhAcceptedConnection: boolean
@@ -46,7 +46,7 @@ export function setupMockApplicationsApi(page: Page): void {
   void page.route(`${API_BASE}/dashboard/summary`, async (route) => {
     const summary = {
       totalApplications: apps.length,
-      waitingResponses: apps.filter((a) => a.status === 'RH').length,
+        organization: payload.organization ?? null,
       interviewsScheduled: apps.filter((a) => a.interviewScheduled).length,
       overdueFollowUps: apps.filter((a) => a.recruiterDmReminderEnabled).length,
       dmRemindersEnabled: apps.filter((a) => a.recruiterDmReminderEnabled).length,
@@ -120,7 +120,7 @@ export function setupMockApplicationsApi(page: Page): void {
         id: nextId++,
         vacancyName: payload.vacancyName ?? null,
         recruiterName: payload.recruiterName ?? null,
-        vacancyOpenedBy: payload.vacancyOpenedBy ?? null,
+        organization: payload.organization ?? null,
         vacancyLink: payload.vacancyLink ?? null,
         applicationDate: payload.applicationDate ?? null,
         rhAcceptedConnection: Boolean(payload.rhAcceptedConnection),

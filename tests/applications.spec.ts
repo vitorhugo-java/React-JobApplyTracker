@@ -191,7 +191,7 @@ test.describe('Application flow', () => {
               rhAcceptedConnection: false,
               interviewScheduled: false,
               nextStepDateTime: null,
-              vacancyOpenedBy: null,
+              organization: null,
               vacancyLink: null,
             },
             params: null,

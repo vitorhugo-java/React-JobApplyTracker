@@ -18,7 +18,7 @@ import { usePageTitle } from '../../hooks/usePageTitle'
 const defaultForm = {
   vacancyName: '',
   recruiterName: '',
-  vacancyOpenedBy: '',
+  organization: '',
   vacancyLink: '',
   applicationDate: null,
   rhAcceptedConnection: false,
@@ -107,7 +107,7 @@ const ApplicationForm = () => {
           ...d,
           vacancyName: d.vacancyName ?? '',
           recruiterName: d.recruiterName ?? '',
-          vacancyOpenedBy: d.vacancyOpenedBy ?? '',
+          organization: d.organization ?? '',
           vacancyLink: d.vacancyLink ?? '',
           applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
@@ -217,8 +217,8 @@ const ApplicationForm = () => {
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="vacancyOpenedBy" value={form.vacancyOpenedBy} onChange={(e) => setField('vacancyOpenedBy', e.target.value)} className="w-full" />
-              <label htmlFor="vacancyOpenedBy">Vacancy Opened By</label>
+              <InputText inputId="organization" value={form.organization} onChange={(e) => setField('organization', e.target.value)} className="w-full" />
+              <label htmlFor="organization">Organization</label>
             </FloatLabel>
           </div>
 

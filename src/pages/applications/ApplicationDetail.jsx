@@ -127,7 +127,7 @@ const ApplicationDetail = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Recruiter Name" value={app.recruiterName} />
-        <Field label="Vacancy Opened By" value={app.vacancyOpenedBy} />
+        <Field label="Organization" value={app.organization} />
         <Field
           label="RH Accepted Connection"
           value={app.rhAcceptedConnection ? 'Yes' : 'No'}
