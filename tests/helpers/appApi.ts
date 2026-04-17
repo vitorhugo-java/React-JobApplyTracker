@@ -4,13 +4,13 @@ type AppRecord = {
   id: number
   vacancyName: string | null
   recruiterName: string | null
-  organization: string | null
+  vacancyOpenedBy: string | null
   vacancyLink: string | null
   applicationDate: string | null
   rhAcceptedConnection: boolean
   interviewScheduled: boolean
   nextStepDateTime: string | null
-  status: string
+  status: string | null
   recruiterDmReminderEnabled: boolean
   createdAt: string
 }
@@ -46,10 +46,11 @@ export function setupMockApplicationsApi(page: Page): void {
   void page.route(`${API_BASE}/dashboard/summary`, async (route) => {
     const summary = {
       totalApplications: apps.length,
-        organization: payload.organization ?? null,
+      waitingResponses: apps.filter((a) => a.status === 'RH').length,
       interviewsScheduled: apps.filter((a) => a.interviewScheduled).length,
       overdueFollowUps: apps.filter((a) => a.recruiterDmReminderEnabled).length,
       dmRemindersEnabled: apps.filter((a) => a.recruiterDmReminderEnabled).length,
+      toSendLater: apps.filter((a) => a.status == null).length,
     }
 
     await route.fulfill({
@@ -103,7 +104,11 @@ export function setupMockApplicationsApi(page: Page): void {
         filtered = filtered.filter((app) => (app.recruiterName || '').toLowerCase().includes(recruiterName))
       }
       if (status) {
-        filtered = filtered.filter((app) => app.status === status)
+        if (status === 'TO_SEND_LATER') {
+          filtered = filtered.filter((app) => app.status == null)
+        } else {
+          filtered = filtered.filter((app) => app.status === status)
+        }
       }
 
       await route.fulfill({
@@ -120,13 +125,13 @@ export function setupMockApplicationsApi(page: Page): void {
         id: nextId++,
         vacancyName: payload.vacancyName ?? null,
         recruiterName: payload.recruiterName ?? null,
-        organization: payload.organization ?? null,
+        vacancyOpenedBy: payload.vacancyOpenedBy ?? null,
         vacancyLink: payload.vacancyLink ?? null,
         applicationDate: payload.applicationDate ?? null,
         rhAcceptedConnection: Boolean(payload.rhAcceptedConnection),
         interviewScheduled: Boolean(payload.interviewScheduled),
         nextStepDateTime: payload.nextStepDateTime ?? null,
-        status: payload.status || 'RH',
+        status: payload.status ?? 'RH',
         recruiterDmReminderEnabled: Boolean(payload.recruiterDmReminderEnabled),
         createdAt: new Date().toISOString(),
       }
@@ -156,8 +161,8 @@ export function setupMockApplicationsApi(page: Page): void {
       return
     }
 
-    const payload = route.request().postDataJSON() as { status?: string }
-    app.status = payload.status || app.status
+    const payload = route.request().postDataJSON() as { status?: string | null }
+    app.status = payload.status === undefined ? app.status : payload.status
 
     await route.fulfill({
       status: 200,

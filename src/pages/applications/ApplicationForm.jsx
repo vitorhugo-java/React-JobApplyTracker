@@ -25,7 +25,8 @@ const defaultForm = {
   interviewScheduled: false,
   nextStepDateTime: null,
   status: APPLICATION_STATUSES[0],
-  recruiterDmReminderEnabled: false,
+  recruiterDmReminderEnabled: true,
+  toSendLater: false,
 }
 
 const getDraftKey = (id) => `jobtracker:application-form-draft:${id || 'new'}`
@@ -111,6 +112,8 @@ const ApplicationForm = () => {
           vacancyLink: d.vacancyLink ?? '',
           applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
+          toSendLater: d.status == null,
+          status: d.status ?? APPLICATION_STATUSES[0],
         })
         if (draftRef.current) {
           setForm((serverData) => ({ ...serverData, ...draftRef.current }))
@@ -145,6 +148,7 @@ const ApplicationForm = () => {
         vacancyName: form.vacancyName.trim() || null,
         applicationDate: formatDateOnly(form.applicationDate),
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
+        status: form.toSendLater ? null : form.status,
       }
       if (isEdit) {
         const response = await updateApplication(id, payload)
@@ -231,21 +235,33 @@ const ApplicationForm = () => {
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="mm/dd/yy" />
+              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="dd/mm/yy" />
               <label htmlFor="applicationDate">Application Date *</label>
             </FloatLabel>
           </div>
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <Calendar inputId="nextStepDateTime" value={form.nextStepDateTime} onChange={(e) => setField('nextStepDateTime', e.value)} className="w-full" showTime dateFormat="mm/dd/yy" />
+              <Calendar inputId="nextStepDateTime" value={form.nextStepDateTime} onChange={(e) => setField('nextStepDateTime', e.value)} className="w-full" showTime dateFormat="dd/mm/yy" />
               <label htmlFor="nextStepDateTime">Next Step Date &amp; Time</label>
             </FloatLabel>
           </div>
 
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg sm:col-span-2">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-white">To send later</label>
+              <p className="text-xs text-gray-400 dark:text-gray-300">Marks this application as pending and keeps status empty</p>
+            </div>
+            <InputSwitch
+              checked={form.toSendLater}
+              onChange={(e) => setField('toSendLater', e.value)}
+              data-testid="app-to-send-later"
+            />
+          </div>
+
           <div className="sm:col-span-2 pt-2">
             <FloatLabel className="w-full">
-              <Dropdown inputId="status" value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" pt={{ root: { 'data-testid': 'app-status' } }} />
+              <Dropdown inputId="status" value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" disabled={form.toSendLater} pt={{ root: { 'data-testid': 'app-status' } }} />
               <label htmlFor="status">Status</label>
             </FloatLabel>
           </div>
@@ -262,7 +278,7 @@ const ApplicationForm = () => {
 
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg sm:col-span-2">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Recruiter DM Reminder</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-white">Recruiter DM Reminder</label>
               <p className="text-xs text-gray-400 dark:text-gray-500">Enable reminder to send DM to recruiter</p>
             </div>
             <InputSwitch checked={form.recruiterDmReminderEnabled} onChange={(e) => setField('recruiterDmReminderEnabled', e.value)} />

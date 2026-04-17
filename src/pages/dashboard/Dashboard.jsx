@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle } from 'lucide-react'
+import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send } from 'lucide-react'
 import { getDashboardSummary } from '../../api/dashboard'
 import { getUpcoming, getOverdue } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -9,7 +9,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
-const MetricCard = ({ icon: Icon, label, value, color, testId }) => (
+const MetricCard = ({ icon, label, value, color, testId }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700" data-testid={testId}>
     <div className="flex items-center justify-between">
       <div>
@@ -17,7 +17,7 @@ const MetricCard = ({ icon: Icon, label, value, color, testId }) => (
         <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1" data-testid={testId && `${testId}-value`}>{value ?? 0}</p>
       </div>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon className="w-6 h-6 text-white" />
+        {React.createElement(icon, { className: 'w-6 h-6 text-white' })}
       </div>
     </div>
   </div>
@@ -35,10 +35,10 @@ const AppRow = ({ app }) => (
     <div className="flex items-center gap-3">
       {app.nextStepDateTime && (
         <span className="text-xs text-gray-400 dark:text-gray-500">
-          {new Date(app.nextStepDateTime).toLocaleDateString()}
+          {new Date(app.nextStepDateTime).toLocaleDateString('pt-BR')}
         </span>
       )}
-      <StatusBadge status={app.status} />
+      <StatusBadge status={app.status || 'TO_SEND_LATER'} />
     </div>
   </Link>
 )
@@ -61,7 +61,8 @@ const Dashboard = () => {
         setSummary(summaryRes.data)
         setUpcoming(upcomingRes.data || [])
         setOverdue(overdueRes.data || [])
-      } catch (_) {
+      } catch {
+        // Keep dashboard shell visible even when summary endpoints are temporarily unavailable.
       } finally {
         setLoading(false)
       }
@@ -75,6 +76,7 @@ const Dashboard = () => {
     { icon: TrendingUp, label: 'Interviews Scheduled', value: summary?.interviewsScheduled, color: 'bg-green-500', testId: 'metric-interviews' },
     { icon: AlertTriangle, label: 'Overdue Follow-ups', value: summary?.overdueFollowUps, color: 'bg-red-500', testId: 'metric-overdue' },
     { icon: MessageCircle, label: 'DM Reminders Enabled', value: summary?.dmRemindersEnabled, color: 'bg-purple-500', testId: 'metric-reminders' },
+    { icon: Send, label: 'To Send Later', value: summary?.toSendLater, color: 'bg-slate-500', testId: 'metric-to-send-later' },
   ]
 
   return (
@@ -87,7 +89,7 @@ const Dashboard = () => {
       {loading ? (
         <LoadingSkeleton rows={2} />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {metrics.map((m) => (
             <MetricCard key={m.label} {...m} />
           ))}

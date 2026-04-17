@@ -20,3 +20,36 @@ a {
     text-emphasis: none;
     text-decoration: none;
 }
+
+.dark .p-inputtext,
+.dark .p-dropdown,
+.dark .p-calendar .p-inputtext,
+.dark .p-multiselect,
+.dark .p-inputtextarea,
+.dark .p-password-input,
+.dark .p-datepicker {
+    background: #1f2937;
+    color: #f9fafb;
+    border-color: #4b5563;
+}
+
+.dark .p-inputtext::placeholder,
+.dark .p-dropdown-label.p-placeholder,
+.dark .p-inputtextarea::placeholder {
+    color: #9ca3af;
+}
+
+.dark .p-float-label > label,
+.dark .p-float-label > .p-inputwrapper ~ label {
+    color: #f9fafb;
+}
+
+.dark .p-dropdown-panel,
+.dark .p-datepicker,
+.dark .p-datepicker table td > span,
+.dark .p-datepicker .p-datepicker-header,
+.dark .p-dropdown-items {
+    background: #111827;
+    color: #f9fafb;
+    border-color: #374151;
+}

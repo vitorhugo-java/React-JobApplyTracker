@@ -21,11 +21,11 @@ const ReminderCard = ({ app, onToggle }) => {
         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{app.recruiterName || 'No recruiter'}</p>
         <div className="flex items-center gap-3 mt-2">
-          <StatusBadge status={app.status} />
+          <StatusBadge status={app.status || 'TO_SEND_LATER'} />
           {reminderAt && (
             <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {reminderAt.toLocaleString()}
+              {reminderAt.toLocaleString('pt-BR')}
             </span>
           )}
         </div>

@@ -3,6 +3,7 @@ import { GitBranch, ExternalLink, Mail, Sparkles, Zap, ArrowLeft } from 'lucide-
 import { usePageTitle } from '../../hooks/usePageTitle'
 import mermaid from 'mermaid'
 import { useLocation, useNavigate } from 'react-router-dom'
+import useAuthStore from '../../store/authStore'
 
 mermaid.initialize({ startOnLoad: true, theme: 'default' })
 
@@ -48,7 +49,16 @@ const About = () => {
   usePageTitle('Sobre')
   const location = useLocation()
   const navigate = useNavigate()
-  const showBack = location?.state?.from === 'login'
+  const isAuthenticated = useAuthStore((s) => !!s.accessToken)
+  const showBack = !isAuthenticated || location?.state?.from === 'login'
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate(isAuthenticated ? '/dashboard' : '/login')
+  }
 
   useEffect(() => {
     mermaid.run()
@@ -60,7 +70,7 @@ const About = () => {
         {showBack && (
           <>
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               aria-label="Voltar"
               className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-50 p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700"
             >
@@ -68,7 +78,7 @@ const About = () => {
             </button>
 
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               aria-label="Voltar"
               className="flex sm:hidden items-center justify-center fixed bottom-4 right-4 z-50 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700"
             >

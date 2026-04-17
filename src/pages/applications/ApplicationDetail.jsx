@@ -31,7 +31,7 @@ const ApplicationDetail = () => {
       try {
         const res = await getApplication(id)
         setApp(res.data)
-      } catch (_) {
+      } catch {
         toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application.' })
       } finally {
         setLoading(false)
@@ -50,7 +50,7 @@ const ApplicationDetail = () => {
         try {
           await deleteApplication(id)
           navigate('/applications')
-        } catch (_) {
+        } catch {
           toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete application.' })
         }
       },
@@ -72,11 +72,11 @@ const ApplicationDetail = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</h1>
           <div className="flex items-center gap-3 mt-2">
-            <StatusBadge status={app.status} />
+            <StatusBadge status={app.status || 'TO_SEND_LATER'} />
             {app.applicationDate && (
               <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
-                Applied {new Date(app.applicationDate).toLocaleDateString()}
+                Applied {new Date(app.applicationDate).toLocaleDateString('pt-BR')}
               </span>
             )}
           </div>
@@ -104,25 +104,37 @@ const ApplicationDetail = () => {
           <div>
             <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Next Step</p>
             <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-              {new Date(app.nextStepDateTime).toLocaleString()}
+              {new Date(app.nextStepDateTime).toLocaleString('pt-BR')}
             </p>
           </div>
         </div>
       )}
 
       {app.vacancyLink && (
-        <a
-          href={app.vacancyLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
-        >
-          <ExternalLink className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vacancy Link</p>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 truncate">{app.vacancyLink}</p>
+        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vacancy Link</p>
+              <p className="text-sm text-indigo-600 dark:text-indigo-400 truncate">{app.vacancyLink}</p>
+            </div>
+            <a
+              href={app.vacancyLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open
+            </a>
           </div>
-        </a>
+          <iframe
+            title="Vacancy preview"
+            src={app.vacancyLink}
+            className="w-full h-72 rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        </div>
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">

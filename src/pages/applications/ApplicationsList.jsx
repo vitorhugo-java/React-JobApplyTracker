@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { InputText } from 'primereact/inputtext'
@@ -8,7 +8,7 @@ import { Paginator } from 'primereact/paginator'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
 import { Edit, Trash2, Eye, Check, X } from 'lucide-react'
-import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES } from '../../api/applications'
+import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
@@ -30,26 +30,26 @@ const ApplicationsList = () => {
   const [editDraft, setEditDraft] = useState(null)
   const [savingId, setSavingId] = useState(null)
 
-  const fetchApps = async () => {
+  const fetchApps = useCallback(async () => {
     setLoading(true)
     try {
       const params = { page, size }
       if (filters.status) params.status = filters.status
       if (filters.recruiterName) params.recruiterName = filters.recruiterName
-      if (filters.startDate) params.startDate = filters.startDate.toISOString()
-      if (filters.endDate) params.endDate = filters.endDate.toISOString()
+      if (filters.startDate) params.applicationDateFrom = filters.startDate.toISOString().slice(0, 10)
+      if (filters.endDate) params.applicationDateTo = filters.endDate.toISOString().slice(0, 10)
       const res = await getApplications(params)
       const data = res.data
       setApps(Array.isArray(data) ? data : data.content || data.items || [])
       setTotal(data.total || data.totalElements || (Array.isArray(data) ? data.length : 0))
-    } catch (_) {
+    } catch {
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load applications.' })
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, page, size])
 
-  useEffect(() => { fetchApps() }, [page, filters])
+  useEffect(() => { fetchApps() }, [fetchApps])
 
   const startInlineEdit = async (app) => {
     try {
@@ -59,10 +59,10 @@ const ApplicationsList = () => {
         ...full,
         vacancyName: full.vacancyName ?? '',
         recruiterName: full.recruiterName ?? '',
-        status: full.status ?? APPLICATION_STATUSES[0],
+        status: full.status ?? TO_SEND_LATER_STATUS,
       })
       setEditingId(app.id)
-    } catch (_) {
+    } catch {
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application for editing.' })
     }
   }
@@ -80,6 +80,7 @@ const ApplicationsList = () => {
       const payload = {
         ...editDraft,
         vacancyName: editDraft.vacancyName?.trim() || null,
+        status: editDraft.status === TO_SEND_LATER_STATUS ? null : editDraft.status,
       }
 
       await updateApplication(editingId, payload)
@@ -105,15 +106,22 @@ const ApplicationsList = () => {
           await deleteApplication(id)
           toast.current.show({ severity: 'success', summary: 'Deleted', detail: 'Application deleted.' })
           fetchApps()
-        } catch (_) {
+        } catch {
           toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete.' })
         }
       },
     })
   }
 
-  const statusOptions = [{ label: 'All Statuses', value: null }, ...APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))]
-  const editStatusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
+  const statusOptions = [
+    { label: 'All Statuses', value: null },
+    { label: 'To send later', value: TO_SEND_LATER_STATUS },
+    ...APPLICATION_STATUSES.map((s) => ({ label: s, value: s })),
+  ]
+  const editStatusOptions = [
+    { label: 'To send later', value: TO_SEND_LATER_STATUS },
+    ...APPLICATION_STATUSES.map((s) => ({ label: s, value: s })),
+  ]
   const actionButtonBaseClass = 'inline-flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent text-gray-400 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-gray-700'
 
   return (
@@ -155,14 +163,14 @@ const ApplicationsList = () => {
             onChange={(e) => setFilters({ ...filters, startDate: e.value })}
             placeholder="Start date"
             className="w-full"
-            dateFormat="mm/dd/yy"
+            dateFormat="dd/mm/yy"
           />
           <Calendar
             value={filters.endDate}
             onChange={(e) => setFilters({ ...filters, endDate: e.value })}
             placeholder="End date"
             className="w-full"
-            dateFormat="mm/dd/yy"
+            dateFormat="dd/mm/yy"
           />
         </div>
       </div>
@@ -225,7 +233,7 @@ const ApplicationsList = () => {
                     <td className="px-4 py-3">
                       {editingId === app.id ? (
                         <Dropdown
-                          value={editDraft?.status ?? APPLICATION_STATUSES[0]}
+                          value={editDraft?.status ?? TO_SEND_LATER_STATUS}
                           options={editStatusOptions}
                           onChange={(e) => setEditDraft((prev) => ({ ...prev, status: e.value }))}
                           className="w-full"
@@ -233,14 +241,14 @@ const ApplicationsList = () => {
                           data-testid="inline-edit-status"
                         />
                       ) : (
-                        <StatusBadge status={app.status} />
+                        <StatusBadge status={app.status || TO_SEND_LATER_STATUS} />
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {app.applicationDate ? new Date(app.applicationDate).toLocaleDateString() : '-'}
+                      {app.applicationDate ? new Date(app.applicationDate).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {app.nextStepDateTime ? new Date(app.nextStepDateTime).toLocaleString() : '-'}
+                      {app.nextStepDateTime ? new Date(app.nextStepDateTime).toLocaleString('pt-BR') : '-'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

@@ -21,7 +21,7 @@ test('regression: application create sends LocalDate and saves without server er
   await page.locator('input#vacancyLink, input[type="url"]').first().fill('https://example.com/jobs/regression')
 
   const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
-  await dateInput.fill('04/13/2026')
+  await dateInput.fill('13/04/2026')
   await dateInput.press('Escape')
 
   const createRequestPromise = page.waitForRequest(

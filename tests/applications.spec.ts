@@ -21,7 +21,7 @@ async function createApplication(
 
   // Fill the application date by typing into the Calendar input.
   const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
-  await dateInput.fill('01/15/2025')
+  await dateInput.fill('15/01/2025')
   await dateInput.press('Escape')
 
   await page.locator('[data-testid="app-submit"]').click()
@@ -191,7 +191,7 @@ test.describe('Application flow', () => {
               rhAcceptedConnection: false,
               interviewScheduled: false,
               nextStepDateTime: null,
-              organization: null,
+              vacancyOpenedBy: null,
               vacancyLink: null,
             },
             params: null,

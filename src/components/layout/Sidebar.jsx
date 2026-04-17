@@ -21,10 +21,10 @@ const Sidebar = () => {
         <span className="font-bold text-gray-900 dark:text-white text-lg">JobTracker</span>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {navItems.map((item) => (
           <NavLink
-            key={to}
-            to={to}
+            key={item.to}
+            to={item.to}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -33,8 +33,8 @@ const Sidebar = () => {
               }`
             }
           >
-            <Icon className="w-5 h-5" />
-            {label}
+            {React.createElement(item.icon, { className: 'w-5 h-5' })}
+            {item.label}
           </NavLink>
         ))}
       </nav>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -10,12 +10,23 @@ import { logout as logoutApi } from '../../api/auth'
 
 const Layout = () => {
   const user = useAuthStore((s) => s.user)
+  const accessToken = useAuthStore((s) => s.accessToken)
   const logoutStore = useAuthStore((s) => s.logout)
+  const location = useLocation()
+  const isGuestAboutPage = !accessToken && location.pathname === '/about'
 
   const handleLogout = async () => {
     await logoutApi().catch(() => null)
     logoutStore()
     window.location.href = '/login'
+  }
+
+  if (isGuestAboutPage) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Outlet />
+      </main>
+    )
   }
 
   return (

@@ -9,6 +9,8 @@ export const APPLICATION_STATUSES = [
   'RH (Negociação)',
 ]
 
+export const TO_SEND_LATER_STATUS = 'TO_SEND_LATER'
+
 export const getApplications = (params) =>
   api.get('/applications', { params })
 

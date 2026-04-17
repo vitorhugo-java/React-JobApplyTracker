@@ -7,13 +7,15 @@ const STATUS_COLORS = {
   'Teste Técnico': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   'Fiz teste Técnico - aguardando atualização': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
   'RH (Negociação)': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  'TO_SEND_LATER': 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200',
 }
 
 const StatusBadge = ({ status }) => {
   const colorClass = STATUS_COLORS[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+  const label = status === 'TO_SEND_LATER' ? 'To send later' : status
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
-      {status}
+      {label}
     </span>
   )
 }

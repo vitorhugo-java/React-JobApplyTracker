@@ -28,6 +28,7 @@ test.describe('Dashboard', () => {
       'metric-interviews',
       'metric-overdue',
       'metric-reminders',
+      'metric-to-send-later',
     ]
 
     for (const id of metricIds) {
@@ -42,6 +43,7 @@ test.describe('Dashboard', () => {
       'metric-interviews-value',
       'metric-overdue-value',
       'metric-reminders-value',
+      'metric-to-send-later-value',
     ]
 
     for (const id of metricIds) {
