@@ -1,6 +1,7 @@
 services:
   db:
     image: mariadb:10.11
+    command: --innodb-use-native-aio=0
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -10,11 +11,11 @@ services:
     ports:
       - '3306:3306'
     healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
-      interval: 10s
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "-u", "$$MYSQL_USER", "--password=$$MYSQL_PASSWORD", "--protocol", "tcp"]
+      interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 20
+      start_period: 20s
 
   backend:
     image: ${BACKEND_IMAGE:-ghcr.io/vitorhugo-java/jobapplytracker-backend:latest}
