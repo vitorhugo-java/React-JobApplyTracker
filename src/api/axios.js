@@ -17,6 +17,7 @@ const API_BASE_URL = normalizedApiBase.endsWith('/api/v1')
     ? `${normalizedApiBase}/v1`
     : `${normalizedApiBase}/api/v1`
 const AUTH_FAILURE_STATUSES = new Set([401, 403])
+const REFRESH_ENDPOINT = '/auth/refresh'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -87,6 +88,17 @@ api.interceptors.response.use(
     logger.apiError(originalRequest?.url, error)
 
     if (AUTH_FAILURE_STATUSES.has(error.response?.status) && !originalRequest._retry) {
+      // If the refresh endpoint itself returned an auth failure, bail out immediately
+      // to prevent a recursive refresh loop. Clear the session and let ProtectedRoute
+      // handle the redirect to /login.
+      if (originalRequest.url === REFRESH_ENDPOINT) {
+        const { logout } = useAuthStore.getState()
+        processQueue(error, null)
+        isRefreshing = false
+        logout()
+        return Promise.reject(error)
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -121,9 +133,10 @@ api.interceptors.response.use(
 
         // Keep session on transient failures (backend restart / network issues).
         // Clear session only when refresh token is definitively invalid.
+        // Use logout() + let ProtectedRoute redirect; avoid window.location.href
+        // which would trigger a full reload and restart the loop.
         if (AUTH_FAILURE_STATUSES.has(status)) {
           logout()
-          window.location.href = '/login'
         }
         return Promise.reject(refreshError)
       } finally {
