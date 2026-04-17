@@ -48,8 +48,8 @@ test.describe('Auth flow', () => {
     await registerUser(page, email, PASSWORD)
 
     // Simulate backend going down (e.g. pressing F5 in VS Code to restart Spring Boot)
-    await page.route('**/api/auth/me', (route) => route.abort('failed'))
-    await page.route('**/api/auth/refresh', (route) => route.abort('failed'))
+    await page.route('**/api/v1/auth/me', (route) => route.abort('failed'))
+    await page.route('**/api/v1/auth/refresh', (route) => route.abort('failed'))
 
     await page.reload()
 
@@ -63,10 +63,10 @@ test.describe('Auth flow', () => {
     await registerUser(page, email, PASSWORD)
 
     // Simulate both /me and /refresh returning 401 (e.g. revoked/expired tokens)
-    await page.route('**/api/auth/me', (route) =>
+    await page.route('**/api/v1/auth/me', (route) =>
       route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
     )
-    await page.route('**/api/auth/refresh', (route) =>
+    await page.route('**/api/v1/auth/refresh', (route) =>
       route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
     )
 
@@ -86,19 +86,18 @@ test.describe('Auth flow', () => {
     let upcomingCalls = 0
     let overdueCalls = 0
 
-    await page.route('**/api/auth/refresh', async (route) => {
+    await page.route('**/api/v1/auth/refresh', async (route) => {
       refreshCalls += 1
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           accessToken: 'refreshed-access-token',
-          refreshToken: 'refreshed-refresh-token',
         }),
       })
     })
 
-    await page.route('**/api/dashboard/summary', async (route) => {
+    await page.route('**/api/v1/dashboard/summary', async (route) => {
       summaryCalls += 1
       if (summaryCalls === 1) {
         await route.fulfill({ status: 403, body: '' })
@@ -112,7 +111,7 @@ test.describe('Auth flow', () => {
       })
     })
 
-    await page.route('**/api/applications/upcoming', async (route) => {
+    await page.route('**/api/v1/applications/upcoming', async (route) => {
       upcomingCalls += 1
       if (upcomingCalls === 1) {
         await route.fulfill({ status: 403, body: '' })
@@ -126,7 +125,7 @@ test.describe('Auth flow', () => {
       })
     })
 
-    await page.route('**/api/applications/overdue', async (route) => {
+    await page.route('**/api/v1/applications/overdue', async (route) => {
       overdueCalls += 1
       if (overdueCalls === 1) {
         await route.fulfill({ status: 403, body: '' })

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { registerUser, uniqueEmail } from './helpers/auth'
+import { setupMockApplicationsApi } from './helpers/appApi'
 
 const PASSWORD = 'Test1234!'
 
@@ -7,6 +8,7 @@ test('regression: application create sends LocalDate and saves without server er
   const email = uniqueEmail('app_regression')
   const vacancyName = `Regression Vacancy ${Date.now()}`
 
+  setupMockApplicationsApi(page)
   await registerUser(page, email, PASSWORD)
   await page.goto('/applications')
   await expect(page.getByRole('heading', { name: 'Applications' })).toBeVisible()
@@ -15,18 +17,18 @@ test('regression: application create sends LocalDate and saves without server er
   await page.waitForURL('**/applications/new')
 
   await page.locator('[data-testid="app-vacancy-name"]').fill(vacancyName)
-  await page.getByPlaceholder('Company name or recruiter').fill('QA Team')
-  await page.getByPlaceholder('https://...').fill('https://example.com/jobs/regression')
+  await page.locator('[data-testid="app-recruiter-name"]').fill('QA Team')
+  await page.locator('input#vacancyLink, input[type="url"]').first().fill('https://example.com/jobs/regression')
 
-  const dateInput = page.getByPlaceholder('Select date').first()
+  const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
   await dateInput.fill('04/13/2026')
   await dateInput.press('Escape')
 
   const createRequestPromise = page.waitForRequest(
-    (request) => request.method() === 'POST' && request.url().includes('/api/applications')
+    (request) => request.method() === 'POST' && request.url().includes('/api/v1/applications')
   )
   const createResponsePromise = page.waitForResponse(
-    (response) => response.request().method() === 'POST' && response.url().includes('/api/applications')
+    (response) => response.request().method() === 'POST' && response.url().includes('/api/v1/applications')
   )
 
   await page.locator('[data-testid="app-submit"]').click()

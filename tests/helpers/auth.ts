@@ -1,5 +1,51 @@
 import { type Page } from '@playwright/test'
 
+const API_V1 = '**/api/v1'
+
+export function setupMockAuth(page: Page, email: string, name: string): void {
+  const user = { id: 'pw-user-1', name, email }
+
+  void page.route(`${API_V1}/auth/register`, async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        accessToken: 'pw-access-token',
+        user,
+      }),
+    })
+  })
+
+  void page.route(`${API_V1}/auth/login`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        accessToken: 'pw-access-token',
+        user,
+      }),
+    })
+  })
+
+  void page.route(`${API_V1}/auth/refresh`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        accessToken: 'pw-access-token',
+      }),
+    })
+  })
+
+  void page.route(`${API_V1}/auth/me`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(user),
+    })
+  })
+}
+
 /**
  * Registers a new user and lands on /dashboard.
  */
@@ -9,6 +55,8 @@ export async function registerUser(
   password: string,
   name = 'Test User'
 ): Promise<void> {
+  setupMockAuth(page, email, name)
+
   await page.goto('/register')
   await page.locator('[data-testid="register-name"]').fill(name)
   await page.locator('[data-testid="register-email"]').fill(email)
@@ -35,6 +83,8 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<void> {
+  setupMockAuth(page, email, 'Test User')
+
   if (!page.url().includes('/login')) {
     await page.goto('/login')
   }

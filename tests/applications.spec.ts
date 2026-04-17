@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginUser, registerUser, uniqueEmail } from './helpers/auth'
+import { setupMockApplicationsApi } from './helpers/appApi'
 
 const PASSWORD = 'Test1234!'
 
@@ -39,17 +40,9 @@ test.describe('Application flow', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await page.context().addCookies([])
-    // Restore saved auth state
+    setupMockApplicationsApi(page)
+    await loginUser(page, sharedEmail, PASSWORD)
     await page.goto('/applications')
-    // If redirected to login, log in again
-    if (page.url().includes('/login')) {
-      await page.locator('[data-testid="login-email"]').fill(sharedEmail)
-      await page.locator('[data-testid="login-password"]').fill(PASSWORD)
-      await page.locator('[data-testid="login-submit"]').click()
-      await page.waitForURL('**/dashboard')
-      await page.goto('/applications')
-    }
     await page.waitForURL('**/applications', { timeout: 10_000 })
   })
 
@@ -85,11 +78,14 @@ test.describe('Application flow', () => {
 
     await createApplication(page, original)
 
-    const row = page.locator('[data-testid="app-row"]').filter({ hasText: original })
-    await row.locator('[data-testid="inline-edit"]').click()
+    await page
+      .locator('[data-testid="app-row"]')
+      .filter({ hasText: original })
+      .locator('[data-testid="inline-edit"]')
+      .click()
 
-    await row.locator('[data-testid="inline-edit-vacancy"]').fill(updated)
-    await row.locator('[data-testid="inline-save"]').click()
+    await page.locator('[data-testid="inline-edit-vacancy"]').fill(updated)
+    await page.locator('[data-testid="inline-save"]').click()
     await page.waitForTimeout(600)
 
     await expect(page.getByText(updated)).toBeVisible()
@@ -99,13 +95,16 @@ test.describe('Application flow', () => {
     const vacancy = `Status Test ${Date.now()}`
     await createApplication(page, vacancy)
 
-    const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    await row.locator('[data-testid="inline-edit"]').click()
+    await page
+      .locator('[data-testid="app-row"]')
+      .filter({ hasText: vacancy })
+      .locator('[data-testid="inline-edit"]')
+      .click()
 
-    await row.locator('[data-testid="inline-edit-status"]').click()
+    await page.locator('[data-testid="inline-edit-status"]').click()
     await page.locator('.p-dropdown-item').filter({ hasText: 'Teste Técnico' }).first().click()
 
-    await row.locator('[data-testid="inline-save"]').click()
+    await page.locator('[data-testid="inline-save"]').click()
     await page.waitForTimeout(600)
 
     await expect(page.getByText('Teste Técnico')).toBeVisible()
@@ -135,7 +134,7 @@ test.describe('Application flow', () => {
 
     await loginUser(page, sharedEmail, PASSWORD)
 
-    await page.route(/\/api\/applications(?:\?.*)?$/, async (route) => {
+    await page.route(/\/api\/v1\/applications(?:\?.*)?$/, async (route) => {
       const request = route.request()
       const method = request.method()
 

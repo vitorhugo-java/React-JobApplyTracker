@@ -1,0 +1,151 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Detect Vitest command
+        id: vitest
+        shell: bash
+        run: |
+          command=$(node -e "const pkg=require('./package.json'); const scripts=pkg.scripts || {}; const hasVitest=Boolean((pkg.dependencies && pkg.dependencies.vitest) || (pkg.devDependencies && pkg.devDependencies.vitest)); const selected=scripts['test:ci'] ? 'npm run test:ci' : scripts['test:unit'] ? 'npm run test:unit' : scripts.test ? 'npm test -- --run' : hasVitest ? 'npx vitest run' : ''; process.stdout.write(selected)")
+          echo "command=$command" >> "$GITHUB_OUTPUT"
+
+      - name: Run Vitest
+        if: ${{ steps.vitest.outputs.command != '' }}
+        run: ${{ steps.vitest.outputs.command }}
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps msedge
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start backend services
+        run: docker compose -f docker-compose.test.yml up -d
+        env:
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/jobapplytracker-backend:latest
+
+      - name: Wait for backend health
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose -f docker-compose.test.yml logs
+          exit 1
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          API_TARGET: http://localhost:8080
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Stop backend services
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Create SPA fallback page
+        run: cp dist/index.html dist/404.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        if: ${{ github.event_name != 'pull_request' }}
+
+      - name: Upload Pages artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

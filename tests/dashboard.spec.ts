@@ -1,16 +1,8 @@
-import { test, expect, type Page } from '@playwright/test'
-import { registerUser, uniqueEmail } from './helpers/auth'
+import { test, expect } from '@playwright/test'
+import { loginUser, registerUser, uniqueEmail } from './helpers/auth'
+import { setupMockApplicationsApi } from './helpers/appApi'
 
 const PASSWORD = 'Test1234!'
-
-async function ensureLoggedIn(page: Page, email: string): Promise<void> {
-  if (page.url().includes('/login')) {
-    await page.locator('[data-testid="login-email"]').fill(email)
-    await page.locator('[data-testid="login-password"]').fill(PASSWORD)
-    await page.locator('[data-testid="login-submit"]').click()
-    await page.waitForURL('**/dashboard')
-  }
-}
 
 test.describe('Dashboard', () => {
   let email: string
@@ -23,8 +15,9 @@ test.describe('Dashboard', () => {
   })
 
   test.beforeEach(async ({ page }) => {
+    setupMockApplicationsApi(page)
+    await loginUser(page, email, PASSWORD)
     await page.goto('/dashboard')
-    await ensureLoggedIn(page, email)
     await page.waitForURL('**/dashboard', { timeout: 10_000 })
   })
 
@@ -60,8 +53,8 @@ test.describe('Dashboard', () => {
   })
 
   test('displays Upcoming Steps and Overdue Follow-ups sections', async ({ page }) => {
-    await expect(page.getByText('Upcoming Steps')).toBeVisible()
-    await expect(page.getByText('Overdue Follow-ups')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Upcoming Steps', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Overdue Follow-ups', exact: true })).toBeVisible()
   })
 
   test('dashboard page heading is visible', async ({ page }) => {

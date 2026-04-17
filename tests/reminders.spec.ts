@@ -1,16 +1,8 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { loginUser, registerUser, uniqueEmail } from './helpers/auth'
+import { setupMockApplicationsApi } from './helpers/appApi'
 
 const PASSWORD = 'Test1234!'
-
-async function ensureLoggedIn(page: Page, email: string): Promise<void> {
-  if (page.url().includes('/login')) {
-    await page.locator('[data-testid="login-email"]').fill(email)
-    await page.locator('[data-testid="login-password"]').fill(PASSWORD)
-    await page.locator('[data-testid="login-submit"]').click()
-    await page.waitForURL('**/dashboard')
-  }
-}
 
 test.describe('Reminder flow', () => {
   let email: string
@@ -23,8 +15,9 @@ test.describe('Reminder flow', () => {
   })
 
   test.beforeEach(async ({ page }) => {
+    setupMockApplicationsApi(page)
+    await loginUser(page, email, PASSWORD)
     await page.goto('/applications')
-    await ensureLoggedIn(page, email)
     await page.waitForURL('**/applications', { timeout: 10_000 })
   })
 
@@ -39,7 +32,7 @@ test.describe('Reminder flow', () => {
     await page.locator('[data-testid="app-vacancy-name"]').fill(vacancy)
     await page.locator('[data-testid="app-recruiter-name"]').fill(recruiterName)
 
-    const dateInput = page.getByPlaceholder('Select date')
+    const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
     await dateInput.fill('01/15/2025')
     await dateInput.press('Escape')
 
@@ -64,7 +57,7 @@ test.describe('Reminder flow', () => {
     await page.locator('[data-testid="app-vacancy-name"]').fill(vacancy)
     // Intentionally leave recruiterName empty
 
-    const dateInput = page.getByPlaceholder('Select date')
+    const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
     await dateInput.fill('01/15/2025')
     await dateInput.press('Escape')
 
@@ -116,7 +109,7 @@ test.describe('Reminder flow', () => {
     const upcoming = apps.filter((app) => new Date(app.createdAt) > threshold)
     const overdue = apps.filter((app) => new Date(app.createdAt) <= threshold)
 
-    await page.route('**/api/applications/upcoming', async (route) => {
+    await page.route('**/api/v1/applications/upcoming', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -124,7 +117,7 @@ test.describe('Reminder flow', () => {
       })
     })
 
-    await page.route('**/api/applications/overdue', async (route) => {
+    await page.route('**/api/v1/applications/overdue', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -135,8 +128,8 @@ test.describe('Reminder flow', () => {
     await page.goto('/reminders')
     await page.waitForURL('**/reminders', { timeout: 10_000 })
     await Promise.all([
-      page.waitForResponse((response) => response.url().includes('/api/applications/upcoming') && response.ok()),
-      page.waitForResponse((response) => response.url().includes('/api/applications/overdue') && response.ok()),
+      page.waitForResponse((response) => response.url().includes('/api/v1/applications/upcoming') && response.ok()),
+      page.waitForResponse((response) => response.url().includes('/api/v1/applications/overdue') && response.ok()),
     ])
 
     const upcomingSection = page.locator('h2:has-text("Upcoming")').locator('..')
