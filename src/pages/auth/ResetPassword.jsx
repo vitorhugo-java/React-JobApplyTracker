@@ -4,8 +4,10 @@ import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { resetPassword as resetPasswordApi } from '../../api/auth'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const ResetPassword = () => {
+  usePageTitle('Redefinir Senha')
   const toast = useRef(null)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()

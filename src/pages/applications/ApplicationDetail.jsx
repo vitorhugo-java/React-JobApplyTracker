@@ -8,6 +8,7 @@ import { getApplication, deleteApplication } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const Field = ({ label, value }) => (
   <div>
@@ -17,6 +18,7 @@ const Field = ({ label, value }) => (
 )
 
 const ApplicationDetail = () => {
+  usePageTitle('Detalhes da Aplicação')
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useRef(null)

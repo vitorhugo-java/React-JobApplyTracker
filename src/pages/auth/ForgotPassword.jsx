@@ -4,8 +4,10 @@ import { InputText } from 'primereact/inputtext'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { forgotPassword as forgotPasswordApi } from '../../api/auth'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const ForgotPassword = () => {
+  usePageTitle('Recuperar Senha')
   const toast = useRef(null)
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)

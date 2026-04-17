@@ -7,6 +7,7 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const MetricCard = ({ icon: Icon, label, value, color, testId }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700" data-testid={testId}>
@@ -43,6 +44,7 @@ const AppRow = ({ app }) => (
 )
 
 const Dashboard = () => {
+  usePageTitle('Painel')
   const [summary, setSummary] = useState(null)
   const [upcoming, setUpcoming] = useState([])
   const [overdue, setOverdue] = useState([])

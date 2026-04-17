@@ -6,8 +6,10 @@ import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { login as loginApi } from '../../api/auth'
 import useAuthStore from '../../store/authStore'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const Login = () => {
+  usePageTitle('Entrar')
   const toast = useRef(null)
   const navigate = useNavigate()
   const setTokens = useAuthStore((s) => s.setTokens)
@@ -38,9 +40,10 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 flex-col">
       <Toast ref={toast} />
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+      <style>{`.p-icon-field.p-icon-field-right{width:100% !important;}`}</style>
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mt-10">
         <div className="text-center mb-8">
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-lg">JT</span>
@@ -93,6 +96,23 @@ const Login = () => {
               Sign up
             </Link>
           </p>
+        </div>
+      </div>
+
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mt-10 mb-4">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Job Apply Tracker</h2>
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
+            Organize your job applications efficiently with reminders and tracking.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <Link
+            to="/about"
+            state={{ from: 'login' }}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
+            Learn More & See Roadmap
+          </Link>
         </div>
       </div>
     </div>

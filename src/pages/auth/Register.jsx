@@ -6,8 +6,10 @@ import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { register as registerApi } from '../../api/auth'
 import useAuthStore from '../../store/authStore'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const Register = () => {
+  usePageTitle('Registrar')
   const toast = useRef(null)
   const navigate = useNavigate()
   const setTokens = useAuthStore((s) => s.setTokens)

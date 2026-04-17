@@ -1,5 +1,6 @@
 import React from 'react'
 import { ExternalLink, Code2, BookOpen, Activity } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 const swaggerUrl = `${apiUrl}/swagger-ui.html`
@@ -28,6 +29,7 @@ const links = [
 ]
 
 const Developer = () => {
+  usePageTitle('Desenvolvedor')
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">

@@ -8,6 +8,7 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const ReminderCard = ({ app, onToggle }) => {
   const reminderAt = app.createdAt
@@ -58,6 +59,7 @@ const Section = ({ title, items, loading, onToggle }) => (
 )
 
 const Reminders = () => {
+  usePageTitle('Lembretes')
   const toast = useRef(null)
   const [upcoming, setUpcoming] = useState([])
   const [overdue, setOverdue] = useState([])

@@ -5,8 +5,10 @@ import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import useAuthStore from '../../store/authStore'
 import { changePassword as changePasswordApi, updateProfile as updateProfileApi } from '../../api/auth'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const AccountSettings = () => {
+  usePageTitle('Configurações')
   const toast = useRef(null)
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)

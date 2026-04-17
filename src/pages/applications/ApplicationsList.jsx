@@ -13,8 +13,10 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const ApplicationsList = () => {
+  usePageTitle('Aplicações')
   const navigate = useNavigate()
   const toast = useRef(null)
 

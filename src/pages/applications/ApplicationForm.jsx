@@ -13,6 +13,7 @@ import {
   updateApplication,
   APPLICATION_STATUSES,
 } from '../../api/applications'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const defaultForm = {
   vacancyName: '',
@@ -74,6 +75,8 @@ const ApplicationForm = () => {
   const navigate = useNavigate()
   const toast = useRef(null)
   const isEdit = Boolean(id)
+
+  usePageTitle(isEdit ? 'Editar Aplicação' : 'Nova Aplicação')
 
   const [form, setForm] = useState(defaultForm)
   const [loading, setLoading] = useState(false)
