@@ -10,13 +10,10 @@ import { logout as logoutApi } from '../../api/auth'
 
 const Layout = () => {
   const user = useAuthStore((s) => s.user)
-  const refreshToken = useAuthStore((s) => s.refreshToken)
   const logoutStore = useAuthStore((s) => s.logout)
 
   const handleLogout = async () => {
-    if (refreshToken) {
-      await logoutApi({ refreshToken }).catch(() => null)
-    }
+    await logoutApi().catch(() => null)
     logoutStore()
     window.location.href = '/login'
   }

@@ -6,7 +6,6 @@ const useAuthStore = create(
     (set, get) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
       theme: 'light',
       isLoading: false,
 
@@ -14,13 +13,13 @@ const useAuthStore = create(
         return !!get().accessToken
       },
 
-      setTokens: (accessToken, refreshToken) =>
-        set({ accessToken, refreshToken }),
+      setTokens: (accessToken) =>
+        set({ accessToken }),
 
       setUser: (user) => set({ user }),
 
       logout: () =>
-        set({ user: null, accessToken: null, refreshToken: null }),
+        set({ user: null, accessToken: null }),
 
       setTheme: (theme) => {
         localStorage.setItem('theme', theme)
@@ -48,7 +47,6 @@ const useAuthStore = create(
       name: 'auth-storage',
       partialize: (state) => ({
         accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         user: state.user,
         theme: state.theme,
       }),

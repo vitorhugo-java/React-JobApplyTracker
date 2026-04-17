@@ -34,41 +34,20 @@ const App = () => {
       // Theme update uses store.set, so it must run after auth hydration.
       initTheme()
 
-      const { accessToken, refreshToken } = useAuthStore.getState()
+      const { accessToken } = useAuthStore.getState()
 
-      if (!accessToken && !refreshToken) {
-        if (!cancelled) setAppReady(true)
-        return
-      }
-
-      if (accessToken) {
+      if (!accessToken) {
+        // Try to refresh using the stored refresh token cookie
         try {
-          const res = await meApi()
-          setUser(res.data)
-          if (!cancelled) setAppReady(true)
-          return
-        } catch (err) {
-          // Network error (backend unreachable) — keep persisted session intact
-          if (!err.response) {
-            if (!cancelled) setAppReady(true)
-            return
-          }
-        }
-      }
-
-      const latestState = useAuthStore.getState()
-      const latestRefreshToken = latestState.refreshToken
-      if (latestRefreshToken) {
-        try {
-          const res = await refreshApi({ refreshToken: latestRefreshToken })
-          const { accessToken: newAccess, refreshToken: newRefresh } = res.data
-          setTokens(newAccess, newRefresh)
+          const res = await refreshApi()
+          const { accessToken: newAccess } = res.data
+          setTokens(newAccess)
           const userRes = await meApi()
           setUser(userRes.data)
           if (!cancelled) setAppReady(true)
           return
         } catch (err) {
-          // Network error — keep persisted session intact
+          // Network error — keep the session and let user try again
           if (!err.response) {
             if (!cancelled) setAppReady(true)
             return
@@ -83,7 +62,24 @@ const App = () => {
         }
       }
 
-      if (!cancelled) setAppReady(true)
+      // Validate the existing access token
+      try {
+        const res = await meApi()
+        setUser(res.data)
+        if (!cancelled) setAppReady(true)
+        return
+      } catch (err) {
+        // Network error (backend unreachable) — keep persisted session intact
+        if (!err.response) {
+          if (!cancelled) setAppReady(true)
+          return
+        }
+
+        // For auth failures, the axios interceptor will handle token refresh
+        // via the cookie-based mechanism. Just set app ready.
+        if (!cancelled) setAppReady(true)
+        return
+      }
     }
 
     restoreSession()
@@ -111,6 +107,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/about" element={<About />} />
 
         <Route
           element={
@@ -127,7 +124,6 @@ const App = () => {
           <Route path="/applications/:id/edit" element={<ApplicationForm />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/developer" element={<Developer />} />
-          <Route path="/about" element={<About />} />
           <Route path="/account" element={<AccountSettings />} />
         </Route>
       </Routes>

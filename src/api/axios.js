@@ -7,12 +7,21 @@ import {
   shouldQueueRequest,
 } from './offlineQueue'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
+const normalizedApiBase = configuredApiBase
+  ? configuredApiBase.replace(/\/+$/, '')
+  : 'http://localhost:8080'
+const API_BASE_URL = normalizedApiBase.endsWith('/api/v1')
+  ? normalizedApiBase
+  : normalizedApiBase.endsWith('/api')
+    ? `${normalizedApiBase}/v1`
+    : `${normalizedApiBase}/api/v1`
 const AUTH_FAILURE_STATUSES = new Set([401, 403])
 
 const api = axios.create({
-  baseURL: `${BASE_URL}/api/v1`,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 
 const createQueuedOfflineResponse = (config, queuedItem) => ({
@@ -92,23 +101,16 @@ api.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      const { refreshToken, setTokens, logout } = useAuthStore.getState()
-
-      if (!refreshToken) {
-        logger.authFailure('No refresh token available')
-        logout()
-        window.location.href = '/login'
-        return Promise.reject(error)
-      }
+      const { setTokens, logout } = useAuthStore.getState()
 
       try {
         const response = await axios.post(
-          `${BASE_URL}/api/auth/refresh`,
-          { refreshToken }
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
         )
-        const { accessToken: newAccess, refreshToken: newRefresh } =
-          response.data
-        setTokens(newAccess, newRefresh)
+        const { accessToken: newAccess } = response.data
+        setTokens(newAccess)
         processQueue(null, newAccess)
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api(originalRequest)
