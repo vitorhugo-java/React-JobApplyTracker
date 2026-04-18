@@ -25,6 +25,7 @@ const ApplicationDetail = () => {
 
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [iframeError, setIframeError] = useState(false)
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -127,15 +128,18 @@ const ApplicationDetail = () => {
               Open
             </a>
           </div>
-          <div className="w-full max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white aspect-[4/3] sm:aspect-video">
-            <iframe
-              title="Vacancy preview"
-              src={app.vacancyLink}
-              className="w-full h-full"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          </div>
+          {!iframeError && (
+            <div className="w-full max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white aspect-[4/3] sm:aspect-video">
+              <iframe
+                title="Vacancy preview"
+                src={app.vacancyLink}
+                className="w-full h-full"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={() => setIframeError(true)}
+              />
+            </div>
+          )}
         </div>
       )}
 
