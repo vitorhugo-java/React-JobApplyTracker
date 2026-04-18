@@ -2,15 +2,15 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InputSwitch } from 'primereact/inputswitch'
 import { Toast } from 'primereact/toast'
-import { Calendar, Bell } from 'lucide-react'
-import { getUpcoming, getOverdue, patchReminder } from '../../api/applications'
+import { Calendar, Bell, Send } from 'lucide-react'
+import { getUpcoming, getOverdue, patchReminder, markDmSent } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
-const ReminderCard = ({ app, onToggle }) => {
+const ReminderCard = ({ app, onToggle, onMarkDmSent }) => {
   const reminderAt = app.createdAt
     ? new Date(new Date(app.createdAt).getTime() + (6 * 60 * 60 * 1000))
     : null
@@ -30,7 +30,14 @@ const ReminderCard = ({ app, onToggle }) => {
           )}
         </div>
       </Link>
-      <div className="flex items-center gap-2 ml-4 shrink-0">
+      <div className="flex items-center gap-3 ml-4 shrink-0">
+        <button
+          onClick={() => onMarkDmSent(app)}
+          className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors"
+          title="Mark DM as sent"
+        >
+          <Send className="w-4 h-4" />
+        </button>
         <Bell className={`w-4 h-4 ${app.recruiterDmReminderEnabled ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'}`} />
         <InputSwitch
           checked={app.recruiterDmReminderEnabled}
@@ -41,7 +48,7 @@ const ReminderCard = ({ app, onToggle }) => {
   )
 }
 
-const Section = ({ title, items, loading, onToggle }) => (
+const Section = ({ title, items, loading, onToggle, onMarkDmSent }) => (
   <div>
     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{title}</h2>
     {loading ? (
@@ -51,7 +58,7 @@ const Section = ({ title, items, loading, onToggle }) => (
     ) : (
       <div className="space-y-3">
         {items.map((app) => (
-          <ReminderCard key={app.id} app={app} onToggle={onToggle} />
+          <ReminderCard key={app.id} app={app} onToggle={onToggle} onMarkDmSent={onMarkDmSent} />
         ))}
       </div>
     )}
@@ -97,6 +104,23 @@ const Reminders = () => {
     }
   }
 
+  const handleMarkDmSent = async (app) => {
+    // Optimistically remove the app from both lists
+    const removeApp = (list) => list.filter((a) => a.id !== app.id)
+    setUpcoming(removeApp)
+    setOverdue(removeApp)
+    try {
+      await markDmSent(app.id)
+      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
+    } catch {
+      // Restore the app if the request fails
+      const restore = (list) => [...list, app]
+      setUpcoming((prev) => [...prev, app])
+      setOverdue((prev) => [...prev, app])
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+    }
+  }
+
   return (
     <div className="space-y-8">
       <Toast ref={toast} />
@@ -104,8 +128,8 @@ const Reminders = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage follow-up reminders for your applications</p>
       </div>
-      <Section title="Upcoming" items={upcoming} loading={loading} onToggle={handleToggle} />
-      <Section title="Overdue" items={overdue} loading={loading} onToggle={handleToggle} />
+      <Section title="Upcoming" items={upcoming} loading={loading} onToggle={handleToggle} onMarkDmSent={handleMarkDmSent} />
+      <Section title="Overdue" items={overdue} loading={loading} onToggle={handleToggle} onMarkDmSent={handleMarkDmSent} />
     </div>
   )
 }

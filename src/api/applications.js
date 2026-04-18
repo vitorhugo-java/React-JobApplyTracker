@@ -30,6 +30,9 @@ export const patchStatus = (id, status) =>
 export const patchReminder = (id, recruiterDmReminderEnabled) =>
   api.patch(`/applications/${id}/reminder`, { recruiterDmReminderEnabled })
 
+export const markDmSent = (id) =>
+  api.patch(`/applications/${id}/mark-dm-sent`, {})
+
 export const deleteApplication = (id) => api.delete(`/applications/${id}`)
 
 export const getUpcoming = () => api.get('/applications/upcoming')
