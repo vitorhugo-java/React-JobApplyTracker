@@ -7,6 +7,7 @@ import { Edit, Trash2, ExternalLink, Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
+import RichLinkPreview from '../../components/ui/RichLinkPreview'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
@@ -25,7 +26,6 @@ const ApplicationDetail = () => {
 
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [iframeError, setIframeError] = useState(false)
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -112,35 +112,7 @@ const ApplicationDetail = () => {
       )}
 
       {app.vacancyLink && (
-        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl space-y-3 min-w-0">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vacancy Link</p>
-              <p className="text-sm text-indigo-600 dark:text-indigo-400 truncate">{app.vacancyLink}</p>
-            </div>
-            <a
-              href={app.vacancyLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open
-            </a>
-          </div>
-          {!iframeError && (
-            <div className="w-full max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white aspect-[4/3] sm:aspect-video">
-              <iframe
-                title="Vacancy preview"
-                src={app.vacancyLink}
-                className="w-full h-full"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                onError={() => setIframeError(true)}
-              />
-            </div>
-          )}
-        </div>
+        <RichLinkPreview url={app.vacancyLink} />
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">

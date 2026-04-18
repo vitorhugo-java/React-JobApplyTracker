@@ -38,3 +38,6 @@ export const deleteApplication = (id) => api.delete(`/applications/${id}`)
 export const getUpcoming = () => api.get('/applications/upcoming')
 
 export const getOverdue = () => api.get('/applications/overdue')
+
+export const getLinkMetadata = (url) =>
+  api.get('/applications/link-metadata', { params: { url } })

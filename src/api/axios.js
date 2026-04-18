@@ -46,18 +46,10 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-let isRefreshing = false
-let failedQueue = []
+let refreshPromise = null
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
-  })
-  failedQueue = []
+  // Queue is now handled by the refreshPromise pattern
 }
 
 api.interceptors.response.use(
@@ -93,55 +85,51 @@ api.interceptors.response.use(
       // handle the redirect to /login.
       if (originalRequest.url === REFRESH_ENDPOINT) {
         const { logout } = useAuthStore.getState()
-        processQueue(error, null)
-        isRefreshing = false
+        refreshPromise = null
         logout()
         return Promise.reject(error)
       }
 
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
+      // Use promise-based locking to ensure only one refresh happens concurrently
+      if (!refreshPromise) {
+        originalRequest._retry = true
+        const { setTokens, logout } = useAuthStore.getState()
+
+        refreshPromise = (async () => {
+          try {
+            const response = await axios.post(
+              `${API_BASE_URL}/auth/refresh`,
+              {},
+              { withCredentials: true }
+            )
+            const { accessToken: newAccess } = response.data
+            setTokens(newAccess)
+            return newAccess
+          } catch (refreshError) {
+            const status = refreshError.response?.status
+            logger.authFailure('Token refresh failed')
+
+            // Keep session on transient failures (backend restart / network issues).
+            // Clear session only when refresh token is definitively invalid.
+            // Use logout() + let ProtectedRoute redirect; avoid window.location.href
+            // which would trigger a full reload and restart the loop.
+            if (AUTH_FAILURE_STATUSES.has(status)) {
+              logout()
+            }
+            throw refreshError
+          } finally {
+            refreshPromise = null
+          }
+        })()
+      }
+
+      // Wait for refresh to complete, then retry the original request
+      return refreshPromise
+        .then((newAccessToken) => {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+          return api(originalRequest)
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            return api(originalRequest)
-          })
-          .catch((err) => Promise.reject(err))
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      const { setTokens, logout } = useAuthStore.getState()
-
-      try {
-        const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        )
-        const { accessToken: newAccess } = response.data
-        setTokens(newAccess)
-        processQueue(null, newAccess)
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`
-        return api(originalRequest)
-      } catch (refreshError) {
-        const status = refreshError.response?.status
-        logger.authFailure('Token refresh failed')
-        processQueue(refreshError, null)
-
-        // Keep session on transient failures (backend restart / network issues).
-        // Clear session only when refresh token is definitively invalid.
-        // Use logout() + let ProtectedRoute redirect; avoid window.location.href
-        // which would trigger a full reload and restart the loop.
-        if (AUTH_FAILURE_STATUSES.has(status)) {
-          logout()
-        }
-        return Promise.reject(refreshError)
-      } finally {
-        isRefreshing = false
-      }
+        .catch((err) => Promise.reject(err))
     }
 
     return Promise.reject(error)
