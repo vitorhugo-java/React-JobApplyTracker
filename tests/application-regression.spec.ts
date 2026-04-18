@@ -48,6 +48,6 @@ test('regression: application create sends LocalDate and saves without server er
   expect(createResponse.ok(), 'Create application must succeed').toBeTruthy()
 
   await page.waitForURL('**/applications', { timeout: 15_000 })
-  await expect(page.getByText(vacancyName)).toBeVisible()
+  await expect(page.locator('[data-testid="app-row"]').getByText(vacancyName)).toBeVisible()
   await expect(page.getByText('Failed to save application.')).not.toBeVisible()
 })

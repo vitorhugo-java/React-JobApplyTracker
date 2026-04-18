@@ -36,7 +36,7 @@ const JobApplicationCard = ({
         !isEditing ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30' : ''
       }`}
       onClick={() => { if (!isEditing) onView() }}
-      data-testid="app-row"
+      data-testid="app-card"
     >
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
@@ -47,7 +47,7 @@ const JobApplicationCard = ({
                 options={editStatusOptions}
                 onChange={(e) => onEditDraftChange({ status: e.value })}
                 className="w-full"
-                data-testid="inline-edit-status"
+                data-testid="inline-edit-status-card"
               />
             ) : (
               <StatusBadge status={app.status || TO_SEND_LATER_STATUS} />
@@ -64,7 +64,7 @@ const JobApplicationCard = ({
               value={editDraft?.vacancyName ?? ''}
               onChange={(e) => onEditDraftChange({ vacancyName: e.target.value })}
               className="w-full"
-              data-testid="inline-edit-vacancy"
+              data-testid="inline-edit-vacancy-card"
             />
           ) : (
             <p className="text-base font-semibold text-gray-900 dark:text-white">
@@ -80,7 +80,7 @@ const JobApplicationCard = ({
                 value={editDraft?.recruiterName ?? ''}
                 onChange={(e) => onEditDraftChange({ recruiterName: e.target.value })}
                 className="w-full"
-                data-testid="inline-edit-recruiter"
+                data-testid="inline-edit-recruiter-card"
               />
             ) : (
               <p className="text-sm text-gray-600 dark:text-gray-300">{app.recruiterName}</p>
@@ -113,7 +113,7 @@ const JobApplicationCard = ({
                 disabled={savingId === app.id}
                 className={`${btnBase} h-11 w-11 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50`}
                 aria-label="Save"
-                data-testid="inline-save"
+                data-testid="inline-save-card"
               >
                 <Check className="w-5 h-5" />
               </button>
@@ -123,7 +123,7 @@ const JobApplicationCard = ({
                 disabled={savingId === app.id}
                 className={`${btnBase} h-11 w-11 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50`}
                 aria-label="Cancel"
-                data-testid="inline-cancel"
+                data-testid="inline-cancel-card"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -134,7 +134,7 @@ const JobApplicationCard = ({
               onClick={onStartEdit}
               className={`${btnBase} h-11 w-11 hover:text-indigo-600 dark:hover:text-indigo-400`}
               aria-label="Edit application inline"
-              data-testid="inline-edit"
+              data-testid="inline-edit-card"
             >
               <Edit className="w-5 h-5" />
             </button>
