@@ -17,7 +17,8 @@ RUN npm run build
 FROM nginx:1.27-alpine AS serve
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-RUN mkdir -p /usr/share/nginx/html/React-JobApplyTracker
+RUN rm -rf /usr/share/nginx/html/* \
+    && mkdir -p /usr/share/nginx/html/React-JobApplyTracker
 COPY --from=build /app/dist/ /usr/share/nginx/html/React-JobApplyTracker/
 
 EXPOSE 80
