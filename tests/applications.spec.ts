@@ -51,7 +51,7 @@ test.describe('Application flow', () => {
     await createApplication(page, vacancy)
 
     await expect(page.locator('[data-testid="app-row"]').first()).toBeVisible()
-    await expect(page.getByText(vacancy)).toBeVisible()
+    await expect(page.locator('[data-testid="app-row"]').getByText(vacancy)).toBeVisible()
   })
 
   test('view application list page', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('Application flow', () => {
     // Wait for the debounce / re-fetch
     await page.waitForTimeout(600)
 
-    await expect(page.getByText(vacancy)).toBeVisible()
+    await expect(page.locator('[data-testid="app-row"]').getByText(vacancy)).toBeVisible()
   })
 
   test('edit application and save changes', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Application flow', () => {
     await page.locator('[data-testid="inline-save"]').click()
     await page.waitForTimeout(600)
 
-    await expect(page.getByText(updated)).toBeVisible()
+    await expect(page.locator('[data-testid="app-row"]').getByText(updated)).toBeVisible()
   })
 
   test('update application status via edit form', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('Application flow', () => {
     await page.locator('[data-testid="inline-save"]').click()
     await page.waitForTimeout(600)
 
-    await expect(page.getByText('Teste Técnico')).toBeVisible()
+    await expect(page.locator('[data-testid="app-row"]').getByText('Teste Técnico')).toBeVisible()
   })
 
   test('delete an application', async ({ page }) => {
@@ -216,6 +216,6 @@ test.describe('Application flow', () => {
     })
 
     await page.goto('/applications')
-    await expect(page.getByText(vacancy)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="app-row"]').getByText(vacancy)).toBeVisible({ timeout: 15_000 })
   })
 })

@@ -17,7 +17,7 @@ const StatusBadge = ({ status }) => {
   const colorClass = STATUS_COLORS[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
   const label = status === 'TO_SEND_LATER' ? 'To send later' : status
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium max-w-full overflow-hidden truncate ${colorClass}`}>
       {label}
     </span>
   )

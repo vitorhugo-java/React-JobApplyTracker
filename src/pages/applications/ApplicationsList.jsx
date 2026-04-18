@@ -10,6 +10,7 @@ import { Toast } from 'primereact/toast'
 import { Edit, Trash2, Eye, Check, X } from 'lucide-react'
 import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
+import JobApplicationCard from '../../components/ui/JobApplicationCard'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
@@ -128,7 +129,7 @@ const ApplicationsList = () => {
     <div className="space-y-4">
       <Toast ref={toast} />
       <ConfirmDialog />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Applications</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{total} total applications</p>
@@ -137,6 +138,7 @@ const ApplicationsList = () => {
           label="New Application"
           icon="pi pi-plus"
           onClick={() => navigate('/applications/new')}
+          className="self-start sm:self-auto"
           data-testid="new-application-btn"
         />
       </div>
@@ -185,7 +187,25 @@ const ApplicationsList = () => {
         />
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="md:hidden">
+            {apps.map((app) => (
+              <JobApplicationCard
+                key={app.id}
+                app={app}
+                editingId={editingId}
+                editDraft={editDraft}
+                savingId={savingId}
+                editStatusOptions={editStatusOptions}
+                onView={() => navigate(`/applications/${app.id}`)}
+                onStartEdit={() => startInlineEdit(app)}
+                onSaveEdit={saveInlineEdit}
+                onCancelEdit={cancelInlineEdit}
+                onDelete={() => handleDelete(app.id)}
+                onEditDraftChange={(changes) => setEditDraft((prev) => ({ ...prev, ...changes }))}
+              />
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-700">
