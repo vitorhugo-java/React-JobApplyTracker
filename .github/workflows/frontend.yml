@@ -122,7 +122,7 @@ jobs:
       - name: Build production bundle
         run: npm run build
         env:
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_BASE_PATH: /
 
       - name: Create SPA fallback page
         run: cp dist/index.html dist/404.html
