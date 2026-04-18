@@ -1,4 +1,3 @@
-# Stage 1: Build
 FROM node:22-alpine AS build
 
 WORKDIR /app
@@ -15,11 +14,12 @@ ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 
 RUN npm run build
 
-# Stage 2: Serve
 FROM nginx:1.27-alpine AS serve
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html/React-JobApplyTracker
+RUN rm -rf /usr/share/nginx/html/* \
+    && mkdir -p /usr/share/nginx/html/React-JobApplyTracker
+COPY --from=build /app/dist/ /usr/share/nginx/html/React-JobApplyTracker/
 
 EXPOSE 80
 
