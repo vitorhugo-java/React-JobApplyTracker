@@ -7,10 +7,13 @@ import { Calendar } from 'primereact/calendar'
 import { InputSwitch } from 'primereact/inputswitch'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
+import { Send } from 'lucide-react'
 import {
   getApplication,
   createApplication,
   updateApplication,
+  markDmSent,
   APPLICATION_STATUSES,
 } from '../../api/applications'
 import { usePageTitle } from '../../hooks/usePageTitle'
@@ -179,6 +182,24 @@ const ApplicationForm = () => {
 
   const statusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
 
+  const handleMarkDmSent = async () => {
+    confirmDialog({
+      message: 'Are you sure you want to mark this DM as sent?',
+      header: 'Confirm',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await markDmSent(id)
+          toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
+          // Optionally navigate back or reload
+          navigate(`/applications/${id}`)
+        } catch {
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+        }
+      },
+    })
+  }
+
   if (fetching) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -190,6 +211,7 @@ const ApplicationForm = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <Toast ref={toast} />
+      <ConfirmDialog />
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {isEdit ? 'Edit Application' : 'New Application'}
@@ -284,6 +306,17 @@ const ApplicationForm = () => {
         <div className="flex gap-3 pt-2">
           <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
           <Button type="button" label="Cancel" outlined onClick={() => navigate(isEdit ? `/applications/${id}` : '/applications')} />
+          {isEdit && (
+            <Button
+              type="button"
+              rounded
+              text
+              icon={() => <Send className="w-4 h-4" />}
+              onClick={handleMarkDmSent}
+              title="Mark DM as sent"
+              className="p-button-sm"
+            />
+          )}
         </div>
       </form>
     </div>
