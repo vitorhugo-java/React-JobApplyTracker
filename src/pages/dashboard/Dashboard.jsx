@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost } from 'lucide-react'
 import { Toast } from 'primereact/toast'
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
+import { Button } from 'primereact/button'
 import { getDashboardSummary } from '../../api/dashboard'
 import { getUpcoming, getOverdue, markDmSent } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -43,16 +45,17 @@ const AppRow = ({ app, onMarkDmSent }) => (
       )}
       <StatusBadge status={app.status || 'TO_SEND_LATER'} />
       {onMarkDmSent && (
-        <button
+        <Button
+          rounded
+          text
+          icon={() => <Send className="w-4 h-4" />}
           onClick={(e) => {
             e.preventDefault()
             onMarkDmSent(app)
           }}
-          className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors"
           title="Mark DM as sent"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+          className="p-button-sm"
+        />
       )}
     </div>
   </div>
@@ -87,19 +90,26 @@ const Dashboard = () => {
   }, [])
 
   const handleMarkDmSent = async (app) => {
-    // Optimistically remove the app from both lists
-    const removeApp = (list) => list.filter((a) => a.id !== app.id)
-    setUpcoming(removeApp)
-    setOverdue(removeApp)
-    try {
-      await markDmSent(app.id)
-      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
-    } catch {
-      // Restore the app if the request fails
-      setUpcoming((prev) => [...prev, app])
-      setOverdue((prev) => [...prev, app])
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
-    }
+    confirmDialog({
+      message: 'Are you sure you want to mark this DM as sent?',
+      header: 'Confirm',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        // Optimistically remove the app from both lists
+        const removeApp = (list) => list.filter((a) => a.id !== app.id)
+        setUpcoming(removeApp)
+        setOverdue(removeApp)
+        try {
+          await markDmSent(app.id)
+          toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
+        } catch {
+          // Restore the app if the request fails
+          setUpcoming((prev) => [...prev, app])
+          setOverdue((prev) => [...prev, app])
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+        }
+      },
+    })
   }
 
   const metrics = [
@@ -116,6 +126,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <Toast ref={toast} />
+      <ConfirmDialog />
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Overview of your job search</p>
