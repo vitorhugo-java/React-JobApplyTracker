@@ -115,8 +115,8 @@ test.describe('Application flow', () => {
     await createApplication(page, vacancy)
 
     const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    // Click the delete button (3rd action icon)
-    await row.getByRole('button').nth(2).click()
+    // Click delete by accessible label to avoid brittle button-index assumptions.
+    await row.getByRole('button', { name: 'Delete application' }).click()
 
     // Confirm the deletion dialog
     await page.locator('.p-confirm-dialog-accept').click()
