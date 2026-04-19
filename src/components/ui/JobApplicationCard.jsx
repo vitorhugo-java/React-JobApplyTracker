@@ -1,5 +1,5 @@
 import React from 'react'
-import { Eye, Edit, Trash2, Check, X } from 'lucide-react'
+import { Edit, Trash2, Check, X } from 'lucide-react'
 import { Dropdown } from 'primereact/dropdown'
 import { InputText } from 'primereact/inputtext'
 import StatusBadge from './StatusBadge'
@@ -96,15 +96,6 @@ const JobApplicationCard = ({
           className="flex items-center justify-around pt-2 border-t border-gray-100 dark:border-gray-700"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={onView}
-            className={`${btnBase} h-11 w-11 hover:text-gray-600 dark:hover:text-gray-200`}
-            aria-label="View application"
-          >
-            <Eye className="w-5 h-5" />
-          </button>
-
           {isEditing ? (
             <>
               <button

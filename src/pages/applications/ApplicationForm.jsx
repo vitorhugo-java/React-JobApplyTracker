@@ -8,7 +8,7 @@ import { InputSwitch } from 'primereact/inputswitch'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
-import { Send } from 'lucide-react'
+
 import {
   getApplication,
   createApplication,
@@ -29,6 +29,7 @@ const defaultForm = {
   nextStepDateTime: null,
   status: APPLICATION_STATUSES[0],
   recruiterDmReminderEnabled: true,
+  markDmSent: false,
   toSendLater: false,
 }
 
@@ -149,9 +150,22 @@ const ApplicationForm = () => {
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
         status: form.toSendLater ? null : form.status,
       }
+      // Remove markDmSent from payload as it's not a backend field
+      delete payload.markDmSent
+      
       if (isEdit) {
         const response = await updateApplication(id, payload)
         window.localStorage.removeItem(draftKey)
+        
+        // If markDmSent is true, call the API
+        if (form.markDmSent) {
+          try {
+            await markDmSent(id)
+          } catch (err) {
+            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+          }
+        }
+        
         if (response.data?.queuedOffline) {
           toast.current.show({
             severity: 'info',
@@ -181,24 +195,6 @@ const ApplicationForm = () => {
   }
 
   const statusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
-
-  const handleMarkDmSent = async () => {
-    confirmDialog({
-      message: 'Are you sure you want to mark this DM as sent?',
-      header: 'Confirm',
-      icon: 'pi pi-exclamation-triangle',
-      accept: async () => {
-        try {
-          await markDmSent(id)
-          toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
-          // Optionally navigate back or reload
-          navigate(`/applications/${id}`)
-        } catch {
-          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
-        }
-      },
-    })
-  }
 
   if (fetching) {
     return (
@@ -294,29 +290,28 @@ const ApplicationForm = () => {
             <InputSwitch checked={form.interviewScheduled} onChange={(e) => setField('interviewScheduled', e.value)} />
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg sm:col-span-2">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-white">Recruiter DM Reminder</label>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Enable reminder to send DM to recruiter</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Enable reminder to send DM</p>
             </div>
             <InputSwitch checked={form.recruiterDmReminderEnabled} onChange={(e) => setField('recruiterDmReminderEnabled', e.value)} />
           </div>
+
+          {isEdit && (
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-white">Mark to DM Sent</label>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Mark this DM as sent to recruiter</p>
+              </div>
+              <InputSwitch checked={form.markDmSent} onChange={(e) => setField('markDmSent', e.value)} />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
           <Button type="button" label="Cancel" outlined onClick={() => navigate(isEdit ? `/applications/${id}` : '/applications')} />
-          {isEdit && (
-            <Button
-              type="button"
-              rounded
-              text
-              icon={() => <Send className="w-4 h-4" />}
-              onClick={handleMarkDmSent}
-              title="Mark DM as sent"
-              className="p-button-sm"
-            />
-          )}
         </div>
       </form>
     </div>

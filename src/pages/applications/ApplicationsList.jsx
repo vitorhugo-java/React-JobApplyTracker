@@ -7,7 +7,7 @@ import { Calendar } from 'primereact/calendar'
 import { Paginator } from 'primereact/paginator'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
-import { Edit, Trash2, Eye, Check, X } from 'lucide-react'
+import { Edit, Trash2, Check, X } from 'lucide-react'
 import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import JobApplicationCard from '../../components/ui/JobApplicationCard'
@@ -272,14 +272,6 @@ const ApplicationsList = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1 sm:flex-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/applications/${app.id}`)}
-                          className={`${actionButtonBaseClass} shrink-0 hover:text-gray-600 dark:hover:text-gray-200`}
-                          aria-label="View application"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         {editingId === app.id ? (
                           <>
                             <button

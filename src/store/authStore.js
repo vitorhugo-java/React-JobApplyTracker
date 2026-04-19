@@ -1,6 +1,22 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const loadPrimeReactTheme = (theme) => {
+  const themeLink = document.getElementById('primereact-theme')
+  const themeName = theme === 'dark' ? 'lara-dark-indigo' : 'lara-light-indigo'
+  const themePath = `https://unpkg.com/primereact/resources/themes/${themeName}/theme.css`
+  
+  if (themeLink) {
+    themeLink.href = themePath
+  } else {
+    const link = document.createElement('link')
+    link.id = 'primereact-theme'
+    link.rel = 'stylesheet'
+    link.href = themePath
+    document.head.appendChild(link)
+  }
+}
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -28,6 +44,7 @@ const useAuthStore = create(
         } else {
           document.documentElement.classList.remove('dark')
         }
+        loadPrimeReactTheme(theme)
         set({ theme })
       },
 
@@ -38,6 +55,7 @@ const useAuthStore = create(
         } else {
           document.documentElement.classList.remove('dark')
         }
+        loadPrimeReactTheme(stored)
         set({ theme: stored })
       },
 
