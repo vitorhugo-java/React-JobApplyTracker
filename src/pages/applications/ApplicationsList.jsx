@@ -7,8 +7,8 @@ import { Calendar } from 'primereact/calendar'
 import { Paginator } from 'primereact/paginator'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
-import { Edit, Trash2, Check, X } from 'lucide-react'
-import { getApplications, getApplication, updateApplication, deleteApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
+import { Edit, Trash2, Check, X, Archive } from 'lucide-react'
+import { getApplications, getApplication, updateApplication, deleteApplication, archiveApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import JobApplicationCard from '../../components/ui/JobApplicationCard'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
@@ -30,11 +30,13 @@ const ApplicationsList = () => {
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState(null)
   const [savingId, setSavingId] = useState(null)
+  const [activeTab, setActiveTab] = useState('active')
 
   const fetchApps = useCallback(async () => {
     setLoading(true)
     try {
       const params = { page, size }
+      params.archived = activeTab === 'archived'
       if (filters.status) params.status = filters.status
       if (filters.recruiterName) params.recruiterName = filters.recruiterName
       if (filters.startDate) params.applicationDateFrom = filters.startDate.toISOString().slice(0, 10)
@@ -48,7 +50,7 @@ const ApplicationsList = () => {
     } finally {
       setLoading(false)
     }
-  }, [filters, page, size])
+  }, [activeTab, filters, page, size])
 
   useEffect(() => { fetchApps() }, [fetchApps])
 
@@ -96,19 +98,36 @@ const ApplicationsList = () => {
     }
   }
 
+  const handleArchive = (id) => {
+    confirmDialog({
+      message: 'Are you sure you want to archive this application?',
+      header: 'Confirm Archive',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await archiveApplication(id)
+          toast.current.show({ severity: 'success', summary: 'Archived', detail: 'Application archived.' })
+          fetchApps()
+        } catch {
+          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to archive.' })
+        }
+      },
+    })
+  }
+
   const handleDelete = (id) => {
     confirmDialog({
-      message: 'Are you sure you want to delete this application?',
-      header: 'Confirm Delete',
+      message: 'Are you sure you want to permanently delete this archived application?',
+      header: 'Confirm Permanent Delete',
       icon: 'pi pi-exclamation-triangle',
       acceptClassName: 'p-button-danger',
       accept: async () => {
         try {
           await deleteApplication(id)
-          toast.current.show({ severity: 'success', summary: 'Deleted', detail: 'Application deleted.' })
+          toast.current.show({ severity: 'success', summary: 'Deleted', detail: 'Application deleted permanently.' })
           fetchApps()
         } catch {
-          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete.' })
+          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete permanently.' })
         }
       },
     })
@@ -132,7 +151,7 @@ const ApplicationsList = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Applications</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{total} total applications</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{total} {activeTab === 'archived' ? 'archived' : 'active'} applications</p>
         </div>
         <Button
           label="New Application"
@@ -140,6 +159,31 @@ const ApplicationsList = () => {
           onClick={() => navigate('/applications/new')}
           className="self-start sm:self-auto"
           data-testid="new-application-btn"
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          label="Ativas"
+          severity={activeTab === 'active' ? undefined : 'secondary'}
+          outlined={activeTab !== 'active'}
+          onClick={() => {
+            setActiveTab('active')
+            setPage(0)
+          }}
+          data-testid="applications-tab-active"
+        />
+        <Button
+          type="button"
+          label="Arquivadas"
+          severity={activeTab === 'archived' ? undefined : 'secondary'}
+          outlined={activeTab !== 'archived'}
+          onClick={() => {
+            setActiveTab('archived')
+            setPage(0)
+          }}
+          data-testid="applications-tab-archived"
         />
       </div>
 
@@ -200,8 +244,10 @@ const ApplicationsList = () => {
                 onStartEdit={() => startInlineEdit(app)}
                 onSaveEdit={saveInlineEdit}
                 onCancelEdit={cancelInlineEdit}
+                onArchive={() => handleArchive(app.id)}
                 onDelete={() => handleDelete(app.id)}
                 onEditDraftChange={(changes) => setEditDraft((prev) => ({ ...prev, ...changes }))}
+                showDelete={activeTab === 'archived'}
               />
             ))}
           </div>
@@ -209,7 +255,7 @@ const ApplicationsList = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-700">
-                  {['Vacancy', 'Recruiter', 'Status', 'Applied', 'Next Step', 'Actions'].map((h) => (
+                  {['Vacancy', 'Recruiter', 'Status', 'Applied', 'Next Step', 'Note', 'Actions'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {h}
                     </th>
@@ -270,6 +316,9 @@ const ApplicationsList = () => {
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {app.nextStepDateTime ? new Date(app.nextStepDateTime).toLocaleString('pt-BR') : '-'}
                     </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate" title={app.note || ''}>
+                      {app.note || '-'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1 sm:flex-nowrap" onClick={(e) => e.stopPropagation()}>
                         {editingId === app.id ? (
@@ -306,14 +355,25 @@ const ApplicationsList = () => {
                             <Edit className="w-4 h-4" />
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(app.id)}
-                          className={`${actionButtonBaseClass} shrink-0 hover:text-red-600 dark:hover:text-red-400`}
-                          aria-label="Delete application"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {activeTab === 'archived' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(app.id)}
+                            className={`${actionButtonBaseClass} shrink-0 hover:text-red-600 dark:hover:text-red-400`}
+                            aria-label="Delete application"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleArchive(app.id)}
+                            className={`${actionButtonBaseClass} shrink-0 hover:text-amber-600 dark:hover:text-amber-400`}
+                            aria-label="Archive application"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

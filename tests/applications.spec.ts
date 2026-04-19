@@ -110,17 +110,25 @@ test.describe('Application flow', () => {
     await expect(page.locator('[data-testid="app-row"]').getByText('Teste Técnico')).toBeVisible()
   })
 
-  test('delete an application', async ({ page }) => {
-    const vacancy = `Delete Me ${Date.now()}`
+  test('archive an application then delete from archived tab', async ({ page }) => {
+    const vacancy = `Archive Me ${Date.now()}`
     await createApplication(page, vacancy)
 
     const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    // Click delete by accessible label to avoid brittle button-index assumptions.
-    await row.getByRole('button', { name: 'Delete application' }).click()
+    await row.getByRole('button', { name: 'Archive application' }).click()
 
-    // Confirm the deletion dialog
     await page.locator('.p-confirm-dialog-accept').click()
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(600)
+
+    await expect(page.getByText(vacancy)).not.toBeVisible()
+
+    await page.locator('[data-testid="applications-tab-archived"]').click()
+    const archivedRow = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
+    await expect(archivedRow).toBeVisible()
+    await archivedRow.getByRole('button', { name: 'Delete application' }).click()
+
+    await page.locator('.p-confirm-dialog-accept').click()
+    await page.waitForTimeout(600)
 
     await expect(page.getByText(vacancy)).not.toBeVisible()
   })

@@ -33,6 +33,9 @@ export const patchReminder = (id, recruiterDmReminderEnabled) =>
 export const markDmSent = (id) =>
   api.patch(`/applications/${id}/mark-dm-sent`, {})
 
+export const archiveApplication = (id) =>
+  api.patch(`/applications/${id}/archive`, {})
+
 export const deleteApplication = (id) => api.delete(`/applications/${id}`)
 
 export const getUpcoming = () => api.get('/applications/upcoming')

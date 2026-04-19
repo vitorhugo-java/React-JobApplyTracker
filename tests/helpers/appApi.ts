@@ -12,6 +12,9 @@ type AppRecord = {
   nextStepDateTime: string | null
   status: string | null
   recruiterDmReminderEnabled: boolean
+  note: string | null
+  archived: boolean
+  archivedAt: string | null
   createdAt: string
 }
 
@@ -51,6 +54,11 @@ export function setupMockApplicationsApi(page: Page): void {
       overdueFollowUps: apps.filter((a) => a.recruiterDmReminderEnabled).length,
       dmRemindersEnabled: apps.filter((a) => a.recruiterDmReminderEnabled).length,
       toSendLater: apps.filter((a) => a.status == null).length,
+      rejectedCount: apps.filter((a) => a.status === 'Rejeitado').length,
+      ghostingCount: apps.filter((a) => a.status === 'Ghosting').length,
+      averageDailyApplications: Number((apps.length / 30).toFixed(2)),
+      averageWeeklyApplications: Number((apps.length / 12).toFixed(2)),
+      averageMonthlyApplications: Number((apps.length / 12).toFixed(2)),
     }
 
     await route.fulfill({
@@ -98,8 +106,9 @@ export function setupMockApplicationsApi(page: Page): void {
       const url = new URL(request.url())
       const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
       const status = url.searchParams.get('status')
+      const archived = url.searchParams.get('archived') === 'true'
 
-      let filtered = apps
+      let filtered = apps.filter((app) => app.archived === archived)
       if (recruiterName) {
         filtered = filtered.filter((app) => (app.recruiterName || '').toLowerCase().includes(recruiterName))
       }
@@ -133,6 +142,9 @@ export function setupMockApplicationsApi(page: Page): void {
         nextStepDateTime: payload.nextStepDateTime ?? null,
         status: payload.status ?? 'RH',
         recruiterDmReminderEnabled: Boolean(payload.recruiterDmReminderEnabled),
+        note: payload.note ?? null,
+        archived: false,
+        archivedAt: null,
         createdAt: new Date().toISOString(),
       }
 
@@ -186,6 +198,29 @@ export function setupMockApplicationsApi(page: Page): void {
 
     const payload = route.request().postDataJSON() as { recruiterDmReminderEnabled?: boolean }
     app.recruiterDmReminderEnabled = Boolean(payload.recruiterDmReminderEnabled)
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(cloneApp(app)),
+    })
+  })
+
+  void page.route(`${API_BASE}/applications/*/archive`, async (route) => {
+    const id = parseIdFromUrl(route.request().url())
+    if (id === null) {
+      await route.fulfill({ status: 400, body: '' })
+      return
+    }
+
+    const app = findById(id)
+    if (!app) {
+      await route.fulfill({ status: 404, body: '' })
+      return
+    }
+
+    app.archived = true
+    app.archivedAt = new Date().toISOString()
 
     await route.fulfill({
       status: 200,

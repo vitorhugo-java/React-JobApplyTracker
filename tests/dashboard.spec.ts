@@ -29,6 +29,11 @@ test.describe('Dashboard', () => {
       'metric-overdue',
       'metric-reminders',
       'metric-to-send-later',
+      'metric-rejected',
+      'metric-ghosting',
+      'metric-average-daily',
+      'metric-average-weekly',
+      'metric-average-monthly',
     ]
 
     for (const id of metricIds) {
@@ -44,6 +49,11 @@ test.describe('Dashboard', () => {
       'metric-overdue-value',
       'metric-reminders-value',
       'metric-to-send-later-value',
+      'metric-rejected-value',
+      'metric-ghosting-value',
+      'metric-average-daily-value',
+      'metric-average-weekly-value',
+      'metric-average-monthly-value',
     ]
 
     for (const id of metricIds) {

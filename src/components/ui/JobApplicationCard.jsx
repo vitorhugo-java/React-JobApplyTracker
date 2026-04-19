@@ -1,5 +1,5 @@
 import React from 'react'
-import { Edit, Trash2, Check, X } from 'lucide-react'
+import { Edit, Trash2, Check, X, Archive } from 'lucide-react'
 import { Dropdown } from 'primereact/dropdown'
 import { InputText } from 'primereact/inputtext'
 import StatusBadge from './StatusBadge'
@@ -19,8 +19,10 @@ const JobApplicationCard = ({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
+  onArchive,
   onDelete,
   onEditDraftChange,
+  showDelete = false,
 }) => {
   const isEditing = editingId === app.id
   const date = app.applicationDate
@@ -131,14 +133,25 @@ const JobApplicationCard = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={onDelete}
-            className={`${btnBase} h-11 w-11 hover:text-red-600 dark:hover:text-red-400`}
-            aria-label="Delete application"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          {showDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className={`${btnBase} h-11 w-11 hover:text-red-600 dark:hover:text-red-400`}
+              aria-label="Delete application"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onArchive}
+              className={`${btnBase} h-11 w-11 hover:text-amber-600 dark:hover:text-amber-400`}
+              aria-label="Archive application"
+            >
+              <Archive className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>

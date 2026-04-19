@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost } from 'lucide-react'
+import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost, CalendarDays, CalendarRange, CalendarClock } from 'lucide-react'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Button } from 'primereact/button'
@@ -121,6 +121,9 @@ const Dashboard = () => {
     { icon: Send, label: 'To Send Later', value: summary?.toSendLater, color: 'bg-slate-500', testId: 'metric-to-send-later' },
     { icon: XCircle, label: 'Rejeitado', value: summary?.rejectedCount, color: 'bg-rose-500', testId: 'metric-rejected' },
     { icon: Ghost, label: 'Ghosting', value: summary?.ghostingCount, color: 'bg-zinc-500', testId: 'metric-ghosting' },
+    { icon: CalendarDays, label: 'Média diária', value: summary?.averageDailyApplications, color: 'bg-cyan-500', testId: 'metric-average-daily' },
+    { icon: CalendarRange, label: 'Média semanal', value: summary?.averageWeeklyApplications, color: 'bg-sky-500', testId: 'metric-average-weekly' },
+    { icon: CalendarClock, label: 'Média mensal', value: summary?.averageMonthlyApplications, color: 'bg-blue-500', testId: 'metric-average-monthly' },
   ]
 
   return (

@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
-import { Edit, Trash2, ExternalLink, Bell, Calendar } from 'lucide-react'
-import { getApplication, deleteApplication } from '../../api/applications'
+import { Edit, Bell, Calendar } from 'lucide-react'
+import { getApplication, deleteApplication, archiveApplication } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import RichLinkPreview from '../../components/ui/RichLinkPreview'
@@ -41,10 +41,26 @@ const ApplicationDetail = () => {
     fetchApp()
   }, [id])
 
+  const handleArchive = () => {
+    confirmDialog({
+      message: 'Are you sure you want to archive this application?',
+      header: 'Confirm Archive',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await archiveApplication(id)
+          navigate('/applications')
+        } catch {
+          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to archive application.' })
+        }
+      },
+    })
+  }
+
   const handleDelete = () => {
     confirmDialog({
-      message: 'Are you sure you want to delete this application?',
-      header: 'Confirm Delete',
+      message: 'Are you sure you want to permanently delete this archived application?',
+      header: 'Confirm Permanent Delete',
       icon: 'pi pi-exclamation-triangle',
       acceptClassName: 'p-button-danger',
       accept: async () => {
@@ -88,14 +104,25 @@ const ApplicationDetail = () => {
             label="Edit"
             outlined
             onClick={() => navigate(`/applications/${id}/edit`)}
+            disabled={Boolean(app.archived)}
           />
-          <Button
-            icon="pi pi-trash"
-            severity="danger"
-            outlined
-            onClick={handleDelete}
-            label="Delete"
-          />
+          {app.archived ? (
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              outlined
+              onClick={handleDelete}
+              label="Delete"
+            />
+          ) : (
+            <Button
+              icon="pi pi-folder"
+              severity="warning"
+              outlined
+              onClick={handleArchive}
+              label="Archive"
+            />
+          )}
         </div>
       </div>
 
@@ -118,6 +145,7 @@ const ApplicationDetail = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Recruiter Name" value={app.recruiterName} />
         <Field label="Organization" value={app.organization} />
+        <Field label="Note" value={app.note} />
         <Field label="Previous Status" value={app.previousStatus} />
         <Field
           label="RH Accepted Connection"

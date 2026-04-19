@@ -8,6 +8,12 @@ const DASHBOARD_FIXTURE = {
   interviewsScheduled: 2,
   overdueFollowUps: 1,
   dmRemindersEnabled: 4,
+  toSendLater: 1,
+  rejectedCount: 1,
+  ghostingCount: 0,
+  averageDailyApplications: 0.23,
+  averageWeeklyApplications: 0.58,
+  averageMonthlyApplications: 0.58,
 }
 
 test.describe('Auth flow', () => {

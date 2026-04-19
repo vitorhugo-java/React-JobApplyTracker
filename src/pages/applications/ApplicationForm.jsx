@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InputText } from 'primereact/inputtext'
+import { InputTextarea } from 'primereact/inputtextarea'
 import { FloatLabel } from 'primereact/floatlabel'
 import { Dropdown } from 'primereact/dropdown'
 import { Calendar } from 'primereact/calendar'
@@ -31,6 +32,7 @@ const defaultForm = {
   recruiterDmReminderEnabled: true,
   markDmSent: false,
   toSendLater: false,
+  note: '',
 }
 
 const getDraftKey = (id) => `jobtracker:application-form-draft:${id || 'new'}`
@@ -118,6 +120,7 @@ const ApplicationForm = () => {
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
           toSendLater: d.status == null,
           status: d.status ?? APPLICATION_STATUSES[0],
+          note: d.note ?? '',
         })
         if (draftRef.current) {
           setForm((serverData) => ({ ...serverData, ...draftRef.current }))
@@ -149,6 +152,7 @@ const ApplicationForm = () => {
         applicationDate: formatDateOnly(form.applicationDate),
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
         status: form.toSendLater ? null : form.status,
+        note: form.note?.trim() || null,
       }
       // Remove markDmSent from payload as it's not a backend field
       delete payload.markDmSent
@@ -277,6 +281,21 @@ const ApplicationForm = () => {
             <FloatLabel className="w-full">
               <Dropdown inputId="status" value={form.status} options={statusOptions} onChange={(e) => setField('status', e.value)} className="w-full" disabled={form.toSendLater} pt={{ root: { 'data-testid': 'app-status' } }} />
               <label htmlFor="status">Status</label>
+            </FloatLabel>
+          </div>
+
+          <div className="sm:col-span-2 pt-2">
+            <FloatLabel className="w-full">
+              <InputTextarea
+                inputId="note"
+                value={form.note}
+                onChange={(e) => setField('note', e.target.value)}
+                rows={4}
+                className="w-full"
+                autoResize
+                data-testid="app-note"
+              />
+              <label htmlFor="note">Note</label>
             </FloatLabel>
           </div>
 
