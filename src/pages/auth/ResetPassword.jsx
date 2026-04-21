@@ -139,7 +139,9 @@ const ResetPassword = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Password Strength:</span>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                  <span
+                    data-testid="password-strength-label"
+                    className={`text-xs font-semibold px-2 py-1 rounded ${
                     passwordStrength.score <= 2 ? 'text-red-700 dark:text-red-400' :
                     passwordStrength.score === 3 ? 'text-yellow-700 dark:text-yellow-400' :
                     'text-green-700 dark:text-green-400'
@@ -151,6 +153,8 @@ const ResetPassword = () => {
                 {/* Strength Bar */}
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
+                    data-testid="password-strength-bar"
+                    data-strength={(passwordStrength.label || '').toLowerCase().replace(/\s+/g, '-')}
                     className={`h-2 rounded-full transition-all ${
                       passwordStrength.score <= 1 ? 'w-1/5 bg-red-500' :
                       passwordStrength.score === 2 ? 'w-2/5 bg-yellow-500' :
@@ -162,10 +166,10 @@ const ResetPassword = () => {
                 </div>
 
                 {/* Requirements Checklist */}
-                <div className="bg-gray-50 dark:bg-gray-900 rounded p-3 space-y-2">
+                <div data-testid="password-requirements" className="bg-gray-50 dark:bg-gray-900 rounded p-3 space-y-2">
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Password must include:</p>
                   <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-2">
+                    <div data-testid="password-req-length" data-met={passwordStrength.requirements.minLength ? 'true' : 'false'} className="flex items-center gap-2">
                       <span className={passwordStrength.requirements.minLength ? '✓ text-green-600 dark:text-green-400 font-bold' : '✗ text-gray-400 dark:text-gray-600 font-bold'}>
                         {passwordStrength.requirements.minLength ? '✓' : '○'}
                       </span>
@@ -173,7 +177,7 @@ const ResetPassword = () => {
                         At least 8 characters
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-testid="password-req-uppercase" data-met={passwordStrength.requirements.hasUppercase ? 'true' : 'false'} className="flex items-center gap-2">
                       <span className={passwordStrength.requirements.hasUppercase ? '✓ text-green-600 dark:text-green-400 font-bold' : '✗ text-gray-400 dark:text-gray-600 font-bold'}>
                         {passwordStrength.requirements.hasUppercase ? '✓' : '○'}
                       </span>
@@ -181,7 +185,7 @@ const ResetPassword = () => {
                         One uppercase letter (A-Z)
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-testid="password-req-lowercase" data-met={passwordStrength.requirements.hasLowercase ? 'true' : 'false'} className="flex items-center gap-2">
                       <span className={passwordStrength.requirements.hasLowercase ? '✓ text-green-600 dark:text-green-400 font-bold' : '✗ text-gray-400 dark:text-gray-600 font-bold'}>
                         {passwordStrength.requirements.hasLowercase ? '✓' : '○'}
                       </span>
@@ -189,7 +193,7 @@ const ResetPassword = () => {
                         One lowercase letter (a-z)
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-testid="password-req-number" data-met={passwordStrength.requirements.hasNumber ? 'true' : 'false'} className="flex items-center gap-2">
                       <span className={passwordStrength.requirements.hasNumber ? '✓ text-green-600 dark:text-green-400 font-bold' : '✗ text-gray-400 dark:text-gray-600 font-bold'}>
                         {passwordStrength.requirements.hasNumber ? '✓' : '○'}
                       </span>
@@ -197,7 +201,7 @@ const ResetPassword = () => {
                         One number (0-9)
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-testid="password-req-special" data-met={passwordStrength.requirements.hasSpecialChar ? 'true' : 'false'} className="flex items-center gap-2">
                       <span className={passwordStrength.requirements.hasSpecialChar ? '✓ text-green-600 dark:text-green-400 font-bold' : '✗ text-gray-400 dark:text-gray-600 font-bold'}>
                         {passwordStrength.requirements.hasSpecialChar ? '✓' : '○'}
                       </span>
