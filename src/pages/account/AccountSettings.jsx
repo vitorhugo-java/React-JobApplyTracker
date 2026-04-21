@@ -4,7 +4,11 @@ import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import useAuthStore from '../../store/authStore'
-import { changePassword as changePasswordApi, updateProfile as updateProfileApi } from '../../api/auth'
+import {
+  changePassword as changePasswordApi,
+  sendTestEmail as sendTestEmailApi,
+  updateProfile as updateProfileApi,
+} from '../../api/auth'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
 const AccountSettings = () => {
@@ -17,6 +21,7 @@ const AccountSettings = () => {
   const [name, setName] = useState(user?.name || '')
   const [reminderTime, setReminderTime] = useState((user?.reminderTime || '19:00:00').slice(0, 5))
   const [savingName, setSavingName] = useState(false)
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -85,6 +90,25 @@ const AccountSettings = () => {
     }
   }
 
+  const handleSendTestEmail = async () => {
+    if (!user?.email) {
+      toast.current.show({ severity: 'warn', summary: 'Validation', detail: 'No email available for this account.' })
+      return
+    }
+
+    setSendingTestEmail(true)
+    try {
+      const res = await sendTestEmailApi()
+      const detail = res.data?.message || 'Test email sent. Check your inbox and spam folder.'
+      toast.current.show({ severity: 'success', summary: 'Success', detail })
+    } catch (err) {
+      const detail = err.response?.data?.message || 'Failed to send test email.'
+      toast.current.show({ severity: 'error', summary: 'Error', detail })
+    } finally {
+      setSendingTestEmail(false)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Toast ref={toast} />
@@ -111,6 +135,16 @@ const AccountSettings = () => {
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
             <InputText id="email" value={user?.email || ''} className="w-full" disabled />
+            <div className="pt-2">
+              <Button
+                type="button"
+                label="Test Email"
+                icon="pi pi-envelope"
+                loading={sendingTestEmail}
+                onClick={handleSendTestEmail}
+                outlined
+              />
+            </div>
           </div>
 
           <div className="space-y-1">
