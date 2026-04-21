@@ -8,8 +8,8 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('Test')
 
-    // Should show very weak password - look for the strength label span that contains "Very Weak"
-    await expect(page.getByText('Very Weak', { exact: true })).toBeVisible()
+    // 'Test': uppercase + lowercase = score 2 → Fair
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Fair')
   })
 
   test('update password strength to weak with 6 characters', async ({ page }) => {
@@ -18,11 +18,11 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('testlo')
 
-    // Should show weak password
-    await expect(page.getByText('Weak', { exact: true })).toBeVisible()
+    // 'testlo': lowercase only = score 1 → Weak
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Weak')
   })
 
-  test('update password strength to fair with lowercase, uppercase, and number', async ({
+  test('update password strength to good with lowercase, uppercase, and number', async ({
     page,
   }) => {
     await page.goto('/register')
@@ -30,11 +30,11 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('Test123')
 
-    // Should show fair password (needs at least 8 characters, but has 3/5 requirements)
-    await expect(page.getByText('Fair', { exact: true })).toBeVisible()
+    // 'Test123': uppercase + lowercase + number = score 3 → Good
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Good')
   })
 
-  test('update password strength to good with 8 characters, uppercase, lowercase, and number', async ({
+  test('update password strength to strong with 8 characters, uppercase, lowercase, and number', async ({
     page,
   }) => {
     await page.goto('/register')
@@ -42,18 +42,18 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('Test1234')
 
-    // Should show good password
-    await expect(page.getByText('Good', { exact: true })).toBeVisible()
+    // 'Test1234': minLength + uppercase + lowercase + number = score 4 → Strong
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Strong')
   })
 
-  test('update password strength to strong with special character', async ({ page }) => {
+  test('update password strength to very strong with special character', async ({ page }) => {
     await page.goto('/register')
 
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('Test1234!')
 
-    // Should show strong password
-    await expect(page.getByText('Strong', { exact: true })).toBeVisible()
+    // 'Test1234!': all 5 criteria met = score 5 → Very Strong
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Very Strong')
   })
 
   test('display all password requirements checklist', async ({ page }) => {
@@ -75,28 +75,25 @@ test.describe('Password Validation and Feedback', () => {
 
     const passwordInput = page.locator('[data-testid="register-password"]')
 
-    // Start with empty password
-    const requirementsSection = page.getByText('Password must include:').locator('..').first()
-
-    // Fill with uppercase
+    // Fill with uppercase only
     await passwordInput.fill('T')
-    await expect(requirementsSection.getByText('One uppercase letter (A-Z)')).toContainText('✓')
+    await expect(page.getByTestId('password-req-uppercase')).toHaveAttribute('data-met', 'true')
 
-    // Fill with lowercase
+    // Fill with lowercase added
     await passwordInput.fill('Tt')
-    await expect(requirementsSection.getByText('One lowercase letter (a-z)')).toContainText('✓')
+    await expect(page.getByTestId('password-req-lowercase')).toHaveAttribute('data-met', 'true')
 
-    // Fill with number
+    // Fill with number added
     await passwordInput.fill('Tt1')
-    await expect(requirementsSection.getByText('One number (0-9)')).toContainText('✓')
+    await expect(page.getByTestId('password-req-number')).toHaveAttribute('data-met', 'true')
 
-    // Fill with special character
+    // Fill with special character added
     await passwordInput.fill('Tt1!')
-    await expect(requirementsSection.getByText('One special character')).toContainText('✓')
+    await expect(page.getByTestId('password-req-special')).toHaveAttribute('data-met', 'true')
 
-    // Fill with 8 characters
+    // Fill with 8 characters to satisfy length requirement
     await passwordInput.fill('Tt1!abcd')
-    await expect(requirementsSection.getByText('At least 8 characters')).toContainText('✓')
+    await expect(page.getByTestId('password-req-length')).toHaveAttribute('data-met', 'true')
   })
 
   test('show password mismatch error for confirm password', async ({ page }) => {
@@ -214,8 +211,8 @@ test.describe('Password Validation and Feedback', () => {
 
     // Should show password strength label
     await expect(page.getByText('Password Strength:')).toBeVisible()
-    // Should show strong indicator
-    await expect(page.locator('text=Strong')).toBeVisible()
+    // 'Test1234!': all 5 criteria = score 5 → Very Strong
+    await expect(page.getByTestId('password-strength-label')).toHaveText('Very Strong')
   })
 
   test('password requirements in reset password form', async ({ page }) => {
@@ -266,14 +263,13 @@ test.describe('Password Validation and Feedback', () => {
 
     const passwordInput = page.locator('[data-testid="register-password"]')
 
-    // Fill with weak password
+    // Fill with weak password: 'test' = lowercase only → score 1 → weak
     await passwordInput.fill('test')
-    let strengthBar = page.getByText('Password Strength:').locator('../../div[contains(@class, "bg-red")]')
-    await expect(strengthBar).toBeVisible()
+    await expect(page.getByTestId('password-strength-bar')).toHaveAttribute('data-strength', 'weak')
 
-    // Strongest - should show full bar
+    // Fill with strongest password: all 5 criteria → score 5 → very-strong
     await passwordInput.fill('Test1234!@#')
-    strengthBar = page.locator('text=Password Strength:').locator('..').locator('div[class*="bg-green"]').first()
-    await expect(strengthBar).toBeVisible()
+    await expect(page.getByTestId('password-strength-bar')).toHaveAttribute('data-strength', 'very-strong')
   })
 })
+
