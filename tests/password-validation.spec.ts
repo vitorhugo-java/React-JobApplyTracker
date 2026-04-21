@@ -224,8 +224,8 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('T')
 
     // All requirements should be visible
-    await expect(page.locator('text=Password must include:')).toBeVisible()
-    await expect(page.locator('text=At least 8 characters')).toBeVisible()
+    await expect(page.getByText('Password must include:')).toBeVisible()
+    await expect(page.getByText('At least 8 characters')).toBeVisible()
   })
 
   test('show error when reset password is shorter than 8 characters', async ({ page }) => {
@@ -239,8 +239,9 @@ test.describe('Password Validation and Feedback', () => {
 
     await page.locator('button:has-text("Reset Password")').click()
 
-    // Should show validation error
-    await expect(page.locator('text=Password must be at least 8 characters')).toBeVisible()
+    // Should show validation error in toast
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText('Password must be at least 8 characters')
   })
 
   test('show error for missing reset token', async ({ page }) => {
@@ -253,8 +254,9 @@ test.describe('Password Validation and Feedback', () => {
     await confirmInput.fill('Test1234!')
 
     await page.locator('button:has-text("Reset Password")').click()
-
-    // Should show error about missing token
+ in toast
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText(/Invalid.*token|reset.*link|token.*required/i
     await expect(page.locator('text=/Invalid.*token|reset.*link/')).toBeVisible()
   })
 
@@ -263,12 +265,12 @@ test.describe('Password Validation and Feedback', () => {
 
     const passwordInput = page.locator('[data-testid="register-password"]')
 
-    // Weakest - should show small bar
-    await passwordInput.fill('weak')
-    let strengthBar = page.locator('text=Password Strength:').locator('..').locator('div:has-text("")').first()
+    // Weakest - should shogetByText('Password Strength:').locator('../../div[contains(@class, "bg-gray")]')
     await expect(strengthBar).toBeVisible()
 
     // Strongest - should show full bar
+    await passwordInput.fill('Test1234!@#')
+    strengthBar = page.getByText('Password Strength:').locator('../../div[contains(@class, "bg-gray")]'
     await passwordInput.fill('Test1234!@#')
     strengthBar = page.locator('text=Password Strength:').locator('..').locator('div:has-text("")').first()
     await expect(strengthBar).toBeVisible()
