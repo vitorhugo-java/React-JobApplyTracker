@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InputSwitch } from 'primereact/inputswitch'
 import { Toast } from 'primereact/toast'
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Calendar, Bell, Send } from 'lucide-react'
 import { getUpcoming, getOverdue, patchReminder, markDmSent } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -105,24 +106,32 @@ const Reminders = () => {
   }
 
   const handleMarkDmSent = async (app) => {
-    // Optimistically remove the app from both lists
-    const removeApp = (list) => list.filter((a) => a.id !== app.id)
-    setUpcoming(removeApp)
-    setOverdue(removeApp)
-    try {
-      await markDmSent(app.id)
-      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent! ✓' })
-    } catch {
-      // Restore the app if the request fails
-      setUpcoming((prev) => [...prev, app])
-      setOverdue((prev) => [...prev, app])
-      toast.current?.show({ severity: 'warn', summary: 'Not Saved', detail: 'Could not mark DM as sent. Please try again.' })
-    }
+    confirmDialog({
+      message: 'Are you sure you want to mark this DM as sent?',
+      header: 'Confirm',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        // Optimistically remove the app from both lists
+        const removeApp = (list) => list.filter((a) => a.id !== app.id)
+        setUpcoming(removeApp)
+        setOverdue(removeApp)
+        try {
+          await markDmSent(app.id)
+          toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
+        } catch {
+          // Restore the app if the request fails
+          setUpcoming((prev) => [...prev, app])
+          setOverdue((prev) => [...prev, app])
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+        }
+      },
+    })
   }
 
   return (
     <div className="space-y-8">
       <Toast ref={toast} />
+      <ConfirmDialog />
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage follow-up reminders for your applications</p>
