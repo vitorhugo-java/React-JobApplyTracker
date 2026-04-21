@@ -76,27 +76,27 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
 
     // Start with empty password
-    const requirementsSection = page.locator('text=Password must include:').locator('..')
+    const requirementsSection = page.getByText('Password must include:').locator('..').first()
 
     // Fill with uppercase
     await passwordInput.fill('T')
-    await expect(requirementsSection.locator('text=One uppercase letter (A-Z)')).toContainText('✓')
+    await expect(requirementsSection.getByText('One uppercase letter (A-Z)')).toContainText('✓')
 
     // Fill with lowercase
     await passwordInput.fill('Tt')
-    await expect(requirementsSection.locator('text=One lowercase letter (a-z)')).toContainText('✓')
+    await expect(requirementsSection.getByText('One lowercase letter (a-z)')).toContainText('✓')
 
     // Fill with number
     await passwordInput.fill('Tt1')
-    await expect(requirementsSection.locator('text=One number (0-9)')).toContainText('✓')
+    await expect(requirementsSection.getByText('One number (0-9)')).toContainText('✓')
 
     // Fill with special character
     await passwordInput.fill('Tt1!')
-    await expect(requirementsSection.locator('text=One special character')).toContainText('✓')
+    await expect(requirementsSection.getByText('One special character')).toContainText('✓')
 
     // Fill with 8 characters
     await passwordInput.fill('Tt1!abcd')
-    await expect(requirementsSection.locator('text=At least 8 characters')).toContainText('✓')
+    await expect(requirementsSection.getByText('At least 8 characters')).toContainText('✓')
   })
 
   test('show password mismatch error for confirm password', async ({ page }) => {
@@ -108,8 +108,16 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('Test1234!')
     await confirmInput.fill('Different')
 
-    // Should show mismatch error
-    await expect(page.getByText('Passwords do not match')).toBeVisible()
+    // Fill the form to enable submit
+    await page.locator('[data-testid="register-name"]').fill('Test User')
+    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('test-mismatch'))
+    
+    // Click submit to see the error
+    await page.locator('[data-testid="register-submit"]').click()
+
+    // Should show mismatch error in toast
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText('Passwords do not match')
   })
 
   test('hide password mismatch error when passwords match', async ({ page }) => {
@@ -118,17 +126,25 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     const confirmInput = page.locator('[data-testid="register-confirm-password"]')
 
+    // Fill the form
+    await page.locator('[data-testid="register-name"]').fill('Test User')
+    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('test-match'))
+
     await passwordInput.fill('Test1234!')
     await confirmInput.fill('Different')
 
+    // Click submit to trigger error
+    await page.locator('[data-testid="register-submit"]').click()
+
     // Initially shows error
-    await expect(page.getByText('Passwords do not match')).toBeVisible()
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText('Passwords do not match')
 
     // Update confirm to match
     await confirmInput.fill('Test1234!')
 
-    // Error should be gone
-    await expect(page.getByText('Passwords do not match')).not.toBeVisible()
+    // Toast should be gone after updating
+    await expect(errorMsg).not.toBeVisible()
   })
 
   test('reject registration with password shorter than 8 characters', async ({ page }) => {
@@ -141,8 +157,9 @@ test.describe('Password Validation and Feedback', () => {
 
     await page.locator('[data-testid="register-submit"]').click()
 
-    // Should show validation error
-    await expect(page.getByText('Password must be at least 8 characters')).toBeVisible()
+    // Should show validation error in toast
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText('Password must be at least 8 characters')
   })
 
   test('show intuitive error for duplicate email registration', async ({ page }) => {
@@ -183,8 +200,9 @@ test.describe('Password Validation and Feedback', () => {
 
     await page.locator('[data-testid="register-submit"]').click()
 
-    // Should show validation error
-    await expect(page.getByText('Passwords do not match')).toBeVisible()
+    // Should show validation error in toast
+    const errorMsg = page.locator('.p-toast-detail')
+    await expect(errorMsg).toContainText('Passwords do not match')
   })
 
   test('password strength feedback in reset password form', async ({ page }) => {
@@ -194,8 +212,8 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('form input[type="password"]').first()
     await passwordInput.fill('Test1234!')
 
-    // Should show strength feedback
-    await expect(page.locator('text=Password Strength:')).toBeVisible()
+    // Should show strgetByText('Password Strength:')).toBeVisible()
+    await expect(page.getByText('Strong', { exact: true }d Strength:')).toBeVisible()
     await expect(page.locator('text=Strong')).toBeVisible()
   })
 
