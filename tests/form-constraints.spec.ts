@@ -60,9 +60,12 @@ test.describe('Application Form Field Constraints', () => {
     // Type some text
     await noteInput.fill('Test note content')
     
-    // The counter should update - check it contains the text we're looking for
-    const page_text = await page.content()
-    expect(page_text).toContain('16 / 5000') // "Test note content" = 16 characters
+    // Verify the input has the text value
+    await expect(noteInput).toHaveValue('Test note content')
+    
+    // The counter should show character count - look for pattern like "17 / 5000"
+    const pageText = await page.textContent('body')
+    expect(pageText).toMatch(/17\s*\/\s*5000/) // "Test note content" = 17 characters
   })
 
   test('warning appears near character limit', async ({ page }) => {

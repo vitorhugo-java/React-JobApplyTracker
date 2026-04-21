@@ -55,7 +55,8 @@ test.describe('Application flow', () => {
   })
 
   test('view application list page', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Applications' })).toBeVisible()
+    // Use a more specific selector to avoid ambiguity between h1 and h3
+    await expect(page.locator('h1').filter({ hasText: 'Applications' }).first()).toBeVisible()
     await expect(page.locator('[data-testid="new-application-btn"]')).toBeVisible()
   })
 
