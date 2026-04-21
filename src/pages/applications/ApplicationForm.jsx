@@ -300,14 +300,14 @@ const ApplicationForm = () => {
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="organization" value={form.organization} onChange={(e) => setField('organization', e.target.value)} maxLength={255} className="w-full" />
+              <InputText inputId="organization" value={form.organization} onChange={(e) => setField('organization', e.target.value)} maxLength={255} className="w-full" data-testid="app-organization" />
               <label htmlFor="organization">Organization</label>
             </FloatLabel>
           </div>
 
           <div className="sm:col-span-2 pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="vacancyLink" value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} maxLength={2048} className="w-full" type="url" />
+              <InputText inputId="vacancyLink" value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} maxLength={2048} className="w-full" type="url" data-testid="app-vacancy-link" />
               <label htmlFor="vacancyLink">Vacancy Link</label>
             </FloatLabel>
           </div>

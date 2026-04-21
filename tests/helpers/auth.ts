@@ -3,7 +3,7 @@ import { type Page } from '@playwright/test'
 const API_V1 = '**/api/v1'
 
 export function setupMockAuth(page: Page, email: string, name: string): void {
-  const user = { id: 'pw-user-1', name, email }
+  const user = { id: 'pw-user-1', name, email, reminderTime: '19:00:00' }
 
   void page.route(`${API_V1}/auth/register`, async (route) => {
     await route.fulfill({
@@ -38,6 +38,15 @@ export function setupMockAuth(page: Page, email: string, name: string): void {
   })
 
   void page.route(`${API_V1}/auth/me`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(user),
+    })
+  })
+
+  // Mock profile endpoints
+  void page.route(`${API_V1}/auth/profile`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

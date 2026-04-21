@@ -32,20 +32,20 @@ test.describe('Application Form Field Constraints', () => {
     expect(await recruiterInput.getAttribute('maxlength')).toBe('255')
 
     // Organization: maxlength=255
-    const orgInput = page.locator('input#organization')
+    const orgInput = page.locator('[data-testid="app-organization"]')
     expect(await orgInput.getAttribute('maxlength')).toBe('255')
 
     // Vacancy link: maxlength=2048
-    const linkInput = page.locator('input#vacancyLink')
+    const linkInput = page.locator('[data-testid="app-vacancy-link"]')
     expect(await linkInput.getAttribute('maxlength')).toBe('2048')
 
     // Note: maxlength=5000
-    const noteInput = page.locator('textarea#note')
+    const noteInput = page.locator('[data-testid="app-note"]')
     expect(await noteInput.getAttribute('maxlength')).toBe('5000')
   })
 
   test('note field displays character counter', async ({ page }) => {
-    const noteInput = page.locator('textarea#note')
+    const noteInput = page.locator('[data-testid="app-note"]')
     // Look for text containing "Character count"
     const counterText = page.locator('text=Character count')
     
@@ -55,7 +55,7 @@ test.describe('Application Form Field Constraints', () => {
   })
 
   test('character counter updates when typing', async ({ page }) => {
-    const noteInput = page.locator('textarea#note')
+    const noteInput = page.locator('[data-testid="app-note"]')
     
     // Type some text
     await noteInput.fill('Test note content')
@@ -66,7 +66,7 @@ test.describe('Application Form Field Constraints', () => {
   })
 
   test('warning appears near character limit', async ({ page }) => {
-    const noteInput = page.locator('textarea#note')
+    const noteInput = page.locator('[data-testid="app-note"]')
     
     // Fill with text near the limit (4500+ characters)
     const longText = 'a'.repeat(4500)
@@ -78,7 +78,7 @@ test.describe('Application Form Field Constraints', () => {
   })
 
   test('note field respects maxlength constraint', async ({ page }) => {
-    const noteInput = page.locator('textarea#note')
+    const noteInput = page.locator('[data-testid="app-note"]')
     
     // Attempt to fill with text exceeding maxlength
     const excessiveText = 'a'.repeat(6000)
