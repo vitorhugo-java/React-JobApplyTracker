@@ -182,7 +182,7 @@ const Register = () => {
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
                     data-testid="password-strength-bar"
-                    data-strength={passwordStrength.label.toLowerCase().replace(/\s+/g, '-')}
+                    data-strength={(passwordStrength.label || '').toLowerCase().replace(/\s+/g, '-')}
                     className={`h-2 rounded-full transition-all ${
                       passwordStrength.score <= 1 ? 'w-1/5 bg-red-500' :
                       passwordStrength.score === 2 ? 'w-2/5 bg-yellow-500' :
