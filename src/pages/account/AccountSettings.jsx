@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
@@ -29,6 +29,42 @@ const AccountSettings = () => {
     confirmPassword: '',
   })
   const [savingPassword, setSavingPassword] = useState(false)
+
+  // Track initial values for dirty form detection
+  const initialValuesRef = useRef({
+    name: user?.name || '',
+    reminderTime: (user?.reminderTime || '19:00:00').slice(0, 5),
+    passwordForm: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
+  })
+
+  // Check if profile form is dirty
+  const isProfileDirty = name !== initialValuesRef.current.name || reminderTime !== initialValuesRef.current.reminderTime
+
+  // Check if password form has any input
+  const isPasswordDirty =
+    passwordForm.currentPassword !== '' || passwordForm.newPassword !== '' || passwordForm.confirmPassword !== ''
+
+  // Track form dirty state and warn on page leave
+  useEffect(() => {
+    const isDirty = isProfileDirty || isPasswordDirty
+
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [isProfileDirty, isPasswordDirty])
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault()

@@ -90,6 +90,7 @@ const ApplicationForm = () => {
   const [fetching, setFetching] = useState(isEdit)
   const [draftReady, setDraftReady] = useState(false)
   const draftRef = useRef(null)
+  const initialFormRef = useRef(null)
   const draftKey = getDraftKey(id)
 
   useEffect(() => {
@@ -135,12 +136,70 @@ const ApplicationForm = () => {
     fetchApp()
   }, [id, isEdit])
 
+  // Set initial form state after all data is loaded or draft is restored
+  useEffect(() => {
+    if (!draftReady) return // Wait for draft to be checked
+    if (isEdit && fetching) return // For edit forms, wait for server data
+    if (!initialFormRef.current) {
+      initialFormRef.current = { ...form }
+    }
+  }, [draftReady, isEdit, fetching])
+
   useEffect(() => {
     if (!draftReady || fetching || typeof window === 'undefined') return
     window.localStorage.setItem(draftKey, JSON.stringify(toStoragePayload(form)))
   }, [draftKey, draftReady, fetching, form])
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+
+  // Helper function to compare dates handling null values
+  const areDatesEqual = (date1, date2) => {
+    if (!date1 && !date2) return true
+    if (!date1 || !date2) return false
+    return date1.getTime() === date2.getTime()
+  }
+
+  // Check if form is dirty (has unsaved changes)
+  const isFormDirty = () => {
+    if (!initialFormRef.current) return false
+
+    const initial = initialFormRef.current
+    return (
+      form.vacancyName !== initial.vacancyName ||
+      form.recruiterName !== initial.recruiterName ||
+      form.organization !== initial.organization ||
+      form.vacancyLink !== initial.vacancyLink ||
+      form.note !== initial.note ||
+      form.rhAcceptedConnection !== initial.rhAcceptedConnection ||
+      form.interviewScheduled !== initial.interviewScheduled ||
+      form.recruiterDmReminderEnabled !== initial.recruiterDmReminderEnabled ||
+      form.markDmSent !== initial.markDmSent ||
+      form.toSendLater !== initial.toSendLater ||
+      form.status !== initial.status ||
+      !areDatesEqual(form.applicationDate, initial.applicationDate) ||
+      !areDatesEqual(form.nextStepDateTime, initial.nextStepDateTime)
+    )
+  }
+
+  const handleCancel = () => {
+    if (isFormDirty()) {
+      confirmDialog({
+        message: 'You have unsaved changes. Are you sure you want to discard them?',
+        header: 'Discard Changes',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClassName: 'p-button-danger',
+        accept: () => {
+          window.localStorage.removeItem(draftKey)
+          navigate(isEdit ? `/applications/${id}` : '/applications')
+        },
+        reject: () => {
+          // User cancelled, stay on form
+        },
+      })
+    } else {
+      navigate(isEdit ? `/applications/${id}` : '/applications')
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -330,7 +389,7 @@ const ApplicationForm = () => {
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
-          <Button type="button" label="Cancel" outlined onClick={() => navigate(isEdit ? `/applications/${id}` : '/applications')} />
+          <Button type="button" label="Cancel" outlined onClick={handleCancel} />
         </div>
       </form>
     </div>
