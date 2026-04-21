@@ -8,8 +8,8 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('[data-testid="register-password"]')
     await passwordInput.fill('Test')
 
-    // Should show very weak password
-    await expect(page.locator('text=Very Weak')).toBeVisible()
+    // Should show very weak password - look for the strength label span that contains "Very Weak"
+    await expect(page.getByText('Very Weak', { exact: true })).toBeVisible()
   })
 
   test('update password strength to weak with 6 characters', async ({ page }) => {
@@ -19,7 +19,7 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('testlo')
 
     // Should show weak password
-    await expect(page.locator('text=Weak')).toBeVisible()
+    await expect(page.getByText('Weak', { exact: true })).toBeVisible()
   })
 
   test('update password strength to fair with lowercase, uppercase, and number', async ({
@@ -31,7 +31,7 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('Test123')
 
     // Should show fair password (needs at least 8 characters, but has 3/5 requirements)
-    await expect(page.locator('text=Fair')).toBeVisible()
+    await expect(page.getByText('Fair', { exact: true })).toBeVisible()
   })
 
   test('update password strength to good with 8 characters, uppercase, lowercase, and number', async ({
@@ -43,7 +43,7 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('Test1234')
 
     // Should show good password
-    await expect(page.locator('text=Good')).toBeVisible()
+    await expect(page.getByText('Good', { exact: true })).toBeVisible()
   })
 
   test('update password strength to strong with special character', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('Test1234!')
 
     // Should show strong password
-    await expect(page.locator('text=Strong')).toBeVisible()
+    await expect(page.getByText('Strong', { exact: true })).toBeVisible()
   })
 
   test('display all password requirements checklist', async ({ page }) => {
@@ -63,11 +63,11 @@ test.describe('Password Validation and Feedback', () => {
     await passwordInput.fill('T')
 
     // All requirements should be visible
-    await expect(page.locator('text=At least 8 characters')).toBeVisible()
-    await expect(page.locator('text=One uppercase letter (A-Z)')).toBeVisible()
-    await expect(page.locator('text=One lowercase letter (a-z)')).toBeVisible()
-    await expect(page.locator('text=One number (0-9)')).toBeVisible()
-    await expect(page.locator('text=One special character')).toBeVisible()
+    await expect(page.getByText('At least 8 characters')).toBeVisible()
+    await expect(page.getByText('One uppercase letter (A-Z)')).toBeVisible()
+    await expect(page.getByText('One lowercase letter (a-z)')).toBeVisible()
+    await expect(page.getByText('One number (0-9)')).toBeVisible()
+    await expect(page.getByText('One special character')).toBeVisible()
   })
 
   test('check off requirements as they are met', async ({ page }) => {
@@ -109,7 +109,7 @@ test.describe('Password Validation and Feedback', () => {
     await confirmInput.fill('Different')
 
     // Should show mismatch error
-    await expect(page.locator('text=Passwords do not match')).toBeVisible()
+    await expect(page.getByText('Passwords do not match')).toBeVisible()
   })
 
   test('hide password mismatch error when passwords match', async ({ page }) => {
@@ -122,13 +122,13 @@ test.describe('Password Validation and Feedback', () => {
     await confirmInput.fill('Different')
 
     // Initially shows error
-    await expect(page.locator('text=Passwords do not match')).toBeVisible()
+    await expect(page.getByText('Passwords do not match')).toBeVisible()
 
     // Update confirm to match
     await confirmInput.fill('Test1234!')
 
     // Error should be gone
-    await expect(page.locator('text=Passwords do not match')).not.toBeVisible()
+    await expect(page.getByText('Passwords do not match')).not.toBeVisible()
   })
 
   test('reject registration with password shorter than 8 characters', async ({ page }) => {
@@ -142,7 +142,7 @@ test.describe('Password Validation and Feedback', () => {
     await page.locator('[data-testid="register-submit"]').click()
 
     // Should show validation error
-    await expect(page.locator('text=Password must be at least 8 characters')).toBeVisible()
+    await expect(page.getByText('Password must be at least 8 characters')).toBeVisible()
   })
 
   test('show intuitive error for duplicate email registration', async ({ page }) => {
@@ -184,7 +184,7 @@ test.describe('Password Validation and Feedback', () => {
     await page.locator('[data-testid="register-submit"]').click()
 
     // Should show validation error
-    await expect(page.locator('text=Passwords do not match')).toBeVisible()
+    await expect(page.getByText('Passwords do not match')).toBeVisible()
   })
 
   test('password strength feedback in reset password form', async ({ page }) => {
