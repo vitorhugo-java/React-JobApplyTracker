@@ -212,8 +212,9 @@ test.describe('Password Validation and Feedback', () => {
     const passwordInput = page.locator('form input[type="password"]').first()
     await passwordInput.fill('Test1234!')
 
-    // Should show strgetByText('Password Strength:')).toBeVisible()
-    await expect(page.getByText('Strong', { exact: true }d Strength:')).toBeVisible()
+    // Should show password strength label
+    await expect(page.getByText('Password Strength:')).toBeVisible()
+    // Should show strong indicator
     await expect(page.locator('text=Strong')).toBeVisible()
   })
 
@@ -254,10 +255,10 @@ test.describe('Password Validation and Feedback', () => {
     await confirmInput.fill('Test1234!')
 
     await page.locator('button:has-text("Reset Password")').click()
- in toast
+
+    // Should show error message in toast
     const errorMsg = page.locator('.p-toast-detail')
-    await expect(errorMsg).toContainText(/Invalid.*token|reset.*link|token.*required/i
-    await expect(page.locator('text=/Invalid.*token|reset.*link/')).toBeVisible()
+    await expect(errorMsg).toContainText(/Invalid.*token|reset.*link|token.*required/i)
   })
 
   test('display password strength bar visual indicator', async ({ page }) => {
@@ -265,14 +266,14 @@ test.describe('Password Validation and Feedback', () => {
 
     const passwordInput = page.locator('[data-testid="register-password"]')
 
-    // Weakest - should shogetByText('Password Strength:').locator('../../div[contains(@class, "bg-gray")]')
+    // Fill with weak password
+    await passwordInput.fill('test')
+    let strengthBar = page.getByText('Password Strength:').locator('../../div[contains(@class, "bg-red")]')
     await expect(strengthBar).toBeVisible()
 
     // Strongest - should show full bar
     await passwordInput.fill('Test1234!@#')
-    strengthBar = page.getByText('Password Strength:').locator('../../div[contains(@class, "bg-gray")]'
-    await passwordInput.fill('Test1234!@#')
-    strengthBar = page.locator('text=Password Strength:').locator('..').locator('div:has-text("")').first()
+    strengthBar = page.locator('text=Password Strength:').locator('..').locator('div[class*="bg-green"]').first()
     await expect(strengthBar).toBeVisible()
   })
 })
