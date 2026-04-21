@@ -32,7 +32,18 @@ const Login = () => {
       setUser(user)
       navigate('/dashboard')
     } catch (err) {
-      const detail = err.response?.data?.message || 'Login failed. Please try again.'
+      let detail = err.response?.data?.message
+      if (!detail) {
+        if (err.response?.status === 401) {
+          detail = 'Invalid email or password. Please check and try again.'
+        } else if (err.response?.status === 429) {
+          detail = 'Too many login attempts. Please try again in a few minutes.'
+        } else if (!err.response) {
+          detail = 'Unable to connect to the server. Please check your internet connection and try again.'
+        } else {
+          detail = 'Login failed. Please check your email and password and try again.'
+        }
+      }
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)

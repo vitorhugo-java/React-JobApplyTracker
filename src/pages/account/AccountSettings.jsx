@@ -84,7 +84,7 @@ const AccountSettings = () => {
       setReminderTime((res.data.reminderTime || '19:00:00').slice(0, 5))
       toast.current.show({ severity: 'success', summary: 'Success', detail: 'Profile updated successfully.' })
     } catch (err) {
-      const detail = err.response?.data?.message || 'Failed to update profile.'
+      const detail = err.response?.data?.message || 'Could not update your profile. Please check your information and try again.'
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setSavingName(false)
@@ -119,7 +119,14 @@ const AccountSettings = () => {
         window.location.href = '/login'
       }, 1000)
     } catch (err) {
-      const detail = err.response?.data?.message || 'Failed to change password.'
+      let detail = err.response?.data?.message
+      if (!detail) {
+        if (err.response?.status === 401) {
+          detail = 'Current password is incorrect. Please try again.'
+        } else {
+          detail = 'Could not change your password. Please verify your current password is correct.'
+        }
+      }
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setSavingPassword(false)
@@ -138,7 +145,7 @@ const AccountSettings = () => {
       const detail = res.data?.message || 'Test email sent. Check your inbox and spam folder.'
       toast.current.show({ severity: 'success', summary: 'Success', detail })
     } catch (err) {
-      const detail = err.response?.data?.message || 'Failed to send test email.'
+      const detail = err.response?.data?.message || 'Could not send test email. Please check your email address and try again.'
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setSendingTestEmail(false)

@@ -127,8 +127,9 @@ const ApplicationForm = () => {
           setForm((serverData) => ({ ...serverData, ...draftRef.current }))
           toast.current?.show({ severity: 'info', summary: 'Draft restored', detail: 'Local unsaved changes were restored.' })
         }
-      } catch {
-        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application.' })
+      } catch (err) {
+        const detail = err.response?.data?.message || 'Unable to load the application. Please try refreshing the page.'
+        toast.current?.show({ severity: 'error', summary: 'Error', detail })
       } finally {
         setFetching(false)
       }
@@ -225,7 +226,8 @@ const ApplicationForm = () => {
           try {
             await markDmSent(id)
           } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+            const detail = err.response?.data?.message || 'Added the application, but could not mark the DM as sent. You can do this later.'
+            toast.current.show({ severity: 'error', summary: 'Partial Success', detail })
           }
         }
         
@@ -250,7 +252,7 @@ const ApplicationForm = () => {
         navigate('/applications')
       }
     } catch (err) {
-      const detail = err.response?.data?.message || 'Failed to save application.'
+      const detail = err.response?.data?.message || 'Could not save the application. Please check your information and try again.'
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)
@@ -284,28 +286,28 @@ const ApplicationForm = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="vacancyName" value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} className="w-full" data-testid="app-vacancy-name" />
+              <InputText inputId="vacancyName" value={form.vacancyName} onChange={(e) => setField('vacancyName', e.target.value)} maxLength={255} className="w-full" data-testid="app-vacancy-name" />
               <label htmlFor="vacancyName">Vacancy Name</label>
             </FloatLabel>
           </div>
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="recruiterName" value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} className="w-full" data-testid="app-recruiter-name" />
+              <InputText inputId="recruiterName" value={form.recruiterName} onChange={(e) => setField('recruiterName', e.target.value)} maxLength={255} className="w-full" data-testid="app-recruiter-name" />
               <label htmlFor="recruiterName">Recruiter Name</label>
             </FloatLabel>
           </div>
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="organization" value={form.organization} onChange={(e) => setField('organization', e.target.value)} className="w-full" />
+              <InputText inputId="organization" value={form.organization} onChange={(e) => setField('organization', e.target.value)} maxLength={255} className="w-full" />
               <label htmlFor="organization">Organization</label>
             </FloatLabel>
           </div>
 
           <div className="sm:col-span-2 pt-2">
             <FloatLabel className="w-full">
-              <InputText inputId="vacancyLink" value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} className="w-full" type="url" />
+              <InputText inputId="vacancyLink" value={form.vacancyLink} onChange={(e) => setField('vacancyLink', e.target.value)} maxLength={2048} className="w-full" type="url" />
               <label htmlFor="vacancyLink">Vacancy Link</label>
             </FloatLabel>
           </div>
@@ -350,12 +352,21 @@ const ApplicationForm = () => {
                 value={form.note}
                 onChange={(e) => setField('note', e.target.value)}
                 rows={4}
+                maxLength={5000}
                 className="w-full"
                 autoResize
                 data-testid="app-note"
               />
               <label htmlFor="note">Note</label>
             </FloatLabel>
+            <div className="flex justify-between items-center mt-2 px-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Character count: <span className={form.note.length >= 4500 ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>{form.note.length}</span> / 5000
+              </p>
+              {form.note.length >= 4500 && (
+                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">⚠️ Approaching limit</p>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">

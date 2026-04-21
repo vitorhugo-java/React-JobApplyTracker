@@ -111,13 +111,12 @@ const Reminders = () => {
     setOverdue(removeApp)
     try {
       await markDmSent(app.id)
-      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
+      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent! ✓' })
     } catch {
       // Restore the app if the request fails
-      const restore = (list) => [...list, app]
       setUpcoming((prev) => [...prev, app])
       setOverdue((prev) => [...prev, app])
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+      toast.current?.show({ severity: 'warn', summary: 'Not Saved', detail: 'Could not mark DM as sent. Please try again.' })
     }
   }
 

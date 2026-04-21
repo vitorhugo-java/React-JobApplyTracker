@@ -24,7 +24,16 @@ const ForgotPassword = () => {
       const message = res.data?.message || 'Check your email for reset instructions.'
       toast.current.show({ severity: 'success', summary: 'Success', detail: message })
     } catch (err) {
-      const detail = err.response?.data?.message || 'Something went wrong. Please try again.'
+      let detail = err.response?.data?.message
+      if (!detail) {
+        if (err.response?.status === 429) {
+          detail = 'Too many reset requests. Please wait a few minutes before trying again.'
+        } else if (!err.response) {
+          detail = 'Unable to connect to the server. Please check your internet connection.'
+        } else {
+          detail = 'Could not send reset email. Please verify your email address is correct and try again.'
+        }
+      }
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)

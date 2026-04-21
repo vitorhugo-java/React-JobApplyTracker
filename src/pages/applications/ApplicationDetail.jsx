@@ -32,8 +32,9 @@ const ApplicationDetail = () => {
       try {
         const res = await getApplication(id)
         setApp(res.data)
-      } catch {
-        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load application.' })
+      } catch (err) {
+        const detail = err.response?.data?.message || 'Unable to load the application. Please try refreshing the page.'
+        toast.current?.show({ severity: 'error', summary: 'Error', detail })
       } finally {
         setLoading(false)
       }
@@ -50,8 +51,9 @@ const ApplicationDetail = () => {
         try {
           await archiveApplication(id)
           navigate('/applications')
-        } catch {
-          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to archive application.' })
+        } catch (err) {
+          const detail = err.response?.data?.message || 'Could not archive the application. Please try again.'
+          toast.current.show({ severity: 'error', summary: 'Error', detail })
         }
       },
     })
@@ -67,8 +69,9 @@ const ApplicationDetail = () => {
         try {
           await deleteApplication(id)
           navigate('/applications')
-        } catch {
-          toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete application.' })
+        } catch (err) {
+          const detail = err.response?.data?.message || 'Could not delete the application. Please try again.'
+          toast.current.show({ severity: 'error', summary: 'Error', detail })
         }
       },
     })
