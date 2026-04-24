@@ -1,6 +1,6 @@
 # Job Apply Tracker Frontend
 
-[Backend Spring Boot](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/)
+[Backend - Spring Boot](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/)
 
 Aplicação frontend do Job Apply Tracker, construída com React + Vite para gerenciar candidaturas, acompanhar status do processo seletivo, lembretes e métricas no dashboard.
 
