@@ -205,6 +205,14 @@ const ApplicationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+
+    // Validation: require applicationDate when not sending later
+    if (!form.toSendLater && !form.applicationDate) {
+      toast.current?.show({ severity: 'error', summary: 'Validation', detail: 'Application date is required unless "To send later" is enabled.' })
+      setLoading(false)
+      return
+    }
+
     try {
       const payload = {
         ...form,
