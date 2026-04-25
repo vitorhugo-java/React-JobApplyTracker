@@ -11,7 +11,6 @@ import Dashboard from './pages/dashboard/Dashboard'
 import ApplicationsList from './pages/applications/ApplicationsList'
 import ApplicationForm from './pages/applications/ApplicationForm'
 import ApplicationDetail from './pages/applications/ApplicationDetail'
-import Reminders from './pages/reminders/Reminders'
 import Developer from './pages/developer/Developer'
 import About from './pages/about/About'
 import AccountSettings from './pages/account/AccountSettings'
@@ -22,6 +21,7 @@ import { warmOfflineData } from './api/offlineWarmup'
 const App = () => {
   const [appReady, setAppReady] = useState(false)
   const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthenticated = Boolean(accessToken)
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
@@ -116,9 +116,7 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        <Route element={<Layout />}>
-          <Route path="/about" element={<About />} />
-        </Route>
+        {!isAuthenticated && <Route path="/about" element={<About />} />}
 
         <Route
           element={
@@ -133,7 +131,7 @@ const App = () => {
           <Route path="/applications/new" element={<ApplicationForm />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
           <Route path="/applications/:id/edit" element={<ApplicationForm />} />
-          <Route path="/reminders" element={<Reminders />} />
+          <Route path="/about" element={<About />} />
           <Route path="/developer" element={<Developer />} />
           <Route path="/account" element={<AccountSettings />} />
         </Route>

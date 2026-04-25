@@ -7,7 +7,7 @@ import { Calendar } from 'primereact/calendar'
 import { Paginator } from 'primereact/paginator'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
-import { Edit, Trash2, Check, X, Archive } from 'lucide-react'
+import { Edit, Trash2, Check, X, Archive, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { getApplications, getApplication, updateApplication, deleteApplication, archiveApplication, APPLICATION_STATUSES, TO_SEND_LATER_STATUS } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import JobApplicationCard from '../../components/ui/JobApplicationCard'
@@ -28,6 +28,14 @@ const SORT_OPTIONS = [
   { label: 'Next step soonest', value: 'nextStepDateTime,asc' },
   { label: 'Next step latest', value: 'nextStepDateTime,desc' },
 ]
+
+const SORTABLE_COLUMNS = {
+  Vacancy: 'vacancyName',
+  Recruiter: 'recruiterName',
+  Status: 'status',
+  Applied: 'applicationDate',
+  'Next Step': 'nextStepDateTime',
+}
 
 const ApplicationsList = () => {
   usePageTitle('Aplicações')
@@ -158,9 +166,29 @@ const ApplicationsList = () => {
   ]
   const actionButtonBaseClass = 'inline-flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent text-gray-400 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-gray-700'
 
+  const [sortField, sortDirection] = sort.split(',')
+
   const updateFilters = (changes) => {
     setPage(0)
     setFilters((current) => ({ ...current, ...changes }))
+  }
+
+  const handleSortByColumn = (columnLabel) => {
+    const field = SORTABLE_COLUMNS[columnLabel]
+    if (!field) return
+
+    const nextDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
+    setSort(`${field},${nextDirection}`)
+    setPage(0)
+  }
+
+  const renderSortIcon = (columnLabel) => {
+    const field = SORTABLE_COLUMNS[columnLabel]
+    if (!field) return null
+
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5" />
+    if (sortDirection === 'asc') return <ChevronUp className="w-3.5 h-3.5" />
+    return <ChevronDown className="w-3.5 h-3.5" />
   }
 
   return (
@@ -287,7 +315,19 @@ const ApplicationsList = () => {
                 <tr className="border-b border-gray-100 dark:border-gray-700">
                   {['Vacancy', 'Recruiter', 'Status', 'Applied', 'Next Step', 'Note', 'Actions'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {h}
+                      {SORTABLE_COLUMNS[h] ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSortByColumn(h)}
+                          className="inline-flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                          aria-label={`Sort by ${h}`}
+                        >
+                          <span>{h}</span>
+                          {renderSortIcon(h)}
+                        </button>
+                      ) : (
+                        h
+                      )}
                     </th>
                   ))}
                 </tr>

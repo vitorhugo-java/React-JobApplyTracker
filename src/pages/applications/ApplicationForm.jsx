@@ -151,6 +151,14 @@ const ApplicationForm = () => {
     window.localStorage.setItem(draftKey, JSON.stringify(toStoragePayload(form)))
   }, [draftKey, draftReady, fetching, form])
 
+  useEffect(() => {
+    if (isEdit || form.toSendLater || form.applicationDate) return
+    setForm((current) => {
+      if (current.toSendLater || current.applicationDate) return current
+      return { ...current, applicationDate: new Date() }
+    })
+  }, [form.applicationDate, form.toSendLater, isEdit])
+
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
   // Helper function to compare dates handling null values

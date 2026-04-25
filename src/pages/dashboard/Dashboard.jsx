@@ -162,13 +162,13 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">To send later</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">To Send Later</h2>
           </div>
           <div className="p-2">
             {loading ? (
               <LoadingSkeleton rows={3} className="p-2" />
             ) : toSendLater.length === 0 ? (
-              <EmptyState title="Nothing to send later" description="All pending applications are already handled." />
+              <EmptyState title="Nothing in To Send Later" description="All pending applications are already handled." />
             ) : (
               toSendLater.map((app) => <AppRow key={app.id} app={app} />)
             )}
@@ -180,7 +180,7 @@ const Dashboard = () => {
                 rows={DASHBOARD_PAGE_SIZE}
                 totalRecords={toSendLaterTotal}
                 onPageChange={(event) => setToSendLaterPage(event.page)}
-                template="PrevPageLink CurrentPageReport NextPageLink"
+                template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
                 currentPageReportTemplate="{first} - {last} of {totalRecords}"
               />
             </div>
@@ -207,7 +207,7 @@ const Dashboard = () => {
                 rows={DASHBOARD_PAGE_SIZE}
                 totalRecords={overdue.length}
                 onPageChange={(event) => setOverduePage(event.page)}
-                template="PrevPageLink CurrentPageReport NextPageLink"
+                template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
                 currentPageReportTemplate="{first} - {last} of {totalRecords}"
               />
             </div>
