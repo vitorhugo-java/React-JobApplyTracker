@@ -20,6 +20,45 @@ type AppRecord = {
 
 const API_BASE = '**/api/v1'
 const APPLICATIONS_COLLECTION_ROUTE = /\/api\/v1\/applications(?:\?.*)?$/
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000
+
+const isSentReminder = (app: AppRecord): boolean => app.recruiterDmReminderEnabled && app.status != null
+
+const compareValues = (left: string | null, right: string | null): number =>
+  String(left || '').localeCompare(String(right || ''), undefined, { sensitivity: 'base' })
+
+const compareDates = (left: string | null, right: string | null): number => {
+  const leftTime = left ? new Date(left).getTime() : 0
+  const rightTime = right ? new Date(right).getTime() : 0
+  return leftTime - rightTime
+}
+
+const sortApps = (items: AppRecord[], sort: string | null): AppRecord[] => {
+  const [field, direction = 'desc'] = String(sort || 'createdAt,desc').split(',')
+  const factor = direction.toLowerCase() === 'asc' ? 1 : -1
+
+  return [...items].sort((left, right) => {
+    let comparison = 0
+
+    switch (field) {
+      case 'vacancyName':
+      case 'recruiterName':
+      case 'status':
+        comparison = compareValues(left[field] as string | null, right[field] as string | null)
+        break
+      case 'applicationDate':
+      case 'nextStepDateTime':
+      case 'createdAt':
+        comparison = compareDates(left[field] as string | null, right[field] as string | null)
+        break
+      default:
+        comparison = compareDates(left.createdAt, right.createdAt)
+        break
+    }
+
+    return comparison * factor
+  })
+}
 
 const toNumber = (value: string | null): number | null => {
   if (!value) return null
@@ -32,10 +71,13 @@ const parseIdFromUrl = (url: string): number | null => {
   return toNumber(match?.[1] ?? null)
 }
 
-const toPagedResponse = (items: AppRecord[]) => ({
-  content: items,
+const toPagedResponse = (items: AppRecord[], page: number, size: number) => ({
+  content: items.slice(page * size, (page + 1) * size),
+  number: page,
+  size,
   totalElements: items.length,
   total: items.length,
+  totalPages: Math.max(1, Math.ceil(items.length / size)),
 })
 
 const cloneApp = (app: AppRecord) => ({ ...app })
@@ -47,18 +89,24 @@ export function setupMockApplicationsApi(page: Page): void {
   const findById = (id: number): AppRecord | undefined => apps.find((app) => app.id === id)
 
   void page.route(`${API_BASE}/dashboard/summary`, async (route) => {
+    const activeApps = apps.filter((app) => !app.archived)
+    const overdueFollowUps = activeApps.filter((app) => {
+      if (!isSentReminder(app)) return false
+      return Date.now() - new Date(app.createdAt).getTime() >= SIX_HOURS_MS
+    })
+
     const summary = {
-      totalApplications: apps.length,
-      waitingResponses: apps.filter((a) => a.status === 'RH').length,
-      interviewsScheduled: apps.filter((a) => a.interviewScheduled).length,
-      overdueFollowUps: apps.filter((a) => a.recruiterDmReminderEnabled).length,
-      dmRemindersEnabled: apps.filter((a) => a.recruiterDmReminderEnabled).length,
-      toSendLater: apps.filter((a) => a.status == null).length,
-      rejectedCount: apps.filter((a) => a.status === 'Rejeitado').length,
-      ghostingCount: apps.filter((a) => a.status === 'Ghosting').length,
-      averageDailyApplications: Number((apps.length / 30).toFixed(2)),
-      averageWeeklyApplications: Number((apps.length / 12).toFixed(2)),
-      averageMonthlyApplications: Number((apps.length / 12).toFixed(2)),
+      totalApplications: activeApps.length,
+      waitingResponses: activeApps.filter((a) => a.status === 'RH').length,
+      interviewsScheduled: activeApps.filter((a) => a.interviewScheduled).length,
+      overdueFollowUps: overdueFollowUps.length,
+      dmRemindersEnabled: activeApps.filter((a) => isSentReminder(a)).length,
+      toSendLater: activeApps.filter((a) => a.status == null).length,
+      rejectedCount: activeApps.filter((a) => a.status === 'Rejeitado').length,
+      ghostingCount: activeApps.filter((a) => a.status === 'Ghosting').length,
+      averageDailyApplications: Number((activeApps.length / 30).toFixed(2)),
+      averageWeeklyApplications: Number((activeApps.length / 12).toFixed(2)),
+      averageMonthlyApplications: Number((activeApps.length / 12).toFixed(2)),
     }
 
     await route.fulfill({
@@ -70,10 +118,9 @@ export function setupMockApplicationsApi(page: Page): void {
 
   void page.route(`${API_BASE}/applications/upcoming`, async (route) => {
     const now = Date.now()
-    const thresholdMs = 6 * 60 * 60 * 1000
     const upcoming = apps.filter((app) => {
-      if (!app.recruiterDmReminderEnabled) return false
-      return now - new Date(app.createdAt).getTime() < thresholdMs
+      if (!isSentReminder(app)) return false
+      return now - new Date(app.createdAt).getTime() < SIX_HOURS_MS
     })
 
     await route.fulfill({
@@ -85,10 +132,9 @@ export function setupMockApplicationsApi(page: Page): void {
 
   void page.route(`${API_BASE}/applications/overdue`, async (route) => {
     const now = Date.now()
-    const thresholdMs = 6 * 60 * 60 * 1000
     const overdue = apps.filter((app) => {
-      if (!app.recruiterDmReminderEnabled) return false
-      return now - new Date(app.createdAt).getTime() >= thresholdMs
+      if (!isSentReminder(app)) return false
+      return now - new Date(app.createdAt).getTime() >= SIX_HOURS_MS
     })
 
     await route.fulfill({
@@ -107,6 +153,9 @@ export function setupMockApplicationsApi(page: Page): void {
       const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
       const status = url.searchParams.get('status')
       const archived = url.searchParams.get('archived') === 'true'
+      const page = Number(url.searchParams.get('page') || '0')
+      const size = Number(url.searchParams.get('size') || '10')
+      const sort = url.searchParams.get('sort')
 
       let filtered = apps.filter((app) => app.archived === archived)
       if (recruiterName) {
@@ -120,10 +169,12 @@ export function setupMockApplicationsApi(page: Page): void {
         }
       }
 
+      filtered = sortApps(filtered, sort)
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(toPagedResponse(filtered.map(cloneApp))),
+        body: JSON.stringify(toPagedResponse(filtered.map(cloneApp), page, size)),
       })
       return
     }
@@ -221,6 +272,28 @@ export function setupMockApplicationsApi(page: Page): void {
 
     app.archived = true
     app.archivedAt = new Date().toISOString()
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(cloneApp(app)),
+    })
+  })
+
+  void page.route(`${API_BASE}/applications/*/mark-dm-sent`, async (route) => {
+    const id = parseIdFromUrl(route.request().url())
+    if (id === null) {
+      await route.fulfill({ status: 400, body: '' })
+      return
+    }
+
+    const app = findById(id)
+    if (!app) {
+      await route.fulfill({ status: 404, body: '' })
+      return
+    }
+
+    app.recruiterDmReminderEnabled = false
 
     await route.fulfill({
       status: 200,

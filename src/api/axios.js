@@ -6,6 +6,12 @@ import {
   flushOfflineQueue,
   shouldQueueRequest,
 } from './offlineQueue'
+import {
+  applyMutationToOfflineSnapshot,
+  cacheSuccessfulGetResponse,
+  getCachedGetResponse,
+  logOfflineCacheMiss,
+} from './offlineCache'
 
 const configuredApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 const normalizedApiBase = configuredApiBase
@@ -43,6 +49,16 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`
   }
   config._startTime = performance.now()
+
+  if (config.method?.toLowerCase() === 'get' && typeof navigator !== 'undefined' && !navigator.onLine) {
+    const cachedResponse = getCachedGetResponse(config)
+    if (cachedResponse) {
+      config.adapter = async () => cachedResponse
+    } else {
+      logOfflineCacheMiss(config)
+    }
+  }
+
   return config
 })
 
@@ -61,6 +77,13 @@ api.interceptors.response.use(
         durationMs: elapsed,
       })
     }
+
+    if (response.config?.method?.toLowerCase() === 'get') {
+      cacheSuccessfulGetResponse(response.config, response)
+    } else {
+      applyMutationToOfflineSnapshot(response.config, { responseData: response.data })
+    }
+
     return response
   },
   async (error) => {
@@ -68,9 +91,20 @@ api.interceptors.response.use(
 
     // Log API errors
     if (!error.response) {
+      if (originalRequest?.method?.toLowerCase() === 'get') {
+        const cachedResponse = getCachedGetResponse(originalRequest)
+        if (cachedResponse) {
+          return Promise.resolve(cachedResponse)
+        }
+      }
+
       // Network error / backend down
       if (shouldQueueRequest(originalRequest)) {
         const queuedItem = enqueueRequest(originalRequest)
+        applyMutationToOfflineSnapshot(originalRequest, {
+          offlineId: queuedItem.id,
+          timestamp: queuedItem.createdAt,
+        })
         return Promise.resolve(createQueuedOfflineResponse(originalRequest, queuedItem))
       }
       logger.error('Backend unreachable', { url: originalRequest?.url, message: error.message })
@@ -147,6 +181,9 @@ const initOfflineQueueSync = () => {
       .then(({ processed, remaining }) => {
         if (processed > 0) {
           logger.info('Offline queue flushed successfully', { processed, remaining })
+          import('./offlineWarmup')
+            .then(({ warmOfflineData }) => warmOfflineData())
+            .catch((err) => logger.warn('Offline warmup import failed', { message: err?.message }))
         }
       })
       .catch((err) => {

@@ -16,6 +16,19 @@ import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
+const SORT_OPTIONS = [
+  { label: 'Newest first', value: 'createdAt,desc' },
+  { label: 'Oldest first', value: 'createdAt,asc' },
+  { label: 'Vacancy A-Z', value: 'vacancyName,asc' },
+  { label: 'Vacancy Z-A', value: 'vacancyName,desc' },
+  { label: 'Recruiter A-Z', value: 'recruiterName,asc' },
+  { label: 'Recruiter Z-A', value: 'recruiterName,desc' },
+  { label: 'Applied date newest', value: 'applicationDate,desc' },
+  { label: 'Applied date oldest', value: 'applicationDate,asc' },
+  { label: 'Next step soonest', value: 'nextStepDateTime,asc' },
+  { label: 'Next step latest', value: 'nextStepDateTime,desc' },
+]
+
 const ApplicationsList = () => {
   usePageTitle('Aplicações')
   const navigate = useNavigate()
@@ -31,11 +44,12 @@ const ApplicationsList = () => {
   const [editDraft, setEditDraft] = useState(null)
   const [savingId, setSavingId] = useState(null)
   const [activeTab, setActiveTab] = useState('active')
+  const [sort, setSort] = useState('createdAt,desc')
 
   const fetchApps = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { page, size }
+      const params = { page, size, sort }
       params.archived = activeTab === 'archived'
       if (filters.status) params.status = filters.status
       if (filters.recruiterName) params.recruiterName = filters.recruiterName
@@ -50,7 +64,7 @@ const ApplicationsList = () => {
     } finally {
       setLoading(false)
     }
-  }, [activeTab, filters, page, size])
+  }, [activeTab, filters, page, size, sort])
 
   useEffect(() => { fetchApps() }, [fetchApps])
 
@@ -144,6 +158,11 @@ const ApplicationsList = () => {
   ]
   const actionButtonBaseClass = 'inline-flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent text-gray-400 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-gray-700'
 
+  const updateFilters = (changes) => {
+    setPage(0)
+    setFilters((current) => ({ ...current, ...changes }))
+  }
+
   return (
     <div className="space-y-4">
       <Toast ref={toast} />
@@ -188,35 +207,46 @@ const ApplicationsList = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
           <Dropdown
             value={filters.status}
             options={statusOptions}
-            onChange={(e) => setFilters({ ...filters, status: e.value })}
+            onChange={(e) => updateFilters({ status: e.value })}
             placeholder="Filter by status"
             className="w-full"
             pt={{ root: { 'data-testid': 'filter-status' } }}
           />
           <InputText
             value={filters.recruiterName}
-            onChange={(e) => setFilters({ ...filters, recruiterName: e.target.value })}
+            onChange={(e) => updateFilters({ recruiterName: e.target.value })}
             placeholder="Search recruiter..."
             className="w-full"
             data-testid="filter-recruiter"
           />
           <Calendar
             value={filters.startDate}
-            onChange={(e) => setFilters({ ...filters, startDate: e.value })}
+            onChange={(e) => updateFilters({ startDate: e.value })}
             placeholder="Start date"
             className="w-full"
             dateFormat="dd/mm/yy"
           />
           <Calendar
             value={filters.endDate}
-            onChange={(e) => setFilters({ ...filters, endDate: e.value })}
+            onChange={(e) => updateFilters({ endDate: e.value })}
             placeholder="End date"
             className="w-full"
             dateFormat="dd/mm/yy"
+          />
+          <Dropdown
+            value={sort}
+            options={SORT_OPTIONS}
+            onChange={(e) => {
+              setSort(e.value)
+              setPage(0)
+            }}
+            placeholder="Order by"
+            className="w-full"
+            pt={{ root: { 'data-testid': 'applications-sort' } }}
           />
         </div>
       </div>

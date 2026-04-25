@@ -89,7 +89,7 @@ test.describe('Auth flow', () => {
 
     let refreshCalls = 0
     let summaryCalls = 0
-    let upcomingCalls = 0
+    let applicationsCalls = 0
     let overdueCalls = 0
 
     await page.route('**/api/v1/auth/refresh', async (route) => {
@@ -117,9 +117,9 @@ test.describe('Auth flow', () => {
       })
     })
 
-    await page.route('**/api/v1/applications/upcoming', async (route) => {
-      upcomingCalls += 1
-      if (upcomingCalls === 1) {
+    await page.route('**/api/v1/applications?**', async (route) => {
+      applicationsCalls += 1
+      if (applicationsCalls === 1) {
         await route.fulfill({ status: 403, body: '' })
         return
       }
@@ -127,7 +127,12 @@ test.describe('Auth flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([]),
+        body: JSON.stringify({
+          content: [],
+          totalElements: 0,
+          total: 0,
+          totalPages: 1,
+        }),
       })
     })
 
@@ -153,7 +158,7 @@ test.describe('Auth flow', () => {
     // more than one refresh attempt while preserving correct behavior.
     await expect.poll(() => refreshCalls >= 1).toBe(true)
     await expect.poll(() => summaryCalls >= 2).toBe(true)
-    await expect.poll(() => upcomingCalls >= 2).toBe(true)
+    await expect.poll(() => applicationsCalls >= 2).toBe(true)
     await expect.poll(() => overdueCalls >= 2).toBe(true)
   })
 

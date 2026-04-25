@@ -64,8 +64,8 @@ test.describe('Dashboard', () => {
     }
   })
 
-  test('displays Upcoming Steps and Overdue Follow-ups sections', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Upcoming Steps', exact: true })).toBeVisible()
+  test('displays To send later and Overdue Follow-ups sections', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'To send later', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Overdue Follow-ups', exact: true })).toBeVisible()
   })
 

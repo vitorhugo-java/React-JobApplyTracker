@@ -17,9 +17,11 @@ import About from './pages/about/About'
 import AccountSettings from './pages/account/AccountSettings'
 import useAuthStore from './store/authStore'
 import { me as meApi, refresh as refreshApi } from './api/auth'
+import { warmOfflineData } from './api/offlineWarmup'
 
 const App = () => {
   const [appReady, setAppReady] = useState(false)
+  const accessToken = useAuthStore((s) => s.accessToken)
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
@@ -89,6 +91,12 @@ const App = () => {
     }
   }, [initTheme, setTokens, setUser, logout])
 
+  useEffect(() => {
+    if (!appReady || !accessToken) return
+
+    warmOfflineData().catch(() => null)
+  }, [appReady, accessToken])
+
   if (!appReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -107,7 +115,10 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/about" element={<About />} />
+
+        <Route element={<Layout />}>
+          <Route path="/about" element={<About />} />
+        </Route>
 
         <Route
           element={

@@ -73,6 +73,22 @@ test.describe('Application flow', () => {
     await expect(page.locator('[data-testid="app-row"]').getByText(vacancy)).toBeVisible()
   })
 
+  test('sort applications by selected order', async ({ page }) => {
+    const vacancyA = `Alpha Vacancy ${Date.now()}`
+    const vacancyZ = `Zulu Vacancy ${Date.now()}`
+
+    await createApplication(page, vacancyZ)
+    await createApplication(page, vacancyA)
+
+    await page.locator('[data-testid="applications-sort"]').click()
+    await page.locator('.p-dropdown-item').filter({ hasText: 'Vacancy A-Z' }).first().click()
+    await page.waitForTimeout(600)
+
+    const rows = page.locator('[data-testid="app-row"]')
+    await expect(rows.nth(0)).toContainText(vacancyA)
+    await expect(rows.nth(1)).toContainText(vacancyZ)
+  })
+
   test('edit application and save changes', async ({ page }) => {
     const original = `Edit Me ${Date.now()}`
     const updated = `Edited ${Date.now()}`

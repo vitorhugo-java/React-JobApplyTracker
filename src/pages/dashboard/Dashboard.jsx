@@ -4,13 +4,16 @@ import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCirc
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Button } from 'primereact/button'
+import { Paginator } from 'primereact/paginator'
 import { getDashboardSummary } from '../../api/dashboard'
-import { getUpcoming, getOverdue, markDmSent } from '../../api/applications'
+import { getApplications, getOverdue, markDmSent } from '../../api/applications'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
+
+const DASHBOARD_PAGE_SIZE = 5
 
 const MetricCard = ({ icon, label, value, color, testId }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700" data-testid={testId}>
@@ -65,20 +68,30 @@ const Dashboard = () => {
   usePageTitle('Painel')
   const toast = useRef(null)
   const [summary, setSummary] = useState(null)
-  const [upcoming, setUpcoming] = useState([])
+  const [toSendLater, setToSendLater] = useState([])
+  const [toSendLaterTotal, setToSendLaterTotal] = useState(0)
+  const [toSendLaterPage, setToSendLaterPage] = useState(0)
   const [overdue, setOverdue] = useState([])
+  const [overduePage, setOverduePage] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [summaryRes, upcomingRes, overdueRes] = await Promise.all([
+        const [summaryRes, toSendLaterRes, overdueRes] = await Promise.all([
           getDashboardSummary(),
-          getUpcoming(),
+          getApplications({
+            archived: false,
+            status: 'TO_SEND_LATER',
+            sort: 'createdAt,asc',
+            page: toSendLaterPage,
+            size: DASHBOARD_PAGE_SIZE,
+          }),
           getOverdue(),
         ])
         setSummary(summaryRes.data)
-        setUpcoming(upcomingRes.data || [])
+        setToSendLater(toSendLaterRes.data?.content || toSendLaterRes.data?.items || [])
+        setToSendLaterTotal(toSendLaterRes.data?.totalElements || toSendLaterRes.data?.total || 0)
         setOverdue(overdueRes.data || [])
       } catch {
         // Keep dashboard shell visible even when summary endpoints are temporarily unavailable.
@@ -87,7 +100,7 @@ const Dashboard = () => {
       }
     }
     fetchAll()
-  }, [])
+  }, [toSendLaterPage])
 
   const handleMarkDmSent = async (app) => {
     confirmDialog({
@@ -95,16 +108,12 @@ const Dashboard = () => {
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: async () => {
-        // Optimistically remove the app from both lists
         const removeApp = (list) => list.filter((a) => a.id !== app.id)
-        setUpcoming(removeApp)
         setOverdue(removeApp)
         try {
           await markDmSent(app.id)
           toast.current?.show({ severity: 'success', summary: 'Success', detail: 'DM marked as sent!' })
         } catch {
-          // Restore the app if the request fails
-          setUpcoming((prev) => [...prev, app])
           setOverdue((prev) => [...prev, app])
           toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
         }
@@ -125,6 +134,11 @@ const Dashboard = () => {
     { icon: CalendarRange, label: 'Média semanal', value: summary?.averageWeeklyApplications, color: 'bg-sky-500', testId: 'metric-average-weekly' },
     { icon: CalendarClock, label: 'Média mensal', value: summary?.averageMonthlyApplications, color: 'bg-blue-500', testId: 'metric-average-monthly' },
   ]
+
+  const overduePageItems = overdue.slice(
+    overduePage * DASHBOARD_PAGE_SIZE,
+    (overduePage + 1) * DASHBOARD_PAGE_SIZE
+  )
 
   return (
     <div className="space-y-6">
@@ -148,17 +162,29 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Upcoming Steps</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">To send later</h2>
           </div>
           <div className="p-2">
             {loading ? (
               <LoadingSkeleton rows={3} className="p-2" />
-            ) : upcoming.length === 0 ? (
-              <EmptyState title="No upcoming steps" description="All caught up!" />
+            ) : toSendLater.length === 0 ? (
+              <EmptyState title="Nothing to send later" description="All pending applications are already handled." />
             ) : (
-              upcoming.map((app) => <AppRow key={app.id} app={app} onMarkDmSent={handleMarkDmSent} />)
+              toSendLater.map((app) => <AppRow key={app.id} app={app} />)
             )}
           </div>
+          {!loading && toSendLaterTotal > DASHBOARD_PAGE_SIZE && (
+            <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-2">
+              <Paginator
+                first={toSendLaterPage * DASHBOARD_PAGE_SIZE}
+                rows={DASHBOARD_PAGE_SIZE}
+                totalRecords={toSendLaterTotal}
+                onPageChange={(event) => setToSendLaterPage(event.page)}
+                template="PrevPageLink CurrentPageReport NextPageLink"
+                currentPageReportTemplate="{first} - {last} of {totalRecords}"
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -171,9 +197,21 @@ const Dashboard = () => {
             ) : overdue.length === 0 ? (
               <EmptyState title="No overdue follow-ups" description="Great job staying on top of things!" />
             ) : (
-              overdue.map((app) => <AppRow key={app.id} app={app} onMarkDmSent={handleMarkDmSent} />)
+              overduePageItems.map((app) => <AppRow key={app.id} app={app} onMarkDmSent={handleMarkDmSent} />)
             )}
           </div>
+          {!loading && overdue.length > DASHBOARD_PAGE_SIZE && (
+            <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-2">
+              <Paginator
+                first={overduePage * DASHBOARD_PAGE_SIZE}
+                rows={DASHBOARD_PAGE_SIZE}
+                totalRecords={overdue.length}
+                onPageChange={(event) => setOverduePage(event.page)}
+                template="PrevPageLink CurrentPageReport NextPageLink"
+                currentPageReportTemplate="{first} - {last} of {totalRecords}"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
