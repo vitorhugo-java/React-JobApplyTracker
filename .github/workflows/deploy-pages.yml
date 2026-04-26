@@ -32,7 +32,7 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build
         env:
-          VITE_BASE_PATH: /React-JobApplyTracker/
+          VITE_BASE_PATH: /
 
       - name: Create SPA fallback page (404.html)
         run: cp dist/index.html dist/404.html
