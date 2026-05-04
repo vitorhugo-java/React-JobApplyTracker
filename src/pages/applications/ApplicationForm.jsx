@@ -349,7 +349,12 @@ const ApplicationForm = () => {
             </div>
             <InputSwitch
               checked={form.toSendLater}
-              onChange={(e) => setField('toSendLater', e.value)}
+              onChange={(e) => {
+                setField('toSendLater', e.value)
+                if (e.value) {
+                  setField('applicationDate', null)
+                }
+              }}
               data-testid="app-to-send-later"
             />
           </div>

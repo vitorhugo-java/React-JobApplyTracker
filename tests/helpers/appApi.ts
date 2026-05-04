@@ -148,6 +148,10 @@ export function setupMockApplicationsApi(page: Page): void {
     const request = route.request()
     const method = request.method()
 
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+
     if (method === 'GET') {
       const url = new URL(request.url())
       const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
