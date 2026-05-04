@@ -319,7 +319,7 @@ const ApplicationsList = () => {
                         <button
                           type="button"
                           onClick={() => handleSortByColumn(h)}
-                          className="inline-flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                          className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 rounded-none hover:text-gray-800 dark:hover:text-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:focus-visible:ring-indigo-400/30"
                           aria-label={`Sort by ${h}`}
                         >
                           <span>{h}</span>
