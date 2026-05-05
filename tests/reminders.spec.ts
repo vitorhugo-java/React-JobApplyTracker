@@ -32,19 +32,24 @@ test.describe('Reminder flow', () => {
     await page.getByTestId('app-vacancy-name').fill(vacancy)
     await page.getByTestId('app-recruiter-name').fill(recruiterName)
 
-    // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
-    // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
-    const dateInput = page.getByTestId('app-application-date')
-    await dateInput.fill('15/01/2025')
-    await dateInput.press('Escape')
+    // PrimeReact Calendar requires direct DOM injection to reliably set the date in CI
+    await page.evaluate(() => {
+      const input = document.querySelector('input[data-testid="app-application-date"]') as HTMLInputElement
+      if (input) {
+        input.value = '15/01/2025'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        input.dispatchEvent(new Event('change', { bubbles: true }))
+        input.dispatchEvent(new Event('blur', { bubbles: true }))
+      }
+    })
+    // Wait for React to sync the injected value into component state
+    await expect(page.locator('input[data-testid="app-application-date"]')).toHaveValue('15/01/2025')
 
     await page.getByTestId('app-submit').click()
     await page.waitForURL('**/applications', { timeout: 15_000 })
 
     // Navigate to the detail page for this application
     const row = page.getByTestId('app-row').filter({ hasText: vacancy })
-    // NOTE: Add data-testid="app-vacancy-cell" to the first <td> in the app-row
-    // table rows inside ApplicationsList.jsx for this locator to work.
     await row.getByTestId('app-vacancy-cell').click()
     await page.waitForURL(/\/applications\/\d+$/, { timeout: 10_000 })
 
@@ -61,11 +66,18 @@ test.describe('Reminder flow', () => {
     await page.getByTestId('app-vacancy-name').fill(vacancy)
     // Intentionally leave recruiterName empty
 
-    // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
-    // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
-    const dateInput = page.getByTestId('app-application-date')
-    await dateInput.fill('15/01/2025')
-    await dateInput.press('Escape')
+    // PrimeReact Calendar requires direct DOM injection to reliably set the date in CI
+    await page.evaluate(() => {
+      const input = document.querySelector('input[data-testid="app-application-date"]') as HTMLInputElement
+      if (input) {
+        input.value = '15/01/2025'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        input.dispatchEvent(new Event('change', { bubbles: true }))
+        input.dispatchEvent(new Event('blur', { bubbles: true }))
+      }
+    })
+    // Wait for React to sync the injected value into component state
+    await expect(page.locator('input[data-testid="app-application-date"]')).toHaveValue('15/01/2025')
 
     await page.getByTestId('app-submit').click()
     await page.waitForURL('**/applications', { timeout: 15_000 })
@@ -81,8 +93,6 @@ test.describe('Reminder flow', () => {
   })
 
   test('separates reminders at the exact 6-hour boundary', async ({ page }) => {
-    await loginUser(page, email, PASSWORD)
-
     const now = new Date('2026-04-13T12:00:00.000Z')
     const sixHoursMs = 6 * 60 * 60 * 1000
 
@@ -133,12 +143,17 @@ test.describe('Reminder flow', () => {
       })
     })
 
+    // Register response watchers BEFORE navigating so responses aren't missed
+    const upcomingResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/applications/upcoming') && response.ok()
+    )
+    const overdueResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/applications/overdue') && response.ok()
+    )
+
     await page.goto('/reminders')
     await page.waitForURL('**/reminders', { timeout: 10_000 })
-    await Promise.all([
-      page.waitForResponse((response) => response.url().includes('/api/v1/applications/upcoming') && response.ok()),
-      page.waitForResponse((response) => response.url().includes('/api/v1/applications/overdue') && response.ok()),
-    ])
+    await Promise.all([upcomingResponsePromise, overdueResponsePromise])
 
     // NOTE: Add data-testid="reminders-upcoming-section" and
     // data-testid="reminders-overdue-section" to the Section wrapper <div>s
