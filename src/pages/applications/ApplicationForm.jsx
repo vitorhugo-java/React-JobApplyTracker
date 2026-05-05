@@ -127,7 +127,7 @@ const ApplicationForm = () => {
           recruiterName: d.recruiterName ?? '',
           organization: d.organization ?? '',
           vacancyLink: d.vacancyLink ?? '',
-          applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
+          applicationDate: d.status == null ? null : parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
           toSendLater: d.status == null,
           status: d.status ?? APPLICATION_STATUSES[0],
@@ -228,7 +228,7 @@ const ApplicationForm = () => {
       const payload = {
         ...form,
         vacancyName: form.vacancyName.trim() || null,
-        applicationDate: formatDateOnly(form.applicationDate),
+        applicationDate: form.toSendLater ? null : formatDateOnly(form.applicationDate),
         nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
         status: form.toSendLater ? null : form.status,
         note: form.note?.trim() || null,

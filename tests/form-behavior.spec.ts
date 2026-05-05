@@ -28,7 +28,7 @@ test.describe('Application Form Behavior', () => {
     
     // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
     // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
-    const dateInput = page.getByTestId('app-application-date')
+    const dateInput = page.locator('input#applicationDate')
     await expect(dateInput).toBeVisible({ timeout: 10000 })
     
     // Default date should be set

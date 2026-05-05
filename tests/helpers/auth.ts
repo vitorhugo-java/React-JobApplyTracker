@@ -105,6 +105,19 @@ export function setupMockAuth(page: Page, email: string, name: string): void {
       body: JSON.stringify([]),
     })
   })
+
+  void page.route(`${API_V1}/gamification/events`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        awardedXp: 0,
+        leveledUp: false,
+        newLevel: 1,
+        achievementUnlocked: null,
+      }),
+    })
+  })
 }
 
 async function seedAuthenticatedSession(page: Page, email: string, name: string): Promise<void> {
