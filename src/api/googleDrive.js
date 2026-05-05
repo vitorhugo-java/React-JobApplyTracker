@@ -5,7 +5,7 @@ const normalizeBaseResume = (resume, index) => {
   const documentId = resume?.documentId ?? resume?.googleDocId ?? resume?.googleFileId ?? ''
 
   return {
-    id: resume?.id ?? `resume-${index + 1}`,
+    id: resume?.id ?? null,
     name: resume?.name ?? resume?.label ?? resume?.documentName ?? `Resume ${index + 1}`,
     documentId,
     documentUrl: resume?.documentUrl ?? resume?.googleDocUrl ?? resume?.webViewLink ?? buildGoogleDocUrl(documentId),
@@ -66,6 +66,7 @@ export const updateGoogleDriveSettings = async (payload) => {
     currentSettings.baseResumes
       .filter(
         (resume) =>
+          Boolean(resume.id) &&
           !desiredIds.has(resume.id) && !desiredDocumentIds.has(resume.documentId)
       )
       .map((resume) => api.delete(`/google-drive/base-resumes/${resume.id}`))
@@ -87,7 +88,7 @@ export const updateGoogleDriveSettings = async (payload) => {
       existingResume.name !== resume.name ||
       existingResume.isDefault !== Boolean(resume.isDefault)
 
-    if (hasChanged) {
+    if (hasChanged && existingResume.id) {
       await api.put(`/google-drive/base-resumes/${existingResume.id}`, {
         documentIdOrUrl: resume.documentId,
         name: resume.name,
