@@ -5,13 +5,17 @@ import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import ThemeToggle from '../ui/ThemeToggle'
 import SyncStatusIndicator from '../ui/SyncStatusIndicator'
+import LevelBadge from '../ui/LevelBadge'
+import GamificationToastHost from '../ui/GamificationToastHost'
 import useAuthStore from '../../store/authStore'
+import useGamificationStore from '../../store/gamificationStore'
 import { logout as logoutApi } from '../../api/auth'
 
 const Layout = () => {
   const user = useAuthStore((s) => s.user)
   const accessToken = useAuthStore((s) => s.accessToken)
   const logoutStore = useAuthStore((s) => s.logout)
+  const profile = useGamificationStore((s) => s.profile)
   const location = useLocation()
   const isGuestAboutPage = !accessToken && location.pathname === '/about'
 
@@ -31,6 +35,7 @@ const Layout = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <GamificationToastHost />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
@@ -40,6 +45,7 @@ const Layout = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <LevelBadge profile={profile} compact />
             <SyncStatusIndicator />
             <ThemeToggle />
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">

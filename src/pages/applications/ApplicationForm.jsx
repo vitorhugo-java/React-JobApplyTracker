@@ -17,7 +17,9 @@ import {
   markDmSent,
   APPLICATION_STATUSES,
 } from '../../api/applications'
+import { GAMIFICATION_EVENT_TYPES } from '../../api/gamification'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import useGamificationStore from '../../store/gamificationStore'
 
 const defaultForm = {
   vacancyName: '',
@@ -85,13 +87,21 @@ const ApplicationForm = () => {
 
   usePageTitle(isEdit ? 'Editar Aplicação' : 'Nova Aplicação')
 
-  const [form, setForm] = useState(defaultForm)
+  const [form, setForm] = useState(() => (
+    isEdit
+      ? defaultForm
+      : {
+          ...defaultForm,
+          applicationDate: new Date(),
+        }
+  ))
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(isEdit)
   const [draftReady, setDraftReady] = useState(false)
   const draftRef = useRef(null)
   const initialFormRef = useRef(null)
   const draftKey = getDraftKey(id)
+  const recordEvent = useGamificationStore((s) => s.recordEvent)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -144,20 +154,12 @@ const ApplicationForm = () => {
     if (!initialFormRef.current) {
       initialFormRef.current = { ...form }
     }
-  }, [draftReady, isEdit, fetching])
+  }, [draftReady, isEdit, fetching, form])
 
   useEffect(() => {
     if (!draftReady || fetching || typeof window === 'undefined') return
     window.localStorage.setItem(draftKey, JSON.stringify(toStoragePayload(form)))
   }, [draftKey, draftReady, fetching, form])
-
-  useEffect(() => {
-    if (isEdit || form.toSendLater || form.applicationDate) return
-    setForm((current) => {
-      if (current.toSendLater || current.applicationDate) return current
-      return { ...current, applicationDate: new Date() }
-    })
-  }, [form.applicationDate, form.toSendLater, isEdit])
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
@@ -222,6 +224,7 @@ const ApplicationForm = () => {
     }
 
     try {
+      const previousForm = initialFormRef.current
       const payload = {
         ...form,
         vacancyName: form.vacancyName.trim() || null,
@@ -241,9 +244,34 @@ const ApplicationForm = () => {
         if (form.markDmSent) {
           try {
             await markDmSent(id)
+            await recordEvent(GAMIFICATION_EVENT_TYPES.RECRUITER_DM_SENT, {
+              applicationId: id,
+            })
           } catch (err) {
             const detail = err.response?.data?.message || 'Added the application, but could not mark the DM as sent. You can do this later.'
             toast.current.show({ severity: 'error', summary: 'Partial Success', detail })
+          }
+        }
+
+        if (!previousForm?.note && payload.note) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
+              applicationId: id,
+            })
+          } catch (err) {
+            const detail = err.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+          }
+        }
+
+        if (!previousForm?.interviewScheduled && payload.interviewScheduled) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
+              applicationId: id,
+            })
+          } catch (err) {
+            const detail = err.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
           }
         }
         
@@ -258,6 +286,37 @@ const ApplicationForm = () => {
       } else {
         const response = await createApplication(payload)
         window.localStorage.removeItem(draftKey)
+        try {
+          await recordEvent(GAMIFICATION_EVENT_TYPES.APPLICATION_CREATED, {
+            applicationId: response.data?.id,
+          })
+        } catch (eventError) {
+          const detail = eventError.response?.data?.message || 'Application saved, but the XP event could not be recorded.'
+          toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+        }
+
+        if (payload.note) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
+              applicationId: response.data?.id,
+            })
+          } catch (eventError) {
+            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+          }
+        }
+
+        if (payload.interviewScheduled) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
+              applicationId: response.data?.id,
+            })
+          } catch (eventError) {
+            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+          }
+        }
+
         if (response.data?.queuedOffline) {
           toast.current.show({
             severity: 'info',
@@ -353,6 +412,8 @@ const ApplicationForm = () => {
                 setField('toSendLater', e.value)
                 if (e.value) {
                   setField('applicationDate', null)
+                } else if (!form.applicationDate) {
+                  setField('applicationDate', new Date())
                 }
               }}
               data-testid="app-to-send-later"

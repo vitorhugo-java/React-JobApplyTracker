@@ -7,11 +7,15 @@ import { Button } from 'primereact/button'
 import { Paginator } from 'primereact/paginator'
 import { getDashboardSummary } from '../../api/dashboard'
 import { getApplications, getOverdue, markDmSent } from '../../api/applications'
+import { GAMIFICATION_EVENT_TYPES } from '../../api/gamification'
+import XPBar from '../../components/ui/XPBar'
+import AchievementsList from '../../components/ui/AchievementsList'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import useGamificationStore from '../../store/gamificationStore'
 
 const DASHBOARD_PAGE_SIZE = 5
 
@@ -74,6 +78,9 @@ const Dashboard = () => {
   const [overdue, setOverdue] = useState([])
   const [overduePage, setOverduePage] = useState(0)
   const [loading, setLoading] = useState(true)
+  const profile = useGamificationStore((s) => s.profile)
+  const achievements = useGamificationStore((s) => s.achievements)
+  const recordEvent = useGamificationStore((s) => s.recordEvent)
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -116,6 +123,16 @@ const Dashboard = () => {
         } catch {
           setOverdue((prev) => [...prev, app])
           toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to mark DM as sent.' })
+          return
+        }
+
+        try {
+          await recordEvent(GAMIFICATION_EVENT_TYPES.RECRUITER_DM_SENT, {
+            applicationId: app.id,
+          })
+        } catch (eventError) {
+          const detail = eventError.response?.data?.message || 'DM was saved, but the XP event could not be recorded.'
+          toast.current?.show({ severity: 'warn', summary: 'Gamification pending', detail })
         }
       },
     })
@@ -149,6 +166,8 @@ const Dashboard = () => {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Overview of your job search</p>
       </div>
 
+      <XPBar profile={profile} />
+
       {loading ? (
         <LoadingSkeleton rows={2} />
       ) : (
@@ -157,7 +176,9 @@ const Dashboard = () => {
             <MetricCard key={m.label} {...m} />
           ))}
         </div>
-      )}
+        )}
+
+      <AchievementsList achievements={achievements} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">

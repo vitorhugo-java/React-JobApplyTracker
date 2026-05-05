@@ -1,20 +1,12 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Code2, CircleUserRound, Settings } from 'lucide-react'
-
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/applications', label: 'Applications', icon: Briefcase },
-  { to: '/account', label: 'Conta', icon: Settings },
-  { to: '/developer', label: 'Developer', icon: Code2 },
-  { to: '/about', label: 'Sobre', icon: CircleUserRound },
-]
+import { navigationItems } from './navigationItems'
 
 const MobileNav = () => {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
       <div className="flex">
-        {navItems.map((item) => (
+        {navigationItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -27,7 +19,7 @@ const MobileNav = () => {
             }
           >
             {React.createElement(item.icon, { className: 'w-5 h-5 mb-1' })}
-            {item.label}
+            {item.mobileLabel || item.label}
           </NavLink>
         ))}
       </div>

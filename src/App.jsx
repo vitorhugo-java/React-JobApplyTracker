@@ -8,6 +8,7 @@ import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import Dashboard from './pages/dashboard/Dashboard'
+import MetricsPage from './pages/dashboard/MetricsPage'
 import ApplicationsList from './pages/applications/ApplicationsList'
 import ApplicationForm from './pages/applications/ApplicationForm'
 import ApplicationDetail from './pages/applications/ApplicationDetail'
@@ -15,6 +16,7 @@ import Developer from './pages/developer/Developer'
 import About from './pages/about/About'
 import AccountSettings from './pages/account/AccountSettings'
 import useAuthStore from './store/authStore'
+import useGamificationStore from './store/gamificationStore'
 import { me as meApi, refresh as refreshApi } from './api/auth'
 import { warmOfflineData } from './api/offlineWarmup'
 
@@ -26,6 +28,8 @@ const App = () => {
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
   const initTheme = useAuthStore((s) => s.initTheme)
+  const loadGamification = useGamificationStore((s) => s.loadGamification)
+  const resetGamification = useGamificationStore((s) => s.reset)
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +101,17 @@ const App = () => {
     warmOfflineData().catch(() => null)
   }, [appReady, accessToken])
 
+  useEffect(() => {
+    if (!appReady) return
+
+    if (!accessToken) {
+      resetGamification()
+      return
+    }
+
+    loadGamification().catch(() => null)
+  }, [appReady, accessToken, loadGamification, resetGamification])
+
   if (!appReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -127,6 +142,7 @@ const App = () => {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/metrics" element={<MetricsPage />} />
           <Route path="/applications" element={<ApplicationsList />} />
           <Route path="/applications/new" element={<ApplicationForm />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />

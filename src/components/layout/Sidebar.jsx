@@ -1,14 +1,7 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Code2, CircleUserRound, Settings } from 'lucide-react'
-
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/applications', label: 'Applications', icon: Briefcase },
-  { to: '/account', label: 'Account', icon: Settings },
-  { to: '/developer', label: 'Developer', icon: Code2 },
-  { to: '/about', label: 'Sobre', icon: CircleUserRound },
-]
+import { Briefcase } from 'lucide-react'
+import { navigationItems } from './navigationItems'
 
 const Sidebar = () => {
   return (
@@ -20,7 +13,7 @@ const Sidebar = () => {
         <span className="font-bold text-gray-900 dark:text-white text-lg">JobTracker</span>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => (
+        {navigationItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
