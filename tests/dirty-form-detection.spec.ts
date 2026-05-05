@@ -21,7 +21,7 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     await page.goto('/applications/new')
     await page.waitForURL('**/applications/new', { timeout: 10_000 })
     // Wait for form to load
-    await page.locator('[data-testid="app-vacancy-name"]').waitFor({ state: 'visible', timeout: 5000 })
+    await page.getByTestId('app-vacancy-name').waitFor({ state: 'visible', timeout: 5000 })
   })
 
   test('should show cancel button without confirmation when no changes made', async ({ page }) => {
@@ -46,11 +46,11 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     await cancelButton.click()
 
     // Assert: Confirmation dialog should appear
-    const dialog = page.locator('.p-confirm-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     // Dialog should have discard message
-    await expect(page.locator('.p-confirm-dialog')).toContainText('unsaved changes')
+    await expect(page.getByRole('dialog')).toContainText('unsaved changes')
   })
 
   test('should discard changes and navigate when user confirms in dialog', async ({ page }) => {
@@ -63,7 +63,9 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     await cancelButton.click()
 
     // Wait for dialog and confirm
-    const acceptButton = page.locator('.p-confirm-dialog .p-button-danger')
+    // NOTE: The accept button uses acceptClassName: 'p-button-danger' in ApplicationForm.jsx.
+    // Its accessible label is "Yes" (PrimeReact ConfirmDialog default).
+    const acceptButton = page.getByRole('dialog').getByRole('button', { name: 'Yes' })
     await acceptButton.click()
 
     // Assert: Should navigate back to applications list
@@ -81,8 +83,9 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     const cancelButton = page.getByRole('button', { name: 'Cancel' })
     await cancelButton.click()
 
-    // Wait for dialog and reject (click reject button or escape)
-    const rejectButton = page.locator('.p-confirm-dialog .p-button-text')
+    // Wait for dialog and reject
+    // NOTE: The reject button label is "No" (PrimeReact ConfirmDialog default).
+    const rejectButton = page.getByRole('dialog').getByRole('button', { name: 'No' })
     await rejectButton.click()
 
     // Assert: Should remain on current form
@@ -103,15 +106,15 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     await cancelButton.click()
 
     // Assert: Dialog should appear indicating dirty form
-    const dialog = page.locator('.p-confirm-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText('unsaved changes')
   })
 
   test('should detect changes in toggle switches', async ({ page }) => {
-    // Arrange: Toggle a switch field
-    const toggles = page.locator('.p-inputswitch')
-    const firstToggle = toggles.first()
+    // Arrange: Toggle the "To send later" switch
+    // NOTE: data-testid="app-to-send-later" is already on the InputSwitch in ApplicationForm.jsx
+    const firstToggle = page.getByTestId('app-to-send-later')
 
     // Click to toggle
     await firstToggle.click()
@@ -121,7 +124,7 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     await cancelButton.click()
 
     // Assert: Dialog should appear
-    const dialog = page.locator('.p-confirm-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
   })
 
@@ -130,7 +133,7 @@ test.describe('Dirty Form Detection - ApplicationForm', () => {
     // The beforeunload handler should trigger on page leave
     await page.goto('/applications/new')
     await page.waitForURL('**/applications/new', { timeout: 10_000 })
-    await page.locator('[data-testid="app-vacancy-name"]').waitFor({ state: 'visible', timeout: 5000 })
+    await page.getByTestId('app-vacancy-name').waitFor({ state: 'visible', timeout: 5000 })
 
     // Make a change
     await page.getByTestId('app-vacancy-name').fill('Test')
@@ -167,7 +170,7 @@ test.describe('Dirty Form Detection - Edit Form', () => {
     // For now, verify we can at least load the new form
     await page.goto('/applications/new')
     await page.waitForURL('**/applications/new', { timeout: 10_000 })
-    await page.locator('[data-testid="app-vacancy-name"]').waitFor({ state: 'visible', timeout: 5000 })
+    await page.getByTestId('app-vacancy-name').waitFor({ state: 'visible', timeout: 5000 })
 
     // Verify form is loaded
     const vacancyInput = page.getByTestId('app-vacancy-name')

@@ -132,6 +132,7 @@ const ResetPassword = () => {
               toggleMask
               className="w-full"
               inputClassName="w-full"
+              pt={{ input: { 'data-testid': 'reset-password-new' } }}
             />
             
             {/* Password Strength Indicator */}
@@ -225,6 +226,7 @@ const ResetPassword = () => {
               toggleMask
               className="w-full"
               inputClassName="w-full"
+              pt={{ input: { 'data-testid': 'reset-password-confirm' } }}
             />
             {form.newPassword && form.confirmPassword && form.newPassword !== form.confirmPassword && (
               <p className="text-xs text-red-600 dark:text-red-400">Passwords do not match</p>

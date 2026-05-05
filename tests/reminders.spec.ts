@@ -26,22 +26,26 @@ test.describe('Reminder flow', () => {
     const recruiterName = `Jane Doe ${Date.now()}`
 
     // Create an application with a recruiter name
-    await page.locator('[data-testid="new-application-btn"]').click()
+    await page.getByTestId('new-application-btn').click()
     await page.waitForURL('**/applications/new')
 
-    await page.locator('[data-testid="app-vacancy-name"]').fill(vacancy)
-    await page.locator('[data-testid="app-recruiter-name"]').fill(recruiterName)
+    await page.getByTestId('app-vacancy-name').fill(vacancy)
+    await page.getByTestId('app-recruiter-name').fill(recruiterName)
 
-    const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
+    // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
+    // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
+    const dateInput = page.getByTestId('app-application-date')
     await dateInput.fill('15/01/2025')
     await dateInput.press('Escape')
 
-    await page.locator('[data-testid="app-submit"]').click()
+    await page.getByTestId('app-submit').click()
     await page.waitForURL('**/applications', { timeout: 15_000 })
 
     // Navigate to the detail page for this application
-    const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    await row.locator('td').first().click()
+    const row = page.getByTestId('app-row').filter({ hasText: vacancy })
+    // NOTE: Add data-testid="app-vacancy-cell" to the first <td> in the app-row
+    // table rows inside ApplicationsList.jsx for this locator to work.
+    await row.getByTestId('app-vacancy-cell').click()
     await page.waitForURL(/\/applications\/\d+$/, { timeout: 10_000 })
 
     // The reminder section should be visible because recruiterName is set
@@ -51,21 +55,25 @@ test.describe('Reminder flow', () => {
   test('reminder section is hidden when recruiterName is not set', async ({ page }) => {
     const vacancy = `No Recruiter ${Date.now()}`
 
-    await page.locator('[data-testid="new-application-btn"]').click()
+    await page.getByTestId('new-application-btn').click()
     await page.waitForURL('**/applications/new')
 
-    await page.locator('[data-testid="app-vacancy-name"]').fill(vacancy)
+    await page.getByTestId('app-vacancy-name').fill(vacancy)
     // Intentionally leave recruiterName empty
 
-    const dateInput = page.locator('input#applicationDate_input, input#applicationDate').first()
+    // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
+    // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
+    const dateInput = page.getByTestId('app-application-date')
     await dateInput.fill('15/01/2025')
     await dateInput.press('Escape')
 
-    await page.locator('[data-testid="app-submit"]').click()
+    await page.getByTestId('app-submit').click()
     await page.waitForURL('**/applications', { timeout: 15_000 })
 
-    const row = page.locator('[data-testid="app-row"]').filter({ hasText: vacancy })
-    await row.locator('td').first().click()
+    const row = page.getByTestId('app-row').filter({ hasText: vacancy })
+    // NOTE: Add data-testid="app-vacancy-cell" to the first <td> in the app-row
+    // table rows inside ApplicationsList.jsx for this locator to work.
+    await row.getByTestId('app-vacancy-cell').click()
     await page.waitForURL(/\/applications\/\d+$/, { timeout: 10_000 })
 
     // Reminder section should NOT appear
@@ -132,8 +140,11 @@ test.describe('Reminder flow', () => {
       page.waitForResponse((response) => response.url().includes('/api/v1/applications/overdue') && response.ok()),
     ])
 
-    const upcomingSection = page.locator('h2:has-text("Upcoming")').locator('..')
-    const overdueSection = page.locator('h2:has-text("Overdue")').locator('..')
+    // NOTE: Add data-testid="reminders-upcoming-section" and
+    // data-testid="reminders-overdue-section" to the Section wrapper <div>s
+    // in Reminders.jsx for these locators to work.
+    const upcomingSection = page.getByTestId('reminders-upcoming-section')
+    const overdueSection = page.getByTestId('reminders-overdue-section')
 
     await expect(upcomingSection.getByText('Upcoming < 6h')).toBeVisible()
     await expect(upcomingSection.getByText('Boundary == 6h')).not.toBeVisible()
