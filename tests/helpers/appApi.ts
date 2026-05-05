@@ -4,6 +4,7 @@ type AppRecord = {
   id: number
   vacancyName: string | null
   recruiterName: string | null
+  organization?: string | null
   vacancyOpenedBy: string | null
   vacancyLink: string | null
   applicationDate: string | null
@@ -16,10 +17,10 @@ type AppRecord = {
   archived: boolean
   archivedAt: string | null
   createdAt: string
+  updatedAt?: string
 }
 
 const API_BASE = '**/api/v1'
-const APPLICATIONS_COLLECTION_ROUTE = /\/api\/v1\/applications(?:\?.*)?$/
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000
 
 const isSentReminder = (app: AppRecord): boolean => app.recruiterDmReminderEnabled && app.status != null
@@ -82,11 +83,124 @@ const toPagedResponse = (items: AppRecord[], page: number, size: number) => ({
 
 const cloneApp = (app: AppRecord) => ({ ...app })
 
-export function setupMockApplicationsApi(page: Page): void {
-  const apps: AppRecord[] = []
-  let nextId = 1
+const normalizeApp = (payload: Partial<AppRecord>, id: number): AppRecord => {
+  const createdAt = payload.createdAt ?? new Date().toISOString()
+
+  return {
+    id: payload.id ?? id,
+    vacancyName: payload.vacancyName ?? null,
+    recruiterName: payload.recruiterName ?? null,
+    organization: payload.organization ?? null,
+    vacancyOpenedBy: payload.vacancyOpenedBy ?? null,
+    vacancyLink: payload.vacancyLink ?? null,
+    applicationDate: payload.applicationDate ?? null,
+    rhAcceptedConnection: Boolean(payload.rhAcceptedConnection),
+    interviewScheduled: Boolean(payload.interviewScheduled),
+    nextStepDateTime: payload.nextStepDateTime ?? null,
+    status: payload.status === undefined ? 'RH' : payload.status,
+    recruiterDmReminderEnabled: Boolean(payload.recruiterDmReminderEnabled),
+    note: payload.note ?? null,
+    archived: Boolean(payload.archived),
+    archivedAt: payload.archivedAt ?? null,
+    createdAt,
+    updatedAt: payload.updatedAt ?? createdAt,
+  }
+}
+
+export function setupMockApplicationsApi(page: Page, initialApps: Partial<AppRecord>[] = []): void {
+  const apps: AppRecord[] = initialApps.map((app, index) => normalizeApp(app, index + 1))
+  let nextId = apps.reduce((maxId, app) => Math.max(maxId, app.id), 0) + 1
 
   const findById = (id: number): AppRecord | undefined => apps.find((app) => app.id === id)
+
+  const handleApplicationsCollection = async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+
+    if (url.pathname !== '/api/v1/applications') {
+      await route.continue()
+      return
+    }
+
+    const method = request.method()
+
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+
+    if (method === 'GET') {
+      const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
+      const status = url.searchParams.get('status')
+      const applicationDateFrom = url.searchParams.get('applicationDateFrom')
+      const applicationDateTo = url.searchParams.get('applicationDateTo')
+      const archived = url.searchParams.get('archived') === 'true'
+      const page = Number(url.searchParams.get('page') || '0')
+      const size = Number(url.searchParams.get('size') || '10')
+      const sort = url.searchParams.get('sort')
+
+      let filtered = apps.filter((app) => app.archived === archived)
+      if (recruiterName) {
+        filtered = filtered.filter((app) => (app.recruiterName || '').toLowerCase().includes(recruiterName))
+      }
+      if (status) {
+        if (status === 'TO_SEND_LATER') {
+          filtered = filtered.filter((app) => app.status == null)
+        } else {
+          filtered = filtered.filter((app) => app.status === status)
+        }
+      }
+      if (applicationDateFrom) {
+        filtered = filtered.filter((app) => (app.applicationDate || '') >= applicationDateFrom)
+      }
+      if (applicationDateTo) {
+        filtered = filtered.filter((app) => (app.applicationDate || '') <= applicationDateTo)
+      }
+
+      filtered = sortApps(filtered, sort)
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(toPagedResponse(filtered.map(cloneApp), page, size)),
+      })
+      return
+    }
+
+    if (method === 'POST') {
+      const payload = request.postDataJSON() as Partial<AppRecord>
+      const app: AppRecord = {
+        id: nextId++,
+        vacancyName: payload.vacancyName ?? null,
+        recruiterName: payload.recruiterName ?? null,
+        organization: payload.organization ?? null,
+        vacancyOpenedBy: payload.vacancyOpenedBy ?? null,
+        vacancyLink: payload.vacancyLink ?? null,
+        applicationDate: payload.applicationDate ?? null,
+        rhAcceptedConnection: Boolean(payload.rhAcceptedConnection),
+        interviewScheduled: Boolean(payload.interviewScheduled),
+        nextStepDateTime: payload.nextStepDateTime ?? null,
+        status: payload.status ?? 'RH',
+        recruiterDmReminderEnabled: Boolean(payload.recruiterDmReminderEnabled),
+        note: payload.note ?? null,
+        archived: false,
+        archivedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      apps.push(app)
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(cloneApp(app)),
+      })
+      return
+    }
+
+    await route.continue()
+  }
+
+  void page.route('**/api/v1/applications*', handleApplicationsCollection)
 
   void page.route(`${API_BASE}/dashboard/summary`, async (route) => {
     const activeApps = apps.filter((app) => !app.archived)
@@ -142,77 +256,6 @@ export function setupMockApplicationsApi(page: Page): void {
       contentType: 'application/json',
       body: JSON.stringify(overdue.map(cloneApp)),
     })
-  })
-
-  void page.route(APPLICATIONS_COLLECTION_ROUTE, async (route) => {
-    const request = route.request()
-    const method = request.method()
-
-    if (['POST', 'PUT', 'DELETE'].includes(method)) {
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-
-    if (method === 'GET') {
-      const url = new URL(request.url())
-      const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
-      const status = url.searchParams.get('status')
-      const archived = url.searchParams.get('archived') === 'true'
-      const page = Number(url.searchParams.get('page') || '0')
-      const size = Number(url.searchParams.get('size') || '10')
-      const sort = url.searchParams.get('sort')
-
-      let filtered = apps.filter((app) => app.archived === archived)
-      if (recruiterName) {
-        filtered = filtered.filter((app) => (app.recruiterName || '').toLowerCase().includes(recruiterName))
-      }
-      if (status) {
-        if (status === 'TO_SEND_LATER') {
-          filtered = filtered.filter((app) => app.status == null)
-        } else {
-          filtered = filtered.filter((app) => app.status === status)
-        }
-      }
-
-      filtered = sortApps(filtered, sort)
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(toPagedResponse(filtered.map(cloneApp), page, size)),
-      })
-      return
-    }
-
-    if (method === 'POST') {
-      const payload = request.postDataJSON() as Partial<AppRecord>
-      const app: AppRecord = {
-        id: nextId++,
-        vacancyName: payload.vacancyName ?? null,
-        recruiterName: payload.recruiterName ?? null,
-        vacancyOpenedBy: payload.vacancyOpenedBy ?? null,
-        vacancyLink: payload.vacancyLink ?? null,
-        applicationDate: payload.applicationDate ?? null,
-        rhAcceptedConnection: Boolean(payload.rhAcceptedConnection),
-        interviewScheduled: Boolean(payload.interviewScheduled),
-        nextStepDateTime: payload.nextStepDateTime ?? null,
-        status: payload.status ?? 'RH',
-        recruiterDmReminderEnabled: Boolean(payload.recruiterDmReminderEnabled),
-        note: payload.note ?? null,
-        archived: false,
-        archivedAt: null,
-        createdAt: new Date().toISOString(),
-      }
-
-      apps.push(app)
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify(cloneApp(app)),
-      })
-      return
-    }
-
-    await route.continue()
   })
 
   void page.route(`${API_BASE}/applications/*/status`, async (route) => {

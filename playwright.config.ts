@@ -15,6 +15,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
+    serviceWorkers: 'block',
   },
   projects: [
     {
@@ -29,6 +30,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       VITE_API_BASE_URL: '/api',
+      VITE_DISABLE_PWA: 'true',
     },
   },
 })

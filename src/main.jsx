@@ -10,7 +10,10 @@ import { measurePageLoad } from './utils/performance'
 import { registerSW } from 'virtual:pwa-register'
 
 measurePageLoad()
-registerSW({ immediate: true })
+
+if (import.meta.env.VITE_DISABLE_PWA !== 'true') {
+  registerSW({ immediate: true })
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

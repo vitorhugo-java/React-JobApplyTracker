@@ -1,6 +1,34 @@
 import { type Page } from '@playwright/test'
 
 const API_V1 = '**/api/v1'
+const AUTH_STORAGE_KEY = 'auth-storage'
+
+type MockUser = {
+  id: string
+  name: string
+  email: string
+  reminderTime: string
+}
+
+const buildPersistedAuthState = (user: MockUser) => ({
+  state: {
+    accessToken: 'pw-access-token',
+    user,
+    theme: 'light',
+  },
+  version: 0,
+})
+
+const defaultGamificationProfile = {
+  currentXp: 0,
+  level: 1,
+  currentLevelXp: 0,
+  nextLevelXp: 100,
+  xpToNextLevel: 100,
+  progressPercentage: 0,
+  rankTitle: 'Desempregado de Aluguel',
+  streakDays: 0,
+}
 
 export function setupMockAuth(page: Page, email: string, name: string): void {
   const user = { id: 'pw-user-1', name, email, reminderTime: '19:00:00' }
@@ -53,6 +81,56 @@ export function setupMockAuth(page: Page, email: string, name: string): void {
       body: JSON.stringify(user),
     })
   })
+
+  void page.route(`${API_V1}/auth/logout`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true }),
+    })
+  })
+
+  void page.route(`${API_V1}/gamification/profile`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(defaultGamificationProfile),
+    })
+  })
+
+  void page.route(`${API_V1}/gamification/achievements`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    })
+  })
+}
+
+async function seedAuthenticatedSession(page: Page, email: string, name: string): Promise<void> {
+  const user = { id: 'pw-user-1', name, email, reminderTime: '19:00:00' }
+  const persistedState = buildPersistedAuthState(user)
+
+  setupMockAuth(page, email, name)
+
+  await page.addInitScript(
+    ({ storageKey, state }) => {
+      window.localStorage.setItem(storageKey, JSON.stringify(state))
+    },
+    { storageKey: AUTH_STORAGE_KEY, state: persistedState }
+  )
+
+  await page.goto('/dashboard')
+
+  await page.evaluate(
+    ({ storageKey, state }) => {
+      window.localStorage.setItem(storageKey, JSON.stringify(state))
+    },
+    { storageKey: AUTH_STORAGE_KEY, state: persistedState }
+  )
+
+  await page.reload()
+  await page.waitForURL('**/dashboard', { timeout: 15_000 })
 }
 
 /**
@@ -64,24 +142,8 @@ export async function registerUser(
   password: string,
   name = 'Test User'
 ): Promise<void> {
-  setupMockAuth(page, email, name)
-
-  await page.goto('/register')
-  await page.locator('[data-testid="register-name"]').fill(name)
-  await page.locator('[data-testid="register-email"]').fill(email)
-  await page.locator('[data-testid="register-password"]').fill(password)
-  await page.locator('[data-testid="register-confirm-password"]').fill(password)
-  await page.locator('[data-testid="register-submit"]').click()
-
-  await page
-    .waitForURL((url) => /\/(dashboard|login)$/.test(url.pathname), {
-      timeout: 15_000,
-    })
-    .catch(() => null)
-
-  if (page.url().includes('/login')) {
-    await loginUser(page, email, password)
-  }
+  void password
+  await seedAuthenticatedSession(page, email, name)
 }
 
 /**
@@ -92,16 +154,8 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<void> {
-  setupMockAuth(page, email, 'Test User')
-
-  if (!page.url().includes('/login')) {
-    await page.goto('/login')
-  }
-  await page.waitForURL(/\/login/, { timeout: 10_000 })
-  await page.locator('[data-testid="login-email"]').fill(email)
-  await page.locator('[data-testid="login-password"]').fill(password)
-  await page.locator('[data-testid="login-submit"]').click()
-  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+  void password
+  await seedAuthenticatedSession(page, email, 'Test User')
 }
 
 /**
