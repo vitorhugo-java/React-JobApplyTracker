@@ -50,10 +50,14 @@ export const updateGoogleDriveSettings = async (payload) => {
   const desiredResumes = (payload.baseResumes ?? []).map(normalizeBaseResume)
 
   const existingById = new Map(
-    currentSettings.baseResumes.map((resume) => [resume.id, resume])
+    currentSettings.baseResumes
+      .filter((resume) => resume.id)
+      .map((resume) => [resume.id, resume])
   )
   const existingByDocumentId = new Map(
-    currentSettings.baseResumes.map((resume) => [resume.documentId, resume])
+    currentSettings.baseResumes
+      .filter((resume) => resume.documentId)
+      .map((resume) => [resume.documentId, resume])
   )
   const desiredIds = new Set(
     desiredResumes.map((resume) => resume.id).filter(Boolean)
@@ -74,7 +78,7 @@ export const updateGoogleDriveSettings = async (payload) => {
 
   for (const resume of desiredResumes) {
     const existingResume =
-      existingById.get(resume.id) ?? existingByDocumentId.get(resume.documentId)
+      (resume.id ? existingById.get(resume.id) : undefined) ?? existingByDocumentId.get(resume.documentId)
 
     if (!existingResume) {
       await api.post('/google-drive/base-resumes', {
