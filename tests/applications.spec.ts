@@ -123,7 +123,7 @@ test.describe('Application flow', () => {
 
     const row = page.getByTestId('app-row').filter({ hasText: vacancy })
     await row.getByRole('button', { name: 'Archive application' }).click()
-    await page.getByRole('button', { name: 'Yes' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Yes' }).click()
 
     await expect(page.getByText(vacancy)).not.toBeVisible()
 
@@ -131,7 +131,7 @@ test.describe('Application flow', () => {
     await expect(page.getByTestId('app-row').getByText(vacancy)).toBeVisible()
     
     await row.getByRole('button', { name: 'Delete application' }).click()
-    await page.getByRole('button', { name: 'Yes' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Yes' }).click()
 
     await expect(page.getByText(vacancy)).not.toBeVisible()
   })
