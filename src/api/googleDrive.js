@@ -66,7 +66,7 @@ export const updateGoogleDriveSettings = async (payload) => {
     currentSettings.baseResumes
       .filter(
         (resume) =>
-          Boolean(resume.id) &&
+          resume.id &&
           !desiredIds.has(resume.id) && !desiredDocumentIds.has(resume.documentId)
       )
       .map((resume) => api.delete(`/google-drive/base-resumes/${resume.id}`))

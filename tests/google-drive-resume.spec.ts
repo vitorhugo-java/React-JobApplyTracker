@@ -79,7 +79,7 @@ const connectedSettings: GoogleDriveStatusPayload = {
 test.describe('Google Drive Resume Workflow', () => {
   test('Create Resume button is disabled when Google Drive is not connected', async ({ page }) => {
     await setupPage(page)
-    await mockGoogleDriveStatus(page, { connected: false, baseFolderId: '', baseResumes: [] })
+    await mockGoogleDriveStatus(page, { connected: false })
     await page.goto('/applications/new')
 
     const createResumeBtn = page.getByRole('button', { name: 'Create Resume' })
@@ -89,21 +89,30 @@ test.describe('Google Drive Resume Workflow', () => {
 
   test('Create Resume button is disabled while Google Drive settings are loading', async ({ page }) => {
     await setupPage(page)
+
+    // Use a deferred latch so the route never responds during the assertion,
+    // avoiding an arbitrary fixed delay while still simulating indefinite loading.
+    let allowResponse: () => void
+    const responseLatch = new Promise<void>((resolve) => { allowResponse = resolve })
+
     await page.route(`${API_BASE}/google-drive/status`, async (route) => {
-      // Introduce a long delay so the button is checked while settings are still loading
-      await new Promise<void>((resolve) => setTimeout(resolve, 3_000))
+      await responseLatch
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(connectedSettings),
       })
     })
+
     await page.goto('/applications/new')
 
     const createResumeBtn = page.getByRole('button', { name: 'Create Resume' })
     await expect(createResumeBtn).toBeVisible({ timeout: 5_000 })
     // Settings have not yet returned, so the button should still be disabled
     await expect(createResumeBtn).toBeDisabled()
+
+    // Unblock the route so Playwright can cleanly close the page
+    allowResponse()
   })
 
   test('Create Resume button is enabled once Google Drive is connected with settings', async ({ page }) => {
