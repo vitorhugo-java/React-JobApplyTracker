@@ -47,23 +47,51 @@ export const updateGoogleDriveSettings = async (payload) => {
 
   const currentStatusResponse = await api.get('/google-drive/status')
   const currentSettings = normalizeGoogleDriveSettings(currentStatusResponse.data)
-  const desiredResumes = payload.baseResumes ?? []
+  const desiredResumes = (payload.baseResumes ?? []).map(normalizeBaseResume)
 
+  const existingById = new Map(
+    currentSettings.baseResumes.map((resume) => [resume.id, resume])
+  )
   const existingByDocumentId = new Map(
     currentSettings.baseResumes.map((resume) => [resume.documentId, resume])
   )
-  const desiredDocumentIds = new Set(desiredResumes.map((resume) => resume.documentId))
+  const desiredIds = new Set(
+    desiredResumes.map((resume) => resume.id).filter(Boolean)
+  )
+  const desiredDocumentIds = new Set(
+    desiredResumes.map((resume) => resume.documentId).filter(Boolean)
+  )
 
   await Promise.all(
     currentSettings.baseResumes
-      .filter((resume) => !desiredDocumentIds.has(resume.documentId))
+      .filter(
+        (resume) =>
+          !desiredIds.has(resume.id) && !desiredDocumentIds.has(resume.documentId)
+      )
       .map((resume) => api.delete(`/google-drive/base-resumes/${resume.id}`))
   )
 
   for (const resume of desiredResumes) {
-    if (!existingByDocumentId.has(resume.documentId)) {
+    const existingResume =
+      existingById.get(resume.id) ?? existingByDocumentId.get(resume.documentId)
+
+    if (!existingResume) {
       await api.post('/google-drive/base-resumes', {
         documentIdOrUrl: resume.documentId,
+      })
+      continue
+    }
+
+    const hasChanged =
+      existingResume.documentId !== resume.documentId ||
+      existingResume.name !== resume.name ||
+      existingResume.isDefault !== Boolean(resume.isDefault)
+
+    if (hasChanged) {
+      await api.put(`/google-drive/base-resumes/${existingResume.id}`, {
+        documentIdOrUrl: resume.documentId,
+        name: resume.name,
+        isDefault: Boolean(resume.isDefault),
       })
     }
   }
