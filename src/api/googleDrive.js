@@ -79,6 +79,8 @@ export const updateGoogleDriveSettings = async (payload) => {
     if (!existingResume) {
       await api.post('/google-drive/base-resumes', {
         documentIdOrUrl: resume.documentId,
+        name: resume.name,
+        isDefault: Boolean(resume.isDefault),
       })
       continue
     }
