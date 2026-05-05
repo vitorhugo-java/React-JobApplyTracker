@@ -389,7 +389,7 @@ const ApplicationForm = () => {
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="dd/mm/yy" />
+              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="dd/mm/yy" pt={{ input: { 'data-testid': 'app-application-date' } }} />
               <label htmlFor="applicationDate">Application Date</label>
             </FloatLabel>
           </div>

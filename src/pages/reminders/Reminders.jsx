@@ -50,7 +50,7 @@ const ReminderCard = ({ app, onToggle, onMarkDmSent }) => {
 }
 
 const Section = ({ title, items, loading, onToggle, onMarkDmSent }) => (
-  <div>
+  <div data-testid={`reminders-${title.toLowerCase()}-section`}>
     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{title}</h2>
     {loading ? (
       <LoadingSkeleton rows={3} />

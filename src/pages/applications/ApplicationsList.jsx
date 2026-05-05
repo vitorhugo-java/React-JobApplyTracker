@@ -342,7 +342,7 @@ const ApplicationsList = () => {
                       if (editingId !== app.id) navigate(`/applications/${app.id}`)
                     }}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-testid="app-vacancy-cell">
                       {editingId === app.id ? (
                         <InputText
                           value={editDraft?.vacancyName ?? ''}
