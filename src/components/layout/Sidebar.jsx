@@ -38,7 +38,7 @@ const Sidebar = ({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+              className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:text-gray-400 dark:hover:text-white"
               aria-label={isCollapsed ? 'Expand navigation menu' : 'Collapse navigation menu'}
             >
               {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
