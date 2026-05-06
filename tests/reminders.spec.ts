@@ -32,6 +32,9 @@ test.describe('Reminder flow', () => {
     await page.getByTestId('app-vacancy-name').fill(vacancy)
     await page.getByTestId('app-recruiter-name').fill(recruiterName)
 
+    // Wait for the date input to be visible before injecting (avoids race with React mount)
+    await expect(page.locator('input[data-testid="app-application-date"]')).toBeVisible({ timeout: 10_000 })
+
     // PrimeReact Calendar requires direct DOM injection to reliably set the date in CI
     await page.evaluate(() => {
       const input = document.querySelector('input[data-testid="app-application-date"]') as HTMLInputElement
@@ -65,6 +68,9 @@ test.describe('Reminder flow', () => {
 
     await page.getByTestId('app-vacancy-name').fill(vacancy)
     // Intentionally leave recruiterName empty
+
+    // Wait for the date input to be visible before injecting (avoids race with React mount)
+    await expect(page.locator('input[data-testid="app-application-date"]')).toBeVisible({ timeout: 10_000 })
 
     // PrimeReact Calendar requires direct DOM injection to reliably set the date in CI
     await page.evaluate(() => {
@@ -127,7 +133,7 @@ test.describe('Reminder flow', () => {
     const upcoming = apps.filter((app) => new Date(app.createdAt) > threshold)
     const overdue = apps.filter((app) => new Date(app.createdAt) <= threshold)
 
-    await page.route('**/api/v1/applications/upcoming', async (route) => {
+    await page.route('**/api/v1/applications/upcoming**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -135,7 +141,7 @@ test.describe('Reminder flow', () => {
       })
     })
 
-    await page.route('**/api/v1/applications/overdue', async (route) => {
+    await page.route('**/api/v1/applications/overdue**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
