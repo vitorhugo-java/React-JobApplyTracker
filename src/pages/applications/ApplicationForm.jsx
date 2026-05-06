@@ -324,7 +324,7 @@ const ApplicationForm = () => {
             detail: 'No internet. Creation was queued and will sync automatically when online.',
           })
         }
-        navigate('/applications')
+        window.location.assign('/applications')
       }
     } catch (err) {
       const detail = err.response?.data?.message || 'Could not save the application. Please check your information and try again.'
@@ -389,7 +389,14 @@ const ApplicationForm = () => {
 
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="dd/mm/yy" pt={{ input: { 'data-testid': 'app-application-date' } }} />
+              <Calendar
+                inputId="applicationDate"
+                value={form.applicationDate}
+                onChange={(e) => setField('applicationDate', e.value)}
+                className="w-full"
+                dateFormat="dd/mm/yy"
+                pt={{ input: { root: { 'data-testid': 'app-application-date' } } }}
+              />
               <label htmlFor="applicationDate">Application Date</label>
             </FloatLabel>
           </div>
