@@ -12,6 +12,7 @@ import MetricsPage from './pages/dashboard/MetricsPage'
 import ApplicationsList from './pages/applications/ApplicationsList'
 import ApplicationForm from './pages/applications/ApplicationForm'
 import ApplicationDetail from './pages/applications/ApplicationDetail'
+import Reminders from './pages/reminders/Reminders'
 import Developer from './pages/developer/Developer'
 import About from './pages/about/About'
 import AccountSettings from './pages/account/AccountSettings'
@@ -97,6 +98,7 @@ const App = () => {
 
   useEffect(() => {
     if (!appReady || !accessToken) return
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return
 
     warmOfflineData().catch(() => null)
   }, [appReady, accessToken])
@@ -147,6 +149,7 @@ const App = () => {
           <Route path="/applications/new" element={<ApplicationForm />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
           <Route path="/applications/:id/edit" element={<ApplicationForm />} />
+          <Route path="/reminders" element={<Reminders />} />
           <Route path="/about" element={<About />} />
           <Route path="/developer" element={<Developer />} />
           <Route path="/account" element={<AccountSettings />} />

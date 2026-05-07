@@ -85,7 +85,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [summaryRes, toSendLaterRes, overdueRes] = await Promise.all([
+        const [summaryRes, toSendLaterRes, overdueRes] = await Promise.allSettled([
           getDashboardSummary(),
           getApplications({
             archived: false,
@@ -96,10 +96,24 @@ const Dashboard = () => {
           }),
           getOverdue(),
         ])
-        setSummary(summaryRes.data)
-        setToSendLater(toSendLaterRes.data?.content || toSendLaterRes.data?.items || [])
-        setToSendLaterTotal(toSendLaterRes.data?.totalElements || toSendLaterRes.data?.total || 0)
-        setOverdue(overdueRes.data || [])
+
+        if (summaryRes.status === 'fulfilled') {
+          setSummary(summaryRes.value.data)
+        }
+
+        if (toSendLaterRes.status === 'fulfilled') {
+          setToSendLater(toSendLaterRes.value.data?.content || toSendLaterRes.value.data?.items || [])
+          setToSendLaterTotal(toSendLaterRes.value.data?.totalElements || toSendLaterRes.value.data?.total || 0)
+        } else {
+          setToSendLater([])
+          setToSendLaterTotal(0)
+        }
+
+        if (overdueRes.status === 'fulfilled') {
+          setOverdue(overdueRes.value.data || [])
+        } else {
+          setOverdue([])
+        }
       } catch {
         // Keep dashboard shell visible even when summary endpoints are temporarily unavailable.
       } finally {
@@ -183,7 +197,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">To Send Later</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">To send later</h2>
           </div>
           <div className="p-2">
             {loading ? (

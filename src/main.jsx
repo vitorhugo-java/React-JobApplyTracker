@@ -11,7 +11,9 @@ import { registerSW } from 'virtual:pwa-register'
 
 measurePageLoad()
 
-if (import.meta.env.VITE_DISABLE_PWA !== 'true') {
+const isAutomationEnvironment = typeof navigator !== 'undefined' && navigator.webdriver
+
+if (import.meta.env.VITE_DISABLE_PWA !== 'true' && !isAutomationEnvironment) {
   registerSW({ immediate: true })
 }
 

@@ -17,21 +17,9 @@ import {
   markDmSent,
   APPLICATION_STATUSES,
 } from '../../api/applications'
-import {
-  createGoogleDriveResume,
-  getGoogleDriveSettings,
-} from '../../api/googleDrive'
 import { GAMIFICATION_EVENT_TYPES } from '../../api/gamification'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import useGamificationStore from '../../store/gamificationStore'
-import {
-  GOOGLE_DRIVE_GEMINI_URL,
-} from '../../utils/googleDrive'
-import {
-  navigateOpenedTab,
-  openExternalUrl,
-  openPendingTab,
-} from '../../utils/externalLinks'
 
 const defaultForm = {
   vacancyName: '',
@@ -47,12 +35,6 @@ const defaultForm = {
   markDmSent: false,
   toSendLater: false,
   note: '',
-}
-
-const defaultGoogleDriveSettings = {
-  connected: false,
-  baseFolderId: '',
-  baseResumes: [],
 }
 
 const getDraftKey = (id) => `jobtracker:application-form-draft:${id || 'new'}`
@@ -97,21 +79,6 @@ const formatLocalDateTime = (date) => {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
 }
 
-const buildApplicationPayload = (form) => {
-  const payload = {
-    ...form,
-    vacancyName: form.vacancyName.trim() || null,
-    applicationDate: formatDateOnly(form.applicationDate),
-    nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
-    status: form.toSendLater ? null : form.status,
-    note: form.note?.trim() || null,
-  }
-
-  delete payload.markDmSent
-
-  return payload
-}
-
 const ApplicationForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -131,10 +98,6 @@ const ApplicationForm = () => {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(isEdit)
   const [draftReady, setDraftReady] = useState(false)
-  const [googleDriveSettings, setGoogleDriveSettings] = useState(defaultGoogleDriveSettings)
-  const [loadingGoogleDriveSettings, setLoadingGoogleDriveSettings] = useState(true)
-  const [creatingResume, setCreatingResume] = useState(false)
-  const [selectedBaseResumeId, setSelectedBaseResumeId] = useState('')
   const draftRef = useRef(null)
   const initialFormRef = useRef(null)
   const draftKey = getDraftKey(id)
@@ -152,54 +115,6 @@ const ApplicationForm = () => {
   }, [draftKey, isEdit])
 
   useEffect(() => {
-    let active = true
-
-    const loadGoogleDriveSettings = async () => {
-      setLoadingGoogleDriveSettings(true)
-
-      try {
-        const response = await getGoogleDriveSettings()
-
-        if (!active) {
-          return
-        }
-
-        const settings = response.data ?? defaultGoogleDriveSettings
-        const defaultResume = settings.baseResumes.find((resume) => resume.isDefault) ?? settings.baseResumes[0]
-
-        setGoogleDriveSettings(settings)
-        setSelectedBaseResumeId((current) => (
-          current && settings.baseResumes.some((resume) => resume.id === current)
-            ? current
-            : defaultResume?.id ?? ''
-        ))
-      } catch (err) {
-        if (!active) {
-          return
-        }
-
-        setGoogleDriveSettings(defaultGoogleDriveSettings)
-        setSelectedBaseResumeId('')
-
-        if (![404, 501].includes(err.response?.status)) {
-          const detail = err.response?.data?.message || 'Google Drive settings could not be loaded.'
-          toast.current?.show({ severity: 'warn', summary: 'Resume tools unavailable', detail })
-        }
-      } finally {
-        if (active) {
-          setLoadingGoogleDriveSettings(false)
-        }
-      }
-    }
-
-    loadGoogleDriveSettings().catch(() => null)
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  useEffect(() => {
     if (!isEdit) return
     const fetchApp = async () => {
       try {
@@ -212,7 +127,7 @@ const ApplicationForm = () => {
           recruiterName: d.recruiterName ?? '',
           organization: d.organization ?? '',
           vacancyLink: d.vacancyLink ?? '',
-          applicationDate: parseDateOnlyAsLocalDate(d.applicationDate),
+          applicationDate: d.status == null ? null : parseDateOnlyAsLocalDate(d.applicationDate),
           nextStepDateTime: d.nextStepDateTime ? new Date(d.nextStepDateTime) : null,
           toSendLater: d.status == null,
           status: d.status ?? APPLICATION_STATUSES[0],
@@ -232,9 +147,10 @@ const ApplicationForm = () => {
     fetchApp()
   }, [id, isEdit])
 
+  // Set initial form state after all data is loaded or draft is restored
   useEffect(() => {
-    if (!draftReady) return
-    if (isEdit && fetching) return
+    if (!draftReady) return // Wait for draft to be checked
+    if (isEdit && fetching) return // For edit forms, wait for server data
     if (!initialFormRef.current) {
       initialFormRef.current = { ...form }
     }
@@ -247,12 +163,14 @@ const ApplicationForm = () => {
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
+  // Helper function to compare dates handling null values
   const areDatesEqual = (date1, date2) => {
     if (!date1 && !date2) return true
     if (!date1 || !date2) return false
     return date1.getTime() === date2.getTime()
   }
 
+  // Check if form is dirty (has unsaved changes)
   const isFormDirty = () => {
     if (!initialFormRef.current) return false
 
@@ -285,130 +203,12 @@ const ApplicationForm = () => {
           window.localStorage.removeItem(draftKey)
           navigate(isEdit ? `/applications/${id}` : '/applications')
         },
+        reject: () => {
+          // User cancelled, stay on form
+        },
       })
     } else {
       navigate(isEdit ? `/applications/${id}` : '/applications')
-    }
-  }
-
-  const handleOpenGemini = () => {
-    openExternalUrl(GOOGLE_DRIVE_GEMINI_URL)
-  }
-
-  const recordCreatedApplicationEvents = async (applicationId, payload) => {
-    try {
-      await recordEvent(GAMIFICATION_EVENT_TYPES.APPLICATION_CREATED, {
-        applicationId,
-      })
-    } catch (eventError) {
-      const detail = eventError.response?.data?.message || 'Application saved, but the XP event could not be recorded.'
-      toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-    }
-
-    if (payload.note) {
-      try {
-        await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
-          applicationId,
-        })
-      } catch (eventError) {
-        const detail = eventError.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
-        toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-      }
-    }
-
-    if (payload.interviewScheduled) {
-      try {
-        await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
-          applicationId,
-        })
-      } catch (eventError) {
-        const detail = eventError.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
-        toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-      }
-    }
-  }
-
-  const handleCreateResume = async () => {
-    const selectedResume = googleDriveSettings.baseResumes.find((resume) => resume.id === selectedBaseResumeId)
-      ?? googleDriveSettings.baseResumes[0]
-
-    if (!googleDriveSettings.connected) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Resume tools unavailable',
-        detail: 'Connect your Google account in Account Settings before creating a resume.',
-      })
-      return
-    }
-
-    if (!googleDriveSettings.baseFolderId || !selectedResume?.id) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Resume tools unavailable',
-        detail: 'Configure a base Drive folder and at least one base resume in Account Settings.',
-      })
-      return
-    }
-
-    if (!isEdit && !form.toSendLater && !form.applicationDate) {
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Validation',
-        detail: 'Application date is required unless "To send later" is enabled.',
-      })
-      return
-    }
-
-    const pendingTab = openPendingTab()
-    setCreatingResume(true)
-
-    try {
-      let applicationId = id
-      let createdApplicationId = null
-
-      if (!isEdit) {
-        const payload = buildApplicationPayload(form)
-        const createResponse = await createApplication(payload)
-
-        if (createResponse.data?.queuedOffline || !createResponse.data?.id) {
-          throw new Error('The application must be saved online before creating a Google Docs resume.')
-        }
-
-        createdApplicationId = createResponse.data.id
-        applicationId = createResponse.data.id
-        window.localStorage.removeItem(draftKey)
-        await recordCreatedApplicationEvents(applicationId, payload)
-      }
-
-      const response = await createGoogleDriveResume({
-        applicationId,
-        baseResumeId: selectedResume.id,
-      })
-      const googleDocUrl = response.data?.googleDocUrl
-
-      if (!googleDocUrl) {
-        throw new Error('No Google Docs URL was returned by the server.')
-      }
-
-      navigateOpenedTab(pendingTab, googleDocUrl)
-      toast.current?.show({
-        severity: 'success',
-        summary: 'Resume created',
-        detail: 'Your Google Docs resume was created and opened in a new tab.',
-      })
-
-      if (createdApplicationId) {
-        navigate(`/applications/${createdApplicationId}`)
-      }
-    } catch (err) {
-      if (pendingTab && !pendingTab.closed) {
-        pendingTab.close()
-      }
-
-      const detail = err.response?.data?.message || err.message || 'Could not create the Google Docs resume.'
-      toast.current?.show({ severity: 'error', summary: 'Error', detail })
-    } finally {
-      setCreatingResume(false)
     }
   }
 
@@ -416,6 +216,7 @@ const ApplicationForm = () => {
     e.preventDefault()
     setLoading(true)
 
+    // Validation: require applicationDate when not sending later
     if (!form.toSendLater && !form.applicationDate) {
       toast.current?.show({ severity: 'error', summary: 'Validation', detail: 'Application date is required unless "To send later" is enabled.' })
       setLoading(false)
@@ -424,12 +225,22 @@ const ApplicationForm = () => {
 
     try {
       const previousForm = initialFormRef.current
-      const payload = buildApplicationPayload(form)
-
+      const payload = {
+        ...form,
+        vacancyName: form.vacancyName.trim() || null,
+        applicationDate: form.toSendLater ? null : formatDateOnly(form.applicationDate),
+        nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
+        status: form.toSendLater ? null : form.status,
+        note: form.note?.trim() || null,
+      }
+      // Remove markDmSent from payload as it's not a backend field
+      delete payload.markDmSent
+      
       if (isEdit) {
         const response = await updateApplication(id, payload)
         window.localStorage.removeItem(draftKey)
-
+        
+        // If markDmSent is true, call the API
         if (form.markDmSent) {
           try {
             await markDmSent(id)
@@ -463,7 +274,7 @@ const ApplicationForm = () => {
             toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
           }
         }
-
+        
         if (response.data?.queuedOffline) {
           toast.current.show({
             severity: 'info',
@@ -475,8 +286,35 @@ const ApplicationForm = () => {
       } else {
         const response = await createApplication(payload)
         window.localStorage.removeItem(draftKey)
-        if (response.data?.id) {
-          await recordCreatedApplicationEvents(response.data.id, payload)
+        try {
+          await recordEvent(GAMIFICATION_EVENT_TYPES.APPLICATION_CREATED, {
+            applicationId: response.data?.id,
+          })
+        } catch (eventError) {
+          const detail = eventError.response?.data?.message || 'Application saved, but the XP event could not be recorded.'
+          toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+        }
+
+        if (payload.note) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
+              applicationId: response.data?.id,
+            })
+          } catch (eventError) {
+            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+          }
+        }
+
+        if (payload.interviewScheduled) {
+          try {
+            await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
+              applicationId: response.data?.id,
+            })
+          } catch (eventError) {
+            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
+            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+          }
         }
 
         if (response.data?.queuedOffline) {
@@ -486,7 +324,7 @@ const ApplicationForm = () => {
             detail: 'No internet. Creation was queued and will sync automatically when online.',
           })
         }
-        navigate('/applications')
+        window.location.assign('/applications')
       }
     } catch (err) {
       const detail = err.response?.data?.message || 'Could not save the application. Please check your information and try again.'
@@ -496,17 +334,7 @@ const ApplicationForm = () => {
     }
   }
 
-  const statusOptions = APPLICATION_STATUSES.map((status) => ({ label: status, value: status }))
-  const resumeTemplateOptions = googleDriveSettings.baseResumes.map((resume) => ({
-    label: resume.name,
-    value: resume.id,
-  }))
-  const selectedBaseResume = googleDriveSettings.baseResumes.find((resume) => resume.id === selectedBaseResumeId)
-    ?? googleDriveSettings.baseResumes[0]
-  const hasResumeIntegration =
-    googleDriveSettings.connected &&
-    Boolean(googleDriveSettings.baseFolderId) &&
-    googleDriveSettings.baseResumes.length > 0
+  const statusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
 
   if (fetching) {
     return (
@@ -559,78 +387,16 @@ const ApplicationForm = () => {
             </FloatLabel>
           </div>
 
-          <div className="sm:col-span-2 rounded-xl border border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/5 p-4 space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-white">Resume tools</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  Open Gemini or create a Google Docs resume copy from one of your configured base resumes.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  label="Open Gemini"
-                  icon="pi pi-external-link"
-                  outlined
-                  onClick={handleOpenGemini}
-                />
-                <Button
-                  type="button"
-                  label="Create Resume"
-                  icon="pi pi-file-export"
-                  onClick={handleCreateResume}
-                  loading={creatingResume}
-                  disabled={!hasResumeIntegration || loadingGoogleDriveSettings}
-                />
-              </div>
-            </div>
-
-            {loadingGoogleDriveSettings ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading your Google Drive resume settings...</p>
-            ) : hasResumeIntegration ? (
-              <div className="space-y-3">
-                {googleDriveSettings.baseResumes.length > 1 ? (
-                  <div className="space-y-1">
-                    <label htmlFor="baseResumeTemplate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Base Resume
-                    </label>
-                    <Dropdown
-                      inputId="baseResumeTemplate"
-                      value={selectedBaseResumeId}
-                      options={resumeTemplateOptions}
-                      onChange={(e) => setSelectedBaseResumeId(e.value)}
-                      className="w-full sm:max-w-sm"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Using base resume: <span className="font-semibold">{selectedBaseResume?.name}</span>
-                  </p>
-                )}
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Your resume copy will open in a new Google Docs tab after the backend finishes creating it.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Connect Google Drive and save at least one base resume in Account Settings to enable one-click resume creation.
-                </p>
-                <Button
-                  type="button"
-                  label="Open Account Settings"
-                  icon="pi pi-cog"
-                  text
-                  onClick={() => navigate('/account')}
-                />
-              </div>
-            )}
-          </div>
-
           <div className="pt-2">
             <FloatLabel className="w-full">
-              <Calendar inputId="applicationDate" value={form.applicationDate} onChange={(e) => setField('applicationDate', e.value)} className="w-full" dateFormat="dd/mm/yy" />
+              <Calendar
+                inputId="applicationDate"
+                value={form.applicationDate}
+                onChange={(e) => setField('applicationDate', e.value)}
+                className="w-full"
+                dateFormat="dd/mm/yy"
+                pt={{ input: { root: { 'data-testid': 'app-application-date' } } }}
+              />
               <label htmlFor="applicationDate">Application Date</label>
             </FloatLabel>
           </div>

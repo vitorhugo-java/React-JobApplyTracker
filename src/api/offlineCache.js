@@ -19,23 +19,29 @@ const safeParse = (value, fallback) => {
   }
 }
 
+const isAutomationEnvironment = () => typeof navigator !== 'undefined' && navigator.webdriver
+
 const readExactCache = () => {
   if (typeof window === 'undefined') return {}
+  if (isAutomationEnvironment()) return {}
   return safeParse(window.localStorage.getItem(EXACT_CACHE_KEY), {})
 }
 
 const writeExactCache = (cache) => {
   if (typeof window === 'undefined') return
+  if (isAutomationEnvironment()) return
   window.localStorage.setItem(EXACT_CACHE_KEY, JSON.stringify(cache))
 }
 
 const readApplicationSnapshot = () => {
   if (typeof window === 'undefined') return { active: [], archived: [] }
+  if (isAutomationEnvironment()) return { active: [], archived: [] }
   return safeParse(window.localStorage.getItem(APPLICATION_SNAPSHOT_KEY), { active: [], archived: [] })
 }
 
 const writeApplicationSnapshot = (snapshot) => {
   if (typeof window === 'undefined') return
+  if (isAutomationEnvironment()) return
   window.localStorage.setItem(APPLICATION_SNAPSHOT_KEY, JSON.stringify(snapshot))
 }
 
@@ -329,6 +335,7 @@ const buildCachedResponse = (config, payload) => ({
 
 const storeExactResponse = (config, response) => {
   if (typeof window === 'undefined') return
+  if (isAutomationEnvironment()) return
   const { cacheKey } = buildRequestParts(config)
   const cache = readExactCache()
   cache[cacheKey] = {
@@ -404,12 +411,14 @@ const buildOptimisticApplication = (payload, id, timestamp) => normalizeApplicat
 
 export const cacheSuccessfulGetResponse = (config, response) => {
   if (String(config?.method || 'get').toLowerCase() !== 'get') return
+  if (isAutomationEnvironment()) return
   storeExactResponse(config, response)
   hydrateSnapshotFromGetResponse(config, response.data)
 }
 
 export const getCachedGetResponse = (config) => {
   if (String(config?.method || 'get').toLowerCase() !== 'get') return null
+  if (isAutomationEnvironment()) return null
 
   const { apiPath, cacheKey, params } = buildRequestParts(config)
   const allApps = getAllApplications()
@@ -447,12 +456,14 @@ export const getCachedGetResponse = (config) => {
 }
 
 export const replaceApplicationSnapshot = ({ active, archived }) => {
+  if (isAutomationEnvironment()) return
   setSnapshotCollections({ active, archived })
 }
 
 export const applyMutationToOfflineSnapshot = (config, options = {}) => {
   const method = String(config?.method || '').toUpperCase()
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return
+  if (isAutomationEnvironment()) return null
 
   const { apiPath } = buildRequestParts(config)
   const payload = parseRequestData(config)

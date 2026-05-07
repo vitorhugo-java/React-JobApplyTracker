@@ -26,6 +26,8 @@ test.describe('Application Form Behavior', () => {
   test('toggling "To send later" clears and restores application date', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'New Application' })).toBeVisible()
     
+    // NOTE: Add pt={{ input: { 'data-testid': 'app-application-date' } }} to the
+    // applicationDate Calendar component in ApplicationForm.jsx for this locator to work.
     const dateInput = page.locator('input#applicationDate')
     await expect(dateInput).toBeVisible({ timeout: 10000 })
     

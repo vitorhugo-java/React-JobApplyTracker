@@ -5,7 +5,7 @@ test.describe('Password Validation and Feedback', () => {
   test('display password strength feedback when typing password', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('Test')
 
     // 'Test': uppercase + lowercase = score 2 → Fair
@@ -15,7 +15,7 @@ test.describe('Password Validation and Feedback', () => {
   test('update password strength to weak with 6 characters', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('testlo')
 
     // 'testlo': lowercase only = score 1 → Weak
@@ -27,7 +27,7 @@ test.describe('Password Validation and Feedback', () => {
   }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('Test123')
 
     // 'Test123': uppercase + lowercase + number = score 3 → Good
@@ -39,7 +39,7 @@ test.describe('Password Validation and Feedback', () => {
   }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('Test1234')
 
     // 'Test1234': minLength + uppercase + lowercase + number = score 4 → Strong
@@ -49,7 +49,7 @@ test.describe('Password Validation and Feedback', () => {
   test('update password strength to very strong with special character', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('Test1234!')
 
     // 'Test1234!': all 5 criteria met = score 5 → Very Strong
@@ -59,7 +59,7 @@ test.describe('Password Validation and Feedback', () => {
   test('display all password requirements checklist', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
     await passwordInput.fill('T')
 
     // All requirements should be visible
@@ -73,7 +73,7 @@ test.describe('Password Validation and Feedback', () => {
   test('check off requirements as they are met', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
 
     // Fill with uppercase only
     await passwordInput.fill('T')
@@ -99,42 +99,42 @@ test.describe('Password Validation and Feedback', () => {
   test('show password mismatch error for confirm password', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
-    const confirmInput = page.locator('[data-testid="register-confirm-password"]')
+    const passwordInput = page.getByTestId('register-password')
+    const confirmInput = page.getByTestId('register-confirm-password')
 
     await passwordInput.fill('Test1234!')
     await confirmInput.fill('Different')
 
     // Fill the form to enable submit
-    await page.locator('[data-testid="register-name"]').fill('Test User')
-    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('test-mismatch'))
+    await page.getByTestId('register-name').fill('Test User')
+    await page.getByTestId('register-email').fill(uniqueEmail('test-mismatch'))
     
     // Click submit to see the error
-    await page.locator('[data-testid="register-submit"]').click()
+    await page.getByTestId('register-submit').click()
 
     // Should show mismatch error in toast
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText('Passwords do not match')
   })
 
   test('hide password mismatch error when passwords match', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
-    const confirmInput = page.locator('[data-testid="register-confirm-password"]')
+    const passwordInput = page.getByTestId('register-password')
+    const confirmInput = page.getByTestId('register-confirm-password')
 
     // Fill the form
-    await page.locator('[data-testid="register-name"]').fill('Test User')
-    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('test-match'))
+    await page.getByTestId('register-name').fill('Test User')
+    await page.getByTestId('register-email').fill(uniqueEmail('test-match'))
 
     await passwordInput.fill('Test1234!')
     await confirmInput.fill('Different')
 
     // Click submit to trigger error
-    await page.locator('[data-testid="register-submit"]').click()
+    await page.getByTestId('register-submit').click()
 
     // Initially shows error
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText('Passwords do not match')
 
     // Update confirm to match
@@ -147,15 +147,15 @@ test.describe('Password Validation and Feedback', () => {
   test('reject registration with password shorter than 8 characters', async ({ page }) => {
     await page.goto('/register')
 
-    await page.locator('[data-testid="register-name"]').fill('Test User')
-    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('short-pwd'))
-    await page.locator('[data-testid="register-password"]').fill('Test123')
-    await page.locator('[data-testid="register-confirm-password"]').fill('Test123')
+    await page.getByTestId('register-name').fill('Test User')
+    await page.getByTestId('register-email').fill(uniqueEmail('short-pwd'))
+    await page.getByTestId('register-password').fill('Test123')
+    await page.getByTestId('register-confirm-password').fill('Test123')
 
-    await page.locator('[data-testid="register-submit"]').click()
+    await page.getByTestId('register-submit').click()
 
     // Should show validation error in toast
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText('Password must be at least 8 characters')
   })
 
@@ -169,11 +169,11 @@ test.describe('Password Validation and Feedback', () => {
     
     // Register once
     await page.goto('/register')
-    await page.locator('[data-testid="register-name"]').fill('First User')
-    await page.locator('[data-testid="register-email"]').fill(email)
-    await page.locator('[data-testid="register-password"]').fill(password)
-    await page.locator('[data-testid="register-confirm-password"]').fill(password)
-    const registerButton = page.locator('[data-testid="register-submit"]')
+    await page.getByTestId('register-name').fill('First User')
+    await page.getByTestId('register-email').fill(email)
+    await page.getByTestId('register-password').fill(password)
+    await page.getByTestId('register-confirm-password').fill(password)
+    const registerButton = page.getByTestId('register-submit')
     await registerButton.click()
 
     // Wait a bit for registration to process
@@ -187,14 +187,14 @@ test.describe('Password Validation and Feedback', () => {
     if (isOnDashboard || !currentUrl.includes('/register')) {
       // Try to navigate to register
       await page.goto('/register')
-      await page.locator('[data-testid="register-name"]').fill('Second User')
-      await page.locator('[data-testid="register-email"]').fill(email)
-      await page.locator('[data-testid="register-password"]').fill(password)
-      await page.locator('[data-testid="register-confirm-password"]').fill(password)
-      await page.locator('[data-testid="register-submit"]').click()
+      await page.getByTestId('register-name').fill('Second User')
+      await page.getByTestId('register-email').fill(email)
+      await page.getByTestId('register-password').fill(password)
+      await page.getByTestId('register-confirm-password').fill(password)
+      await page.getByTestId('register-submit').click()
 
       // Should show helpful error message
-      const errorMsg = page.locator('.p-toast-detail').first()
+      const errorMsg = page.getByRole('alert').first()
       await expect(errorMsg).toContainText(/already registered|already in use|already exists|duplicate/, { timeout: 10000 })
     }
     // If first registration failed, that's ok - the test demonstrated the registration flow
@@ -203,15 +203,15 @@ test.describe('Password Validation and Feedback', () => {
   test('show intuitive error for mismatched passwords on submit', async ({ page }) => {
     await page.goto('/register')
 
-    await page.locator('[data-testid="register-name"]').fill('Test User')
-    await page.locator('[data-testid="register-email"]').fill(uniqueEmail('mismatch'))
-    await page.locator('[data-testid="register-password"]').fill('Test1234!')
-    await page.locator('[data-testid="register-confirm-password"]').fill('Test1234@')
+    await page.getByTestId('register-name').fill('Test User')
+    await page.getByTestId('register-email').fill(uniqueEmail('mismatch'))
+    await page.getByTestId('register-password').fill('Test1234!')
+    await page.getByTestId('register-confirm-password').fill('Test1234@')
 
-    await page.locator('[data-testid="register-submit"]').click()
+    await page.getByTestId('register-submit').click()
 
     // Should show validation error in toast
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText('Passwords do not match')
   })
 
@@ -219,7 +219,9 @@ test.describe('Password Validation and Feedback', () => {
     // This test uses a fake token since we're just testing UI
     await page.goto('/reset-password?token=fake-token')
 
-    const passwordInput = page.locator('form input[type="password"]').first()
+    // NOTE: Add pt={{ input: { 'data-testid': 'reset-password-new' } }} to the first
+    // Password component in ResetPassword.jsx for this locator to work.
+    const passwordInput = page.getByTestId('reset-password-new')
     await passwordInput.fill('Test1234!')
 
     // Should show password strength label
@@ -231,7 +233,9 @@ test.describe('Password Validation and Feedback', () => {
   test('password requirements in reset password form', async ({ page }) => {
     await page.goto('/reset-password?token=fake-token')
 
-    const passwordInput = page.locator('form input[type="password"]').first()
+    // NOTE: Add pt={{ input: { 'data-testid': 'reset-password-new' } }} to the first
+    // Password component in ResetPassword.jsx for this locator to work.
+    const passwordInput = page.getByTestId('reset-password-new')
     await passwordInput.fill('T')
 
     // All requirements should be visible
@@ -242,39 +246,45 @@ test.describe('Password Validation and Feedback', () => {
   test('show error when reset password is shorter than 8 characters', async ({ page }) => {
     await page.goto('/reset-password?token=fake-token')
 
-    const passwordInput = page.locator('form input[type="password"]').first()
-    const confirmInput = page.locator('form input[type="password"]').last()
+    // NOTE: Add pt={{ input: { 'data-testid': 'reset-password-new' } }} and
+    // pt={{ input: { 'data-testid': 'reset-password-confirm' } }} to the Password
+    // components in ResetPassword.jsx for these locators to work.
+    const passwordInput = page.getByTestId('reset-password-new')
+    const confirmInput = page.getByTestId('reset-password-confirm')
 
     await passwordInput.fill('Short')
     await confirmInput.fill('Short')
 
-    await page.locator('button:has-text("Reset Password")').click()
+    await page.getByRole('button', { name: 'Reset Password' }).click()
 
     // Should show validation error in toast
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText('Password must be at least 8 characters')
   })
 
   test('show error for missing reset token', async ({ page }) => {
     await page.goto('/reset-password')
 
-    const passwordInput = page.locator('form input[type="password"]').first()
-    const confirmInput = page.locator('form input[type="password"]').last()
+    // NOTE: Add pt={{ input: { 'data-testid': 'reset-password-new' } }} and
+    // pt={{ input: { 'data-testid': 'reset-password-confirm' } }} to the Password
+    // components in ResetPassword.jsx for these locators to work.
+    const passwordInput = page.getByTestId('reset-password-new')
+    const confirmInput = page.getByTestId('reset-password-confirm')
 
     await passwordInput.fill('Test1234!')
     await confirmInput.fill('Test1234!')
 
-    await page.locator('button:has-text("Reset Password")').click()
+    await page.getByRole('button', { name: 'Reset Password' }).click()
 
     // Should show error message in toast
-    const errorMsg = page.locator('.p-toast-detail')
+    const errorMsg = page.getByRole('alert')
     await expect(errorMsg).toContainText(/Invalid.*token|reset.*link|token.*required/i)
   })
 
   test('display password strength bar visual indicator', async ({ page }) => {
     await page.goto('/register')
 
-    const passwordInput = page.locator('[data-testid="register-password"]')
+    const passwordInput = page.getByTestId('register-password')
 
     // Fill with weak password: 'test' = lowercase only → score 1 → weak
     await passwordInput.fill('test')
