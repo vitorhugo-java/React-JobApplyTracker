@@ -79,6 +79,7 @@ const AccountSettings = () => {
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
+  const canUseGoogleIntegration = Boolean(user?.canUseGoogleIntegration)
 
   const [name, setName] = useState(user?.name || '')
   const [reminderTime, setReminderTime] = useState((user?.reminderTime || '19:00:00').slice(0, 5))
@@ -108,7 +109,8 @@ const AccountSettings = () => {
   const isProfileDirty = name !== initialProfile.name || reminderTime !== initialProfile.reminderTime
   const isPasswordDirty =
     passwordForm.currentPassword !== '' || passwordForm.newPassword !== '' || passwordForm.confirmPassword !== ''
-  const isGoogleDriveDirty = serializeGoogleDriveForm(googleDriveForm) !== initialGoogleDriveSnapshot
+  const isGoogleDriveDirty =
+    canUseGoogleIntegration && serializeGoogleDriveForm(googleDriveForm) !== initialGoogleDriveSnapshot
 
   const applyGoogleDriveSettings = useCallback((settings) => {
     const nextForm = mapGoogleDriveSettingsToForm(settings)
@@ -116,7 +118,19 @@ const AccountSettings = () => {
     setInitialGoogleDriveSnapshot(serializeGoogleDriveForm(nextForm))
   }, [])
 
+  const resetGoogleDriveState = useCallback(() => {
+    const emptyForm = createEmptyGoogleDriveForm()
+    setGoogleDriveForm(emptyForm)
+    setInitialGoogleDriveSnapshot(serializeGoogleDriveForm(emptyForm))
+    setLoadingGoogleDrive(false)
+  }, [])
+
   const loadGoogleDriveSettings = useCallback(async (showSuccessMessage = false, showLoadingSpinner = true) => {
+    if (!canUseGoogleIntegration) {
+      resetGoogleDriveState()
+      return
+    }
+
     if (showLoadingSpinner) {
       setLoadingGoogleDrive(true)
     }
@@ -133,7 +147,7 @@ const AccountSettings = () => {
         })
       }
     } catch (err) {
-      applyGoogleDriveSettings(createEmptyGoogleDriveForm())
+      resetGoogleDriveState()
 
       if (![404, 501].includes(err.response?.status)) {
         const detail = err.response?.data?.message || 'Could not load your Google Drive settings right now.'
@@ -142,9 +156,13 @@ const AccountSettings = () => {
     } finally {
       setLoadingGoogleDrive(false)
     }
-  }, [applyGoogleDriveSettings])
+  }, [applyGoogleDriveSettings, canUseGoogleIntegration, resetGoogleDriveState])
 
   useEffect(() => {
+    if (!canUseGoogleIntegration) {
+      return
+    }
+
     const loadTimer = window.setTimeout(() => {
       loadGoogleDriveSettings(false, false).catch(() => null)
     }, 0)
@@ -152,7 +170,7 @@ const AccountSettings = () => {
     return () => {
       window.clearTimeout(loadTimer)
     }
-  }, [loadGoogleDriveSettings])
+  }, [canUseGoogleIntegration, loadGoogleDriveSettings])
 
   useEffect(() => {
     const isDirty = isProfileDirty || isPasswordDirty || isGoogleDriveDirty
@@ -466,7 +484,11 @@ const AccountSettings = () => {
 
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your personal information, Google Drive resumes and account password</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          {canUseGoogleIntegration
+            ? 'Manage your personal information, Google Drive resumes and account password'
+            : 'Manage your personal information and account password'}
+        </p>
       </div>
 
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
@@ -513,6 +535,7 @@ const AccountSettings = () => {
         </form>
       </section>
 
+      {canUseGoogleIntegration && (
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -661,6 +684,7 @@ const AccountSettings = () => {
           <Button type="submit" label="Save Google Drive Settings" loading={savingGoogleDrive} />
         </form>
       </section>
+      )}
 
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>

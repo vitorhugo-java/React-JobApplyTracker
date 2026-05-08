@@ -8,6 +8,8 @@ type MockUser = {
   name: string
   email: string
   reminderTime: string
+  roles: string[]
+  canUseGoogleIntegration: boolean
 }
 
 const buildPersistedAuthState = (user: MockUser) => ({
@@ -30,8 +32,29 @@ const defaultGamificationProfile = {
   streakDays: 0,
 }
 
-export function setupMockAuth(page: Page, email: string, name: string): void {
-  const user = { id: 'pw-user-1', name, email, reminderTime: '19:00:00' }
+type SetupMockAuthOptions = {
+  canUseGoogleIntegration?: boolean
+}
+
+const buildMockUser = (
+  email: string,
+  name: string,
+  options: SetupMockAuthOptions = {}
+): MockUser => {
+  const canUseGoogleIntegration = Boolean(options.canUseGoogleIntegration)
+
+  return {
+    id: 'pw-user-1',
+    name,
+    email,
+    reminderTime: '19:00:00',
+    roles: canUseGoogleIntegration ? ['USER', 'BETA'] : ['USER'],
+    canUseGoogleIntegration,
+  }
+}
+
+export function setupMockAuth(page: Page, email: string, name: string, options: SetupMockAuthOptions = {}): void {
+  const user = buildMockUser(email, name, options)
 
   void page.route(`${API_V1}/auth/register`, async (route) => {
     await route.fulfill({
@@ -120,11 +143,16 @@ export function setupMockAuth(page: Page, email: string, name: string): void {
   })
 }
 
-async function seedAuthenticatedSession(page: Page, email: string, name: string): Promise<void> {
-  const user = { id: 'pw-user-1', name, email, reminderTime: '19:00:00' }
+async function seedAuthenticatedSession(
+  page: Page,
+  email: string,
+  name: string,
+  options: SetupMockAuthOptions = {}
+): Promise<void> {
+  const user = buildMockUser(email, name, options)
   const persistedState = buildPersistedAuthState(user)
 
-  setupMockAuth(page, email, name)
+  setupMockAuth(page, email, name, options)
 
   await page.addInitScript(
     ({ storageKey, state }) => {
@@ -153,10 +181,11 @@ export async function registerUser(
   page: Page,
   email: string,
   password: string,
-  name = 'Test User'
+  name = 'Test User',
+  options: SetupMockAuthOptions = {}
 ): Promise<void> {
   void password
-  await seedAuthenticatedSession(page, email, name)
+  await seedAuthenticatedSession(page, email, name, options)
 }
 
 /**
@@ -165,10 +194,11 @@ export async function registerUser(
 export async function loginUser(
   page: Page,
   email: string,
-  password: string
+  password: string,
+  options: SetupMockAuthOptions = {}
 ): Promise<void> {
   void password
-  await seedAuthenticatedSession(page, email, 'Test User')
+  await seedAuthenticatedSession(page, email, 'Test User', options)
 }
 
 /**

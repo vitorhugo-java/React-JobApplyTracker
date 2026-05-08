@@ -18,7 +18,7 @@ type GoogleDriveStatusPayload = {
 }
 
 function setupPage(page: Page): Promise<void> {
-  setupMockAuth(page, 'test@example.com', 'Test User')
+  setupMockAuth(page, 'test@example.com', 'Test User', { canUseGoogleIntegration: true })
   setupMockApplicationsApi(page)
   return page.addInitScript(() => {
     window.localStorage.setItem(
@@ -26,7 +26,13 @@ function setupPage(page: Page): Promise<void> {
       JSON.stringify({
         state: {
           accessToken: 'pw-access-token',
-          user: { id: 'pw-user-1', name: 'Test User', email: 'test@example.com' },
+          user: {
+            id: 'pw-user-1',
+            name: 'Test User',
+            email: 'test@example.com',
+            roles: ['USER', 'BETA'],
+            canUseGoogleIntegration: true,
+          },
           theme: 'light',
         },
         version: 0,
