@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { LogOut, Menu, User } from 'lucide-react'
+import { LogOut, User } from 'lucide-react'
+import MobileNav from './MobileNav'
 import Sidebar from './Sidebar'
 import ThemeToggle from '../ui/ThemeToggle'
 import SyncStatusIndicator from '../ui/SyncStatusIndicator'
@@ -25,7 +26,6 @@ const Layout = () => {
   const [isCompactDesktop, setIsCompactDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px) and (max-width: 1023px)').matches : false,
   )
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === 'true'
@@ -41,9 +41,6 @@ const Layout = () => {
 
     const handleDesktopChange = (event) => {
       setIsDesktop(event.matches)
-      if (event.matches) {
-        setIsMobileSidebarOpen(false)
-      }
     }
 
     const handleCompactDesktopChange = (event) => {
@@ -81,32 +78,16 @@ const Layout = () => {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <GamificationToastHost />
-      {!isDesktop && isMobileSidebarOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-gray-900/50 md:hidden"
-          onClick={() => setIsMobileSidebarOpen(false)}
-          aria-label="Close navigation menu"
+      {isDesktop && (
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          showDesktopCollapseToggle={!isCompactDesktop}
+          onToggleCollapse={() => setIsDesktopSidebarCollapsed((current) => !current)}
         />
       )}
-      <Sidebar
-        isMobileOpen={isMobileSidebarOpen}
-        isCollapsed={isSidebarCollapsed}
-        showDesktopCollapseToggle={!isCompactDesktop}
-        onClose={() => setIsMobileSidebarOpen(false)}
-        onToggleCollapse={() => setIsDesktopSidebarCollapsed((current) => !current)}
-      />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white md:hidden"
-              aria-label="Open navigation menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
             <div className="md:hidden w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center">
               <span className="text-white text-xs font-bold">JT</span>
             </div>
@@ -129,10 +110,11 @@ const Layout = () => {
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
           <Outlet />
         </main>
       </div>
+      {!isDesktop && <MobileNav />}
     </div>
   )
 }
