@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InputText } from 'primereact/inputtext'
 import { InputTextarea } from 'primereact/inputtextarea'
@@ -17,9 +17,13 @@ import {
   markDmSent,
   APPLICATION_STATUSES,
 } from '../../api/applications'
+import { createGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
 import { GAMIFICATION_EVENT_TYPES } from '../../api/gamification'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import useAuthStore from '../../store/authStore'
 import useGamificationStore from '../../store/gamificationStore'
+import { canUseGoogleIntegration } from '../../utils/googleDriveAccess'
+import { navigateOpenedTab, openPendingTab } from '../../utils/externalLinks'
 
 const defaultForm = {
   vacancyName: '',
@@ -38,6 +42,18 @@ const defaultForm = {
 }
 
 const getDraftKey = (id) => `jobtracker:application-form-draft:${id || 'new'}`
+
+const createEmptyGoogleDriveState = () => ({
+  configured: true,
+  connected: false,
+  accountEmail: '',
+  accountDisplayName: '',
+  connectedAt: null,
+  baseFolderId: '',
+  baseFolderName: '',
+  baseFolderUrl: '',
+  baseResumes: [],
+})
 
 const toStoragePayload = (form) => ({
   ...form,
@@ -101,7 +117,13 @@ const ApplicationForm = () => {
   const draftRef = useRef(null)
   const initialFormRef = useRef(null)
   const draftKey = getDraftKey(id)
+  const user = useAuthStore((s) => s.user)
+  const googleDriveEnabled = !isEdit && canUseGoogleIntegration(user)
   const recordEvent = useGamificationStore((s) => s.recordEvent)
+  const [googleDriveState, setGoogleDriveState] = useState(() => createEmptyGoogleDriveState())
+  const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(false)
+  const [selectedBaseResumeId, setSelectedBaseResumeId] = useState('')
+  const [creatingResume, setCreatingResume] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -162,6 +184,103 @@ const ApplicationForm = () => {
   }, [draftKey, draftReady, fetching, form])
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+
+  const loadGoogleDriveSettings = useCallback(async () => {
+    if (!googleDriveEnabled) {
+      setGoogleDriveState(createEmptyGoogleDriveState())
+      setSelectedBaseResumeId('')
+      return
+    }
+
+    setLoadingGoogleDrive(true)
+
+    try {
+      const response = await getGoogleDriveSettings()
+      const nextState = { ...createEmptyGoogleDriveState(), ...response.data }
+      setGoogleDriveState(nextState)
+      setSelectedBaseResumeId((currentSelectedBaseResumeId) => {
+        if (
+          currentSelectedBaseResumeId &&
+          nextState.baseResumes.some((resume) => resume.id === currentSelectedBaseResumeId)
+        ) {
+          return currentSelectedBaseResumeId
+        }
+
+        return nextState.baseResumes[0]?.id ?? ''
+      })
+    } catch (err) {
+      if (![404, 501].includes(err.response?.status)) {
+        const detail = err.response?.data?.message || 'Could not load your Google Drive settings.'
+        toast.current?.show({ severity: 'error', summary: 'Error', detail })
+      }
+      setGoogleDriveState(createEmptyGoogleDriveState())
+      setSelectedBaseResumeId('')
+    } finally {
+      setLoadingGoogleDrive(false)
+    }
+  }, [googleDriveEnabled])
+
+  useEffect(() => {
+    if (!googleDriveEnabled) {
+      return
+    }
+
+    const loadTimer = window.setTimeout(() => {
+      loadGoogleDriveSettings().catch(() => null)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(loadTimer)
+    }
+  }, [googleDriveEnabled, loadGoogleDriveSettings])
+
+  const buildPayload = () => {
+    const payload = {
+      ...form,
+      vacancyName: form.vacancyName.trim() || null,
+      applicationDate: form.toSendLater ? null : formatDateOnly(form.applicationDate),
+      nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
+      status: form.toSendLater ? null : form.status,
+      note: form.note?.trim() || null,
+    }
+
+    delete payload.markDmSent
+
+    return payload
+  }
+
+  const recordCreationEvents = async (applicationId, payload) => {
+    try {
+      await recordEvent(GAMIFICATION_EVENT_TYPES.APPLICATION_CREATED, {
+        applicationId,
+      })
+    } catch (eventError) {
+      const detail = eventError.response?.data?.message || 'Application saved, but the XP event could not be recorded.'
+      toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+    }
+
+    if (payload.note) {
+      try {
+        await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
+          applicationId,
+        })
+      } catch (eventError) {
+        const detail = eventError.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
+        toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+      }
+    }
+
+    if (payload.interviewScheduled) {
+      try {
+        await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
+          applicationId,
+        })
+      } catch (eventError) {
+        const detail = eventError.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
+        toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
+      }
+    }
+  }
 
   // Helper function to compare dates handling null values
   const areDatesEqual = (date1, date2) => {
@@ -225,16 +344,7 @@ const ApplicationForm = () => {
 
     try {
       const previousForm = initialFormRef.current
-      const payload = {
-        ...form,
-        vacancyName: form.vacancyName.trim() || null,
-        applicationDate: form.toSendLater ? null : formatDateOnly(form.applicationDate),
-        nextStepDateTime: formatLocalDateTime(form.nextStepDateTime),
-        status: form.toSendLater ? null : form.status,
-        note: form.note?.trim() || null,
-      }
-      // Remove markDmSent from payload as it's not a backend field
-      delete payload.markDmSent
+      const payload = buildPayload()
       
       if (isEdit) {
         const response = await updateApplication(id, payload)
@@ -286,35 +396,8 @@ const ApplicationForm = () => {
       } else {
         const response = await createApplication(payload)
         window.localStorage.removeItem(draftKey)
-        try {
-          await recordEvent(GAMIFICATION_EVENT_TYPES.APPLICATION_CREATED, {
-            applicationId: response.data?.id,
-          })
-        } catch (eventError) {
-          const detail = eventError.response?.data?.message || 'Application saved, but the XP event could not be recorded.'
-          toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-        }
-
-        if (payload.note) {
-          try {
-            await recordEvent(GAMIFICATION_EVENT_TYPES.NOTE_ADDED, {
-              applicationId: response.data?.id,
-            })
-          } catch (eventError) {
-            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for note tracking could not be recorded.'
-            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-          }
-        }
-
-        if (payload.interviewScheduled) {
-          try {
-            await recordEvent(GAMIFICATION_EVENT_TYPES.INTERVIEW_PROGRESS, {
-              applicationId: response.data?.id,
-            })
-          } catch (eventError) {
-            const detail = eventError.response?.data?.message || 'Application saved, but the XP event for interview progress could not be recorded.'
-            toast.current.show({ severity: 'warn', summary: 'Gamification pending', detail })
-          }
+        if (response.data?.id) {
+          await recordCreationEvents(response.data.id, payload)
         }
 
         if (response.data?.queuedOffline) {
@@ -334,7 +417,68 @@ const ApplicationForm = () => {
     }
   }
 
+  const handleCreateResume = async () => {
+    if (!selectedBaseResumeId) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Choose a Google Docs base resume first.',
+      })
+      return
+    }
+
+    if (!form.toSendLater && !form.applicationDate) {
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Validation',
+        detail: 'Application date is required unless "To send later" is enabled.',
+      })
+      return
+    }
+
+    const resumeTab = openPendingTab()
+    setCreatingResume(true)
+
+    try {
+      const payload = buildPayload()
+      const createResponse = await createApplication(payload)
+      const applicationId = createResponse.data?.id
+
+      if (createResponse.data?.queuedOffline || !applicationId) {
+        resumeTab?.close?.()
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'The application must be saved online before creating a Google Docs resume.',
+        })
+        return
+      }
+
+      window.localStorage.removeItem(draftKey)
+      await recordCreationEvents(applicationId, payload)
+
+      const resumeResponse = await createGoogleDriveResume({
+        applicationId,
+        baseResumeId: selectedBaseResumeId,
+      })
+
+      navigateOpenedTab(resumeTab, resumeResponse.data?.googleDocUrl)
+      navigate(`/applications/${applicationId}`)
+    } catch (err) {
+      resumeTab?.close?.()
+      const detail = err.response?.data?.message || 'Could not create the Google Drive resume copy.'
+      toast.current?.show({ severity: 'error', summary: 'Error', detail })
+    } finally {
+      setCreatingResume(false)
+    }
+  }
+
   const statusOptions = APPLICATION_STATUSES.map((s) => ({ label: s, value: s }))
+  const googleDriveRequirementsMet =
+    googleDriveState.configured &&
+    googleDriveState.connected &&
+    Boolean(googleDriveState.baseFolderId) &&
+    googleDriveState.baseResumes.length > 0
 
   if (fetching) {
     return (
@@ -489,6 +633,16 @@ const ApplicationForm = () => {
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
+          {googleDriveEnabled && (
+            <Button
+              type="button"
+              label="Create Resume"
+              icon="pi pi-copy"
+              onClick={handleCreateResume}
+              loading={creatingResume}
+              disabled={loadingGoogleDrive || creatingResume || !googleDriveRequirementsMet || !selectedBaseResumeId}
+            />
+          )}
           <Button type="button" label="Cancel" outlined onClick={handleCancel} />
         </div>
       </form>

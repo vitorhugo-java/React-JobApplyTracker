@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Toast } from 'primereact/toast'
 import useGamificationStore from '../../store/gamificationStore'
 
@@ -18,19 +18,33 @@ const resolveSummary = (event) => {
 
 const GamificationToastHost = () => {
   const toast = useRef(null)
+  const [isToastMounted, setIsToastMounted] = useState(false)
+  const [pendingEvent, setPendingEvent] = useState(null)
   const latestEvent = useGamificationStore((s) => s.latestEvent)
   const clearLatestEvent = useGamificationStore((s) => s.clearLatestEvent)
 
   useEffect(() => {
     if (!latestEvent) return
 
-    toast.current?.show({
-      severity: resolveSeverity(latestEvent),
-      summary: resolveSummary(latestEvent),
-      detail: latestEvent.message,
-    })
+    setIsToastMounted(true)
+    setPendingEvent(latestEvent)
     clearLatestEvent()
   }, [latestEvent, clearLatestEvent])
+
+  useEffect(() => {
+    if (!pendingEvent || !toast.current) return
+
+    toast.current?.show({
+      severity: resolveSeverity(pendingEvent),
+      summary: resolveSummary(pendingEvent),
+      detail: pendingEvent.message,
+    })
+    setPendingEvent(null)
+  }, [pendingEvent])
+
+  if (!isToastMounted) {
+    return null
+  }
 
   return <Toast ref={toast} position="top-right" />
 }

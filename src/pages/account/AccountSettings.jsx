@@ -433,7 +433,7 @@ const AccountSettings = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           {canUseGoogleIntegration
-            ? 'Manage your personal information, Google Drive integration and account password'
+            ? 'Manage your personal information, Google Drive resumes and account password'
             : 'Manage your personal information and account password'}
         </p>
       </div>
@@ -486,7 +486,7 @@ const AccountSettings = () => {
         <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive (BETA)</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive Resumes</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Connect Google Drive, set the root folder and manage the Google Docs base resumes used in application copies.
               </p>
