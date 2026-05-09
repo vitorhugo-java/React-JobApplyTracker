@@ -16,6 +16,7 @@ import Reminders from './pages/reminders/Reminders'
 import Developer from './pages/developer/Developer'
 import About from './pages/about/About'
 import AccountSettings from './pages/account/AccountSettings'
+import GoogleDriveCallback from './pages/account/GoogleDriveCallback'
 import useAuthStore from './store/authStore'
 import useGamificationStore from './store/gamificationStore'
 import { me as meApi, refresh as refreshApi } from './api/auth'
@@ -132,6 +133,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/settings/google-drive/callback" element={<GoogleDriveCallback />} />
 
         {!isAuthenticated && <Route path="/about" element={<About />} />}
 

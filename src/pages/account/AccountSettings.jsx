@@ -11,67 +11,36 @@ import {
   updateProfile as updateProfileApi,
 } from '../../api/auth'
 import {
+  addGoogleDriveBaseResume,
+  deleteGoogleDriveBaseResume,
   disconnectGoogleDriveConnection,
   getGoogleDriveSettings,
   startGoogleDriveConnection,
-  updateGoogleDriveSettings,
+  updateGoogleDriveRootFolder,
 } from '../../api/googleDrive'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import {
-  buildGoogleDocUrl,
+  GOOGLE_DRIVE_GEMINI_URL,
   buildGoogleDriveFolderUrl,
   extractGoogleDocId,
   extractGoogleDriveFolderId,
+  formatGoogleDriveDateTime,
 } from '../../utils/googleDrive'
+import { canUseGoogleIntegration as userCanUseGoogleIntegration } from '../../utils/googleDriveAccess'
 import { openExternalUrl } from '../../utils/externalLinks'
 
-const createResumeRowId = () =>
-  `resume-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-
-const createResumeRow = (resume = {}) => ({
-  clientId: createResumeRowId(),
-  id: resume.id ?? null,
-  name: resume.name ?? '',
-  documentInput: resume.documentUrl ?? buildGoogleDocUrl(resume.documentId),
-  isDefault: Boolean(resume.isDefault),
-})
-
-const createEmptyGoogleDriveForm = () => ({
+const createEmptyGoogleDriveSettings = () => ({
+  configured: true,
   connected: false,
   accountEmail: '',
   accountDisplayName: '',
-  baseFolderInput: '',
-  resumes: [createResumeRow({ isDefault: true })],
+  accountId: '',
+  connectedAt: null,
+  baseFolderId: '',
+  baseFolderName: '',
+  baseFolderUrl: '',
+  baseResumes: [],
 })
-
-const mapGoogleDriveSettingsToForm = (settings = {}) => {
-  const resumes = (settings.baseResumes ?? []).map(createResumeRow)
-
-  if (!resumes.length) {
-    resumes.push(createResumeRow({ isDefault: true }))
-  } else if (!resumes.some((resume) => resume.isDefault)) {
-    resumes[0].isDefault = true
-  }
-
-  return {
-    connected: Boolean(settings.connected),
-    accountEmail: settings.accountEmail ?? '',
-    accountDisplayName: settings.accountDisplayName ?? '',
-    baseFolderInput: settings.baseFolderUrl ?? buildGoogleDriveFolderUrl(settings.baseFolderId),
-    resumes,
-  }
-}
-
-const serializeGoogleDriveForm = (form) =>
-  JSON.stringify({
-    baseFolderInput: form.baseFolderInput.trim(),
-    resumes: form.resumes.map((resume) => ({
-      id: resume.id ?? null,
-      name: resume.name.trim(),
-      documentInput: resume.documentInput.trim(),
-      isDefault: Boolean(resume.isDefault),
-    })),
-  })
 
 const AccountSettings = () => {
   usePageTitle('Configurações')
@@ -79,7 +48,7 @@ const AccountSettings = () => {
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
-  const canUseGoogleIntegration = Boolean(user?.canUseGoogleIntegration)
+  const canUseGoogleIntegration = userCanUseGoogleIntegration(user)
 
   const [name, setName] = useState(user?.name || '')
   const [reminderTime, setReminderTime] = useState((user?.reminderTime || '19:00:00').slice(0, 5))
@@ -97,66 +66,78 @@ const AccountSettings = () => {
     reminderTime: (user?.reminderTime || '19:00:00').slice(0, 5),
   })
 
-  const [googleDriveForm, setGoogleDriveForm] = useState(() => createEmptyGoogleDriveForm())
+  const [googleDriveSettings, setGoogleDriveSettings] = useState(() => createEmptyGoogleDriveSettings())
+  const [googleDriveBaseFolderInput, setGoogleDriveBaseFolderInput] = useState('')
+  const [initialGoogleDriveBaseFolderInput, setInitialGoogleDriveBaseFolderInput] = useState('')
+  const [googleDriveResumeInput, setGoogleDriveResumeInput] = useState('')
   const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(true)
-  const [savingGoogleDrive, setSavingGoogleDrive] = useState(false)
+  const [savingGoogleDriveFolder, setSavingGoogleDriveFolder] = useState(false)
+  const [addingGoogleDriveResume, setAddingGoogleDriveResume] = useState(false)
   const [connectingGoogleDrive, setConnectingGoogleDrive] = useState(false)
   const [disconnectingGoogleDrive, setDisconnectingGoogleDrive] = useState(false)
-  const [initialGoogleDriveSnapshot, setInitialGoogleDriveSnapshot] = useState(
-    serializeGoogleDriveForm(createEmptyGoogleDriveForm())
-  )
+  const [removingGoogleDriveResumeId, setRemovingGoogleDriveResumeId] = useState(null)
 
   const isProfileDirty = name !== initialProfile.name || reminderTime !== initialProfile.reminderTime
   const isPasswordDirty =
     passwordForm.currentPassword !== '' || passwordForm.newPassword !== '' || passwordForm.confirmPassword !== ''
   const isGoogleDriveDirty =
-    canUseGoogleIntegration && serializeGoogleDriveForm(googleDriveForm) !== initialGoogleDriveSnapshot
+    canUseGoogleIntegration &&
+    googleDriveBaseFolderInput.trim() !== initialGoogleDriveBaseFolderInput
 
   const applyGoogleDriveSettings = useCallback((settings) => {
-    const nextForm = mapGoogleDriveSettingsToForm(settings)
-    setGoogleDriveForm(nextForm)
-    setInitialGoogleDriveSnapshot(serializeGoogleDriveForm(nextForm))
+    const nextSettings = { ...createEmptyGoogleDriveSettings(), ...settings }
+    const nextBaseFolderInput =
+      nextSettings.baseFolderUrl || buildGoogleDriveFolderUrl(nextSettings.baseFolderId)
+
+    setGoogleDriveSettings(nextSettings)
+    setGoogleDriveBaseFolderInput(nextBaseFolderInput)
+    setInitialGoogleDriveBaseFolderInput(nextBaseFolderInput.trim())
   }, [])
 
   const resetGoogleDriveState = useCallback(() => {
-    const emptyForm = createEmptyGoogleDriveForm()
-    setGoogleDriveForm(emptyForm)
-    setInitialGoogleDriveSnapshot(serializeGoogleDriveForm(emptyForm))
+    const emptyState = createEmptyGoogleDriveSettings()
+    setGoogleDriveSettings(emptyState)
+    setGoogleDriveBaseFolderInput('')
+    setInitialGoogleDriveBaseFolderInput('')
+    setGoogleDriveResumeInput('')
     setLoadingGoogleDrive(false)
   }, [])
 
-  const loadGoogleDriveSettings = useCallback(async (showSuccessMessage = false, showLoadingSpinner = true) => {
-    if (!canUseGoogleIntegration) {
-      resetGoogleDriveState()
-      return
-    }
-
-    if (showLoadingSpinner) {
-      setLoadingGoogleDrive(true)
-    }
-
-    try {
-      const response = await getGoogleDriveSettings()
-      applyGoogleDriveSettings(response.data)
-
-      if (showSuccessMessage) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Google Drive status refreshed.',
-        })
+  const loadGoogleDriveSettings = useCallback(
+    async (showSuccessMessage = false, showLoadingSpinner = true) => {
+      if (!canUseGoogleIntegration) {
+        resetGoogleDriveState()
+        return
       }
-    } catch (err) {
-      resetGoogleDriveState()
 
-      if (![404, 501].includes(err.response?.status)) {
-        const detail = err.response?.data?.message || 'Could not load your Google Drive settings right now.'
-        toast.current?.show({ severity: 'error', summary: 'Error', detail })
+      if (showLoadingSpinner) {
+        setLoadingGoogleDrive(true)
       }
-    } finally {
-      setLoadingGoogleDrive(false)
-    }
-  }, [applyGoogleDriveSettings, canUseGoogleIntegration, resetGoogleDriveState])
+
+      try {
+        const response = await getGoogleDriveSettings()
+        applyGoogleDriveSettings(response.data)
+
+        if (showSuccessMessage) {
+          toast.current?.show({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Google Drive status refreshed.',
+          })
+        }
+      } catch (err) {
+        resetGoogleDriveState()
+
+        if (![404, 501].includes(err.response?.status)) {
+          const detail = err.response?.data?.message || 'Could not load your Google Drive settings right now.'
+          toast.current?.show({ severity: 'error', summary: 'Error', detail })
+        }
+      } finally {
+        setLoadingGoogleDrive(false)
+      }
+    },
+    [applyGoogleDriveSettings, canUseGoogleIntegration, resetGoogleDriveState]
+  )
 
   useEffect(() => {
     if (!canUseGoogleIntegration) {
@@ -279,55 +260,6 @@ const AccountSettings = () => {
     }
   }
 
-  const setGoogleDriveField = (key, value) => {
-    setGoogleDriveForm((current) => ({ ...current, [key]: value }))
-  }
-
-  const updateResumeRow = (clientId, key, value) => {
-    setGoogleDriveForm((current) => ({
-      ...current,
-      resumes: current.resumes.map((resume) =>
-        resume.clientId === clientId ? { ...resume, [key]: value } : resume
-      ),
-    }))
-  }
-
-  const addResumeRow = () => {
-    setGoogleDriveForm((current) => ({
-      ...current,
-      resumes: [...current.resumes, createResumeRow()],
-    }))
-  }
-
-  const removeResumeRow = (clientId) => {
-    setGoogleDriveForm((current) => {
-      if (current.resumes.length === 1) {
-        return current
-      }
-
-      const resumes = current.resumes.filter((resume) => resume.clientId !== clientId)
-
-      if (!resumes.some((resume) => resume.isDefault) && resumes[0]) {
-        resumes[0] = { ...resumes[0], isDefault: true }
-      }
-
-      return {
-        ...current,
-        resumes,
-      }
-    })
-  }
-
-  const setDefaultResume = (clientId) => {
-    setGoogleDriveForm((current) => ({
-      ...current,
-      resumes: current.resumes.map((resume) => ({
-        ...resume,
-        isDefault: resume.clientId === clientId,
-      })),
-    }))
-  }
-
   const handleConnectGoogleDrive = async () => {
     setConnectingGoogleDrive(true)
 
@@ -364,12 +296,6 @@ const AccountSettings = () => {
 
         try {
           await disconnectGoogleDriveConnection()
-          setGoogleDriveForm((current) => ({
-            ...current,
-            connected: false,
-            accountEmail: '',
-            accountDisplayName: '',
-          }))
           toast.current?.show({
             severity: 'success',
             summary: 'Success',
@@ -386,10 +312,19 @@ const AccountSettings = () => {
     })
   }
 
-  const handleGoogleDriveSubmit = async (e) => {
+  const handleGoogleDriveFolderSubmit = async (e) => {
     e.preventDefault()
 
-    const baseFolderInput = googleDriveForm.baseFolderInput.trim()
+    if (!googleDriveSettings.connected) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Connect your Google Drive account before setting a root folder.',
+      })
+      return
+    }
+
+    const baseFolderInput = googleDriveBaseFolderInput.trim()
     const baseFolderId = extractGoogleDriveFolderId(baseFolderInput)
 
     if (!baseFolderInput || !baseFolderId) {
@@ -401,80 +336,92 @@ const AccountSettings = () => {
       return
     }
 
-    const enteredResumes = googleDriveForm.resumes.filter(
-      (resume) => resume.name.trim() || resume.documentInput.trim()
-    )
-
-    if (!enteredResumes.length) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Validation',
-        detail: 'Add at least one base resume before saving.',
-      })
-      return
-    }
-
-    const normalizedResumes = []
-
-    for (const resume of enteredResumes) {
-      const name = resume.name.trim()
-      const documentInput = resume.documentInput.trim()
-      const documentId = extractGoogleDocId(documentInput)
-
-      if (!name || !documentInput) {
-        toast.current?.show({
-          severity: 'warn',
-          summary: 'Validation',
-          detail: 'Each base resume needs a name and a Google Docs URL or document ID.',
-        })
-        return
-      }
-
-      if (!documentId) {
-        toast.current?.show({
-          severity: 'warn',
-          summary: 'Validation',
-          detail: 'One of the base resumes has an invalid Google Docs URL or document ID.',
-        })
-        return
-      }
-
-      normalizedResumes.push({
-        id: resume.id ?? undefined,
-        name,
-        documentId,
-        isDefault: resume.isDefault,
-      })
-    }
-
-    const defaultIndex = normalizedResumes.findIndex((resume) => resume.isDefault)
-    const selectedDefaultIndex = defaultIndex >= 0 ? defaultIndex : 0
-    const payload = {
-      baseFolderId,
-      baseResumes: normalizedResumes.map((resume, index) => ({
-        ...(resume.id ? { id: resume.id } : {}),
-        name: resume.name,
-        documentId: resume.documentId,
-        isDefault: index === selectedDefaultIndex,
-      })),
-    }
-
-    setSavingGoogleDrive(true)
+    setSavingGoogleDriveFolder(true)
 
     try {
-      const response = await updateGoogleDriveSettings(payload)
+      const response = await updateGoogleDriveRootFolder(baseFolderInput)
       applyGoogleDriveSettings(response.data)
       toast.current?.show({
         severity: 'success',
         summary: 'Success',
-        detail: 'Google Drive settings saved successfully.',
+        detail: 'Google Drive root folder saved successfully.',
       })
     } catch (err) {
-      const detail = err.response?.data?.message || 'Could not save your Google Drive settings.'
+      const detail = err.response?.data?.message || 'Could not save your Google Drive root folder.'
       toast.current?.show({ severity: 'error', summary: 'Error', detail })
     } finally {
-      setSavingGoogleDrive(false)
+      setSavingGoogleDriveFolder(false)
     }
+  }
+
+  const handleGoogleDriveResumeSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!googleDriveSettings.connected) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Connect your Google Drive account before adding a base resume.',
+      })
+      return
+    }
+
+    const documentInput = googleDriveResumeInput.trim()
+    const documentId = extractGoogleDocId(documentInput)
+
+    if (!documentInput || !documentId) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please provide a valid Google Docs URL or document ID.',
+      })
+      return
+    }
+
+    setAddingGoogleDriveResume(true)
+
+    try {
+      await addGoogleDriveBaseResume(documentInput)
+      setGoogleDriveResumeInput('')
+      await loadGoogleDriveSettings().catch(() => null)
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Base resume added successfully.',
+      })
+    } catch (err) {
+      const detail = err.response?.data?.message || 'Could not add your Google Docs base resume.'
+      toast.current?.show({ severity: 'error', summary: 'Error', detail })
+    } finally {
+      setAddingGoogleDriveResume(false)
+    }
+  }
+
+  const handleRemoveGoogleDriveResume = (resumeId) => {
+    confirmDialog({
+      message: 'Remove this Google Docs base resume?',
+      header: 'Remove Base Resume',
+      icon: 'pi pi-exclamation-triangle',
+      acceptClassName: 'p-button-danger',
+      accept: async () => {
+        setRemovingGoogleDriveResumeId(resumeId)
+
+        try {
+          await deleteGoogleDriveBaseResume(resumeId)
+          await loadGoogleDriveSettings().catch(() => null)
+          toast.current?.show({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Base resume removed successfully.',
+          })
+        } catch (err) {
+          const detail = err.response?.data?.message || 'Could not remove this base resume.'
+          toast.current?.show({ severity: 'error', summary: 'Error', detail })
+        } finally {
+          setRemovingGoogleDriveResumeId(null)
+        }
+      },
+    })
   }
 
   return (
@@ -486,7 +433,7 @@ const AccountSettings = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           {canUseGoogleIntegration
-            ? 'Manage your personal information, Google Drive resumes and account password'
+            ? 'Manage your personal information, Google Drive integration and account password'
             : 'Manage your personal information and account password'}
         </p>
       </div>
@@ -536,154 +483,214 @@ const AccountSettings = () => {
       </section>
 
       {canUseGoogleIntegration && (
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive Resumes</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Connect Google Drive, set your base folder and manage one or more base Google Docs resumes.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              label="Refresh Status"
-              icon="pi pi-refresh"
-              outlined
-              onClick={() => loadGoogleDriveSettings(true)}
-              loading={loadingGoogleDrive}
-            />
-            <Button
-              type="button"
-              label={googleDriveForm.connected ? 'Reconnect Google' : 'Connect Google'}
-              icon="pi pi-link"
-              onClick={handleConnectGoogleDrive}
-              loading={connectingGoogleDrive}
-            />
-            {googleDriveForm.connected && (
-              <Button
-                type="button"
-                label="Disconnect"
-                icon="pi pi-times"
-                severity="danger"
-                outlined
-                onClick={handleDisconnectGoogleDrive}
-                loading={disconnectingGoogleDrive}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="mt-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Connection status</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {loadingGoogleDrive
-                  ? 'Checking your Google Drive connection...'
-                  : googleDriveForm.connected
-                    ? `${googleDriveForm.accountDisplayName || 'Google account'}${googleDriveForm.accountEmail ? ` • ${googleDriveForm.accountEmail}` : ''}`
-                    : 'No Google Drive account connected yet.'}
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive (BETA)</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Connect Google Drive, set the root folder and manage the Google Docs base resumes used in application copies.
               </p>
             </div>
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                googleDriveForm.connected
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-                  : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
-              }`}
-            >
-              {googleDriveForm.connected ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
-        </div>
 
-        <form onSubmit={handleGoogleDriveSubmit} className="space-y-5 mt-5">
-          <div className="space-y-1">
-            <label htmlFor="googleDriveBaseFolder" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Base Drive Folder
-            </label>
-            <InputText
-              id="googleDriveBaseFolder"
-              value={googleDriveForm.baseFolderInput}
-              onChange={(e) => setGoogleDriveField('baseFolderInput', e.target.value)}
-              className="w-full"
-              placeholder="Paste a Google Drive folder URL or folder ID"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Resume copies will be created inside this Drive folder.
-            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                label="Refresh Status"
+                icon="pi pi-refresh"
+                outlined
+                onClick={() => loadGoogleDriveSettings(true)}
+                loading={loadingGoogleDrive}
+              />
+              <Button
+                type="button"
+                label={googleDriveSettings.connected ? 'Reconnect Google' : 'Connect Google'}
+                icon="pi pi-link"
+                onClick={handleConnectGoogleDrive}
+                loading={connectingGoogleDrive}
+              />
+              {googleDriveSettings.connected && (
+                <Button
+                  type="button"
+                  label="Disconnect"
+                  icon="pi pi-times"
+                  severity="danger"
+                  outlined
+                  onClick={handleDisconnectGoogleDrive}
+                  loading={disconnectingGoogleDrive}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
+          {!googleDriveSettings.configured && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Google Drive integration is not configured on the server yet.
+              </p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                Backend environment variables must be configured before this feature can be used.
+              </p>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Base resumes</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Add one or more Google Docs templates and choose which one is the default.
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Connection status</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {loadingGoogleDrive
+                    ? 'Checking your Google Drive connection...'
+                    : googleDriveSettings.connected
+                      ? `${googleDriveSettings.accountDisplayName || 'Google account'}${
+                          googleDriveSettings.accountEmail ? ` • ${googleDriveSettings.accountEmail}` : ''
+                        }`
+                      : 'No Google Drive account connected yet.'}
                 </p>
+                {googleDriveSettings.connectedAt && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Connected at {formatGoogleDriveDateTime(googleDriveSettings.connectedAt)}
+                  </p>
+                )}
               </div>
-              <Button type="button" label="Add Resume" icon="pi pi-plus" outlined onClick={addResumeRow} />
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                  googleDriveSettings.connected
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                    : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+                }`}
+              >
+                {googleDriveSettings.connected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleGoogleDriveFolderSubmit} className="space-y-3">
+            <div className="space-y-1">
+              <label htmlFor="googleDriveBaseFolder" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Root Drive Folder
+              </label>
+              <InputText
+                id="googleDriveBaseFolder"
+                value={googleDriveBaseFolderInput}
+                onChange={(e) => setGoogleDriveBaseFolderInput(e.target.value)}
+                className="w-full"
+                placeholder="Paste a Google Drive folder URL or folder ID"
+                disabled={!googleDriveSettings.configured}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Resume copies for each application will be created inside this Drive folder.
+              </p>
             </div>
 
-            {googleDriveForm.resumes.map((resume, index) => (
-              <div
-                key={resume.clientId}
-                className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <div className="flex-1 space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Resume name
-                    </label>
-                    <InputText
-                      value={resume.name}
-                      onChange={(e) => updateResumeRow(resume.clientId, 'name', e.target.value)}
-                      className="w-full"
-                      placeholder={`Base Resume ${index + 1}`}
-                    />
-                  </div>
-
-                  <div className="flex-1 space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Google Docs URL or ID
-                    </label>
-                    <InputText
-                      value={resume.documentInput}
-                      onChange={(e) => updateResumeRow(resume.clientId, 'documentInput', e.target.value)}
-                      className="w-full"
-                      placeholder="https://docs.google.com/document/d/..."
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            {googleDriveSettings.baseFolderId && (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {googleDriveSettings.baseFolderName || 'Configured root folder'}
+                </p>
+                <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+                  {googleDriveSettings.baseFolderId}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    label={resume.isDefault ? 'Default Resume' : 'Set as Default'}
-                    icon={resume.isDefault ? 'pi pi-check-circle' : 'pi pi-star'}
-                    outlined={!resume.isDefault}
-                    severity={resume.isDefault ? 'success' : undefined}
-                    onClick={() => setDefaultResume(resume.clientId)}
+                    label="Open Folder"
+                    icon="pi pi-external-link"
+                    outlined
+                    onClick={() => openExternalUrl(googleDriveSettings.baseFolderUrl)}
                   />
                   <Button
                     type="button"
-                    label="Remove"
-                    icon="pi pi-trash"
-                    severity="danger"
+                    label="Gemini Helper"
+                    icon="pi pi-sparkles"
                     text
-                    disabled={googleDriveForm.resumes.length === 1}
-                    onClick={() => removeResumeRow(resume.clientId)}
+                    onClick={() => openExternalUrl(GOOGLE_DRIVE_GEMINI_URL)}
                   />
                 </div>
               </div>
-            ))}
-          </div>
+            )}
 
-          <Button type="submit" label="Save Google Drive Settings" loading={savingGoogleDrive} />
-        </form>
-      </section>
+            <Button
+              type="submit"
+              label="Save Root Folder"
+              loading={savingGoogleDriveFolder}
+              disabled={!googleDriveSettings.configured}
+            />
+          </form>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Base resumes</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Register each Google Docs template that should be available when generating resume copies for a job application.
+              </p>
+            </div>
+
+            <form onSubmit={handleGoogleDriveResumeSubmit} className="flex flex-col gap-3 sm:flex-row">
+              <InputText
+                value={googleDriveResumeInput}
+                onChange={(e) => setGoogleDriveResumeInput(e.target.value)}
+                className="w-full"
+                placeholder="https://docs.google.com/document/d/..."
+                disabled={!googleDriveSettings.configured}
+              />
+              <Button
+                type="submit"
+                label="Add Base Resume"
+                icon="pi pi-plus"
+                loading={addingGoogleDriveResume}
+                disabled={!googleDriveSettings.configured}
+              />
+            </form>
+
+            {googleDriveSettings.baseResumes.length ? (
+              <div className="space-y-3">
+                {googleDriveSettings.baseResumes.map((resume) => (
+                  <div
+                    key={resume.id}
+                    className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{resume.documentName}</p>
+                        <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+                          {resume.documentId}
+                        </p>
+                        {resume.createdAt && (
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Added at {formatGoogleDriveDateTime(resume.createdAt)}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          label="Open Doc"
+                          icon="pi pi-external-link"
+                          outlined
+                          onClick={() => openExternalUrl(resume.documentUrl)}
+                        />
+                        <Button
+                          type="button"
+                          label="Remove"
+                          icon="pi pi-trash"
+                          severity="danger"
+                          text
+                          loading={removingGoogleDriveResumeId === resume.id}
+                          onClick={() => handleRemoveGoogleDriveResume(resume.id)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                No Google Docs base resumes configured yet.
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">

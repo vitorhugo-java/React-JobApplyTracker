@@ -37,3 +37,17 @@ export const buildGoogleDocUrl = (documentId) =>
 
 export const buildGoogleDriveFolderUrl = (folderId) =>
   folderId ? `${GOOGLE_DRIVE_FOLDER_URL_PREFIX}${folderId}` : ''
+
+export const formatGoogleDriveDateTime = (value) => {
+  if (!value) {
+    return ''
+  }
+
+  const parsedDate = new Date(value)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return ''
+  }
+
+  return parsedDate.toLocaleString('pt-BR')
+}

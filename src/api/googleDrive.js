@@ -6,10 +6,11 @@ const normalizeBaseResume = (resume, index) => {
 
   return {
     id: resume?.id ?? null,
-    name: resume?.name ?? resume?.label ?? resume?.documentName ?? `Resume ${index + 1}`,
+    documentName: resume?.documentName ?? resume?.name ?? resume?.label ?? `Resume ${index + 1}`,
     documentId,
-    documentUrl: resume?.documentUrl ?? resume?.googleDocUrl ?? resume?.webViewLink ?? buildGoogleDocUrl(documentId),
-    isDefault: Boolean(resume?.isDefault),
+    documentUrl:
+      resume?.documentUrl ?? resume?.googleDocUrl ?? resume?.webViewLink ?? buildGoogleDocUrl(documentId),
+    createdAt: resume?.createdAt ?? null,
   }
 }
 
@@ -18,6 +19,7 @@ export const normalizeGoogleDriveSettings = (data = {}) => {
   const connection = data.connection ?? {}
 
   return {
+    configured: Boolean(data.configured ?? data.available ?? true),
     connected: Boolean(
       data.connected ??
         data.isConnected ??
@@ -26,8 +28,11 @@ export const normalizeGoogleDriveSettings = (data = {}) => {
     ),
     accountEmail: data.accountEmail ?? data.googleEmail ?? connection.accountEmail ?? connection.email ?? '',
     accountDisplayName: data.accountDisplayName ?? data.googleDisplayName ?? connection.accountDisplayName ?? connection.displayName ?? '',
+    accountId: data.accountId ?? data.googleAccountId ?? connection.accountId ?? '',
     baseFolderId,
+    baseFolderName: data.baseFolderName ?? data.rootFolderName ?? data.folderName ?? '',
     baseFolderUrl: data.baseFolderUrl ?? data.folderUrl ?? buildGoogleDriveFolderUrl(baseFolderId),
+    connectedAt: data.connectedAt ?? connection.connectedAt ?? null,
     baseResumes: (data.baseResumes ?? data.resumes ?? []).map(normalizeBaseResume),
   }
 }
@@ -40,69 +45,32 @@ export const getGoogleDriveSettings = async () => {
   }
 }
 
-export const updateGoogleDriveSettings = async (payload) => {
-  await api.put('/google-drive/root-folder', {
-    folderIdOrUrl: payload.baseFolderId ?? payload.baseFolderInput ?? '',
+export const updateGoogleDriveRootFolder = async (folderIdOrUrl) => {
+  const response = await api.put('/google-drive/root-folder', {
+    folderIdOrUrl,
   })
 
-  const currentStatusResponse = await api.get('/google-drive/status')
-  const currentSettings = normalizeGoogleDriveSettings(currentStatusResponse.data)
-  const desiredResumes = (payload.baseResumes ?? []).map(normalizeBaseResume)
-
-  const existingById = new Map(
-    currentSettings.baseResumes
-      .filter((resume) => resume.id)
-      .map((resume) => [resume.id, resume])
-  )
-  const existingByDocumentId = new Map(
-    currentSettings.baseResumes
-      .filter((resume) => resume.documentId)
-      .map((resume) => [resume.documentId, resume])
-  )
-  const desiredIds = new Set(
-    desiredResumes.map((resume) => resume.id).filter(Boolean)
-  )
-  const desiredDocumentIds = new Set(
-    desiredResumes.map((resume) => resume.documentId).filter(Boolean)
-  )
-
-  await Promise.all(
-    currentSettings.baseResumes
-      .filter(
-        (resume) =>
-          resume.id &&
-          !desiredIds.has(resume.id) && !desiredDocumentIds.has(resume.documentId)
-      )
-      .map((resume) => api.delete(`/google-drive/base-resumes/${resume.id}`))
-  )
-
-  for (const resume of desiredResumes) {
-    const existingResume =
-      (resume.id ? existingById.get(resume.id) : undefined) ?? existingByDocumentId.get(resume.documentId)
-
-    if (!existingResume) {
-      await api.post('/google-drive/base-resumes', {
-        documentIdOrUrl: resume.documentId,
-        name: resume.name,
-        isDefault: Boolean(resume.isDefault),
-      })
-      continue
-    }
-
-    const hasChanged =
-      existingResume.documentId !== resume.documentId ||
-      existingResume.name !== resume.name ||
-      existingResume.isDefault !== Boolean(resume.isDefault)
-
-    if (hasChanged && existingResume.id) {
-      await api.put(`/google-drive/base-resumes/${existingResume.id}`, {
-        documentIdOrUrl: resume.documentId,
-        name: resume.name,
-        isDefault: Boolean(resume.isDefault),
-      })
-    }
+  return {
+    ...response,
+    data: normalizeGoogleDriveSettings(response.data),
   }
+}
 
+export const addGoogleDriveBaseResume = async (documentIdOrUrl) => {
+  const response = await api.post('/google-drive/base-resumes', {
+    documentIdOrUrl,
+  })
+
+  return {
+    ...response,
+    data: normalizeBaseResume(response.data, 0),
+  }
+}
+
+export const deleteGoogleDriveBaseResume = (baseResumeId) =>
+  api.delete(`/google-drive/base-resumes/${baseResumeId}`)
+
+export const refreshGoogleDriveSettings = async () => {
   const response = await api.get('/google-drive/status')
   return {
     ...response,
@@ -136,6 +104,7 @@ export const createGoogleDriveResume = async (payload) => {
     data: {
       ...response.data,
       googleDocUrl: response.data?.googleDocUrl ?? response.data?.documentWebViewLink ?? response.data?.documentUrl ?? response.data?.url ?? '',
+      vacancyFolderUrl: response.data?.vacancyFolderUrl ?? response.data?.vacancyFolderWebViewLink ?? '',
     },
   }
 }
