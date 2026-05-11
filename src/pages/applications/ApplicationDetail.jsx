@@ -195,6 +195,8 @@ const ApplicationDetail = () => {
     googleDriveState.connected &&
     googleDriveState.baseFolderId &&
     googleDriveState.baseResumes.length > 0
+  const baseResumeSelectClassName =
+    'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white'
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -302,6 +304,7 @@ const ApplicationDetail = () => {
                 rounded
                 size="small"
                 aria-label="Refresh Google Drive settings"
+                title="Refresh Google Drive settings"
                 onClick={() => loadGoogleDriveSettings().catch(() => null)}
                 loading={loadingGoogleDrive}
               />
@@ -310,7 +313,7 @@ const ApplicationDetail = () => {
               id="googleDriveBaseResume"
               value={selectedBaseResumeId}
               onChange={(e) => setSelectedBaseResumeId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              className={baseResumeSelectClassName}
               disabled={!googleDriveRequirementsMet}
             >
               <option value="">Choose a Google Docs base resume</option>
