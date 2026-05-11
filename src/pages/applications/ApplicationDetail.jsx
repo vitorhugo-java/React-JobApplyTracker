@@ -243,40 +243,24 @@ const ApplicationDetail = () => {
       </div>
 
       {googleDriveEnabled && (
-        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+          <div className="flex flex-col gap-1.5">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive Resume Copy</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Use one of your Google Docs base resumes to create a copy for this application.
               </p>
             </div>
-            <Button
-              type="button"
-              label="Refresh"
-              icon="pi pi-refresh"
-              outlined
-              onClick={() => loadGoogleDriveSettings().catch(() => null)}
-              loading={loadingGoogleDrive}
-            />
           </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 space-y-2">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 space-y-1.5">
             {!googleDriveState.configured ? (
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 Google Drive integration is not configured on the server yet.
               </p>
             ) : !googleDriveState.connected ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-xs text-gray-600 dark:text-gray-300">
                 Connect your Google account in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button> before creating resume copies.
-              </p>
-            ) : !googleDriveState.baseFolderId ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Configure your Google Drive root folder in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
-              </p>
-            ) : !googleDriveState.baseResumes.length ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Add at least one Google Docs base resume in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
               </p>
             ) : (
               <>
@@ -286,33 +270,47 @@ const ApplicationDetail = () => {
                     {googleDriveState.accountEmail ? ` • ${googleDriveState.accountEmail}` : ''}
                   </p>
                   {googleDriveState.connectedAt && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Connected at {formatGoogleDriveDateTime(googleDriveState.connectedAt)}
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    label={googleDriveState.baseFolderName || 'Open Root Folder'}
-                    icon="pi pi-folder-open"
-                    outlined
-                    onClick={() => openExternalUrl(googleDriveState.baseFolderUrl)}
-                  />
-                </div>
+                {googleDriveState.baseFolderId && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      label={googleDriveState.baseFolderName || 'Open Root Folder'}
+                      icon="pi pi-folder-open"
+                      outlined
+                      onClick={() => openExternalUrl(googleDriveState.baseFolderUrl)}
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
 
-          <div className="space-y-3">
-            <label htmlFor="googleDriveBaseResume" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Base resume
-            </label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="googleDriveBaseResume" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Base resume
+              </label>
+              <Button
+                type="button"
+                icon="pi pi-refresh"
+                text
+                rounded
+                size="small"
+                aria-label="Refresh Google Drive settings"
+                onClick={() => loadGoogleDriveSettings().catch(() => null)}
+                loading={loadingGoogleDrive}
+              />
+            </div>
             <select
               id="googleDriveBaseResume"
               value={selectedBaseResumeId}
               onChange={(e) => setSelectedBaseResumeId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
               disabled={!googleDriveRequirementsMet}
             >
               <option value="">Choose a Google Docs base resume</option>
@@ -322,6 +320,16 @@ const ApplicationDetail = () => {
                 </option>
               ))}
             </select>
+            {googleDriveState.connected && !googleDriveState.baseFolderId && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Configure your Google Drive root folder in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
+              </p>
+            )}
+            {googleDriveState.connected && googleDriveState.baseFolderId && !googleDriveState.baseResumes.length && (
+              <p className="text-xs text-gray-600 dark:text-gray-300">
+                Add at least one Google Docs base resume in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
+              </p>
+            )}
             <Button
               type="button"
               label="Create Google Docs Copy"
@@ -329,6 +337,7 @@ const ApplicationDetail = () => {
               onClick={handleCreateGoogleDriveResume}
               loading={copyingGoogleDriveResume}
               disabled={!googleDriveRequirementsMet || !selectedBaseResumeId}
+              className="w-full sm:w-auto"
             />
           </div>
 

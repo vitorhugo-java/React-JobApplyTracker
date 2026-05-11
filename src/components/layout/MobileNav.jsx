@@ -5,13 +5,13 @@ import { navigationItems } from './navigationItems'
 const MobileNav = () => {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
-      <div className="flex">
+      <div className="flex items-stretch gap-1 overflow-x-auto px-1">
         {navigationItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center py-2 text-xs font-medium transition-colors ${
+              `flex min-w-[4.5rem] shrink-0 flex-col items-center justify-center px-1 py-2.5 text-[11px] leading-tight font-medium transition-colors sm:text-xs ${
                 isActive
                   ? 'text-indigo-600 dark:text-indigo-400'
                   : 'text-gray-500 dark:text-gray-400'

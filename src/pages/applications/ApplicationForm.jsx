@@ -631,8 +631,14 @@ const ApplicationForm = () => {
           )}
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" label={isEdit ? 'Save Changes' : 'Create Application'} loading={loading} data-testid="app-submit" />
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <Button
+            type="submit"
+            label={isEdit ? 'Save Changes' : 'Create Application'}
+            loading={loading}
+            data-testid="app-submit"
+            className="w-full sm:w-auto"
+          />
           {googleDriveEnabled && (
             <Button
               type="button"
@@ -641,9 +647,10 @@ const ApplicationForm = () => {
               onClick={handleCreateResume}
               loading={creatingResume}
               disabled={loadingGoogleDrive || creatingResume || !googleDriveRequirementsMet || !selectedBaseResumeId}
+              className="w-full sm:w-auto"
             />
           )}
-          <Button type="button" label="Cancel" outlined onClick={handleCancel} />
+          <Button type="button" label="Cancel" outlined onClick={handleCancel} className="w-full sm:w-auto" />
         </div>
       </form>
     </div>
