@@ -47,7 +47,7 @@ const ApplicationsList = () => {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [size] = useState(10)
-  const [filters, setFilters] = useState({ status: null, recruiterName: '', startDate: null, endDate: null })
+  const [filters, setFilters] = useState({ status: null, recruiterName: '', organization: '', startDate: null, endDate: null })
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState(null)
   const [savingId, setSavingId] = useState(null)
@@ -61,6 +61,7 @@ const ApplicationsList = () => {
       params.archived = activeTab === 'archived'
       if (filters.status) params.status = filters.status
       if (filters.recruiterName) params.recruiterName = filters.recruiterName
+      if (filters.organization) params.organization = filters.organization
       if (filters.startDate) params.applicationDateFrom = filters.startDate.toISOString().slice(0, 10)
       if (filters.endDate) params.applicationDateTo = filters.endDate.toISOString().slice(0, 10)
       const res = await getApplications(params)
@@ -236,7 +237,7 @@ const ApplicationsList = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
           <Dropdown
             value={filters.status}
             options={statusOptions}
@@ -251,6 +252,13 @@ const ApplicationsList = () => {
             placeholder="Search recruiter..."
             className="w-full"
             data-testid="filter-recruiter"
+          />
+          <InputText
+            value={filters.organization}
+            onChange={(e) => updateFilters({ organization: e.target.value })}
+            placeholder="Search company..."
+            className="w-full"
+            data-testid="filter-company"
           />
           <Calendar
             value={filters.startDate}
