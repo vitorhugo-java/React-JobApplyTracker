@@ -125,7 +125,7 @@ test.describe('Application flow', () => {
     await row.getByRole('button', { name: 'Archive application' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Yes' }).click()
 
-    await expect(page.getByText(vacancy)).not.toBeVisible()
+    await expect(page.getByTestId('app-row').filter({ hasText: vacancy })).toHaveCount(0)
 
     await page.getByTestId('applications-tab-archived').click()
     await expect(page.getByTestId('app-row').getByText(vacancy)).toBeVisible()
@@ -133,6 +133,6 @@ test.describe('Application flow', () => {
     await row.getByRole('button', { name: 'Delete application' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Yes' }).click()
 
-    await expect(page.getByText(vacancy)).not.toBeVisible()
+    await expect(page.getByTestId('app-row').filter({ hasText: vacancy })).toHaveCount(0)
   })
 })
