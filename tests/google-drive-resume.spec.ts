@@ -194,4 +194,36 @@ test.describe('Google Drive Resume Workflow', () => {
       { timeout: 10_000 }
     )
   })
+
+  test('keeps the generated resume link visible after reloading the details page', async ({ page }) => {
+    await setupPage(page)
+    await mockGoogleDriveStatus(page, connectedSettings)
+
+    setupMockApplicationsApi(page, [
+      {
+        id: 1,
+        vacancyName: 'Backend Engineer',
+        organization: 'Acme',
+        status: 'RH',
+        applicationDate: '2026-05-11',
+        driveVacancyFolderId: 'folder-123',
+        driveResumeFileId: 'copied-doc-id',
+        driveResumeFileName: 'APP-1 - Backend Engineer - Base Resume',
+        driveResumeDocumentUrl: 'https://docs.google.com/document/d/copied-doc-id/edit',
+        driveResumeGeneratedAt: '2026-05-11T20:00:00',
+        createdAt: '2026-05-11T19:00:00',
+        updatedAt: '2026-05-11T20:00:00',
+      },
+    ])
+
+    await page.goto('/applications/1')
+
+    await expect(page.getByRole('button', { name: 'Open Google Doc' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('.p-dropdown')).toBeVisible()
+
+    await page.reload()
+
+    await expect(page.getByRole('button', { name: 'Open Google Doc' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('APP-1 - Backend Engineer - Base Resume')).toBeVisible()
+  })
 })

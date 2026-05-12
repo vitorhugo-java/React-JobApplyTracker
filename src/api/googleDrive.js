@@ -105,6 +105,7 @@ export const createGoogleDriveResume = async (payload) => {
       ...response.data,
       googleDocUrl: response.data?.googleDocUrl ?? response.data?.documentWebViewLink ?? response.data?.documentUrl ?? response.data?.url ?? '',
       vacancyFolderUrl: response.data?.vacancyFolderUrl ?? response.data?.vacancyFolderWebViewLink ?? '',
+      generatedAt: response.data?.generatedAt ?? response.data?.createdAt ?? null,
     },
   }
 }

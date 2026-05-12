@@ -16,6 +16,11 @@ type AppRecord = {
   note: string | null
   archived: boolean
   archivedAt: string | null
+  driveVacancyFolderId?: string | null
+  driveResumeFileId?: string | null
+  driveResumeFileName?: string | null
+  driveResumeDocumentUrl?: string | null
+  driveResumeGeneratedAt?: string | null
   createdAt: string
   updatedAt?: string
 }
@@ -102,6 +107,11 @@ const normalizeApp = (payload: Partial<AppRecord>, id: number): AppRecord => {
     note: payload.note ?? null,
     archived: Boolean(payload.archived),
     archivedAt: payload.archivedAt ?? null,
+    driveVacancyFolderId: payload.driveVacancyFolderId ?? null,
+    driveResumeFileId: payload.driveResumeFileId ?? null,
+    driveResumeFileName: payload.driveResumeFileName ?? null,
+    driveResumeDocumentUrl: payload.driveResumeDocumentUrl ?? null,
+    driveResumeGeneratedAt: payload.driveResumeGeneratedAt ?? null,
     createdAt,
     updatedAt: payload.updatedAt ?? createdAt,
   }
@@ -184,6 +194,11 @@ export function setupMockApplicationsApi(page: Page, initialApps: Partial<AppRec
         note: payload.note ?? null,
         archived: false,
         archivedAt: null,
+        driveVacancyFolderId: null,
+        driveResumeFileId: null,
+        driveResumeFileName: null,
+        driveResumeDocumentUrl: null,
+        driveResumeGeneratedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

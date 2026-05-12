@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
+import { Dropdown } from 'primereact/dropdown'
 import { Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication, archiveApplication } from '../../api/applications'
 import { createGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
@@ -11,6 +12,7 @@ import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import RichLinkPreview from '../../components/ui/RichLinkPreview'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { canUseGoogleIntegration } from '../../utils/googleDriveAccess'
+import { buildGoogleDriveFolderUrl, formatGoogleDriveDateTime } from '../../utils/googleDrive'
 import { openExternalUrl } from '../../utils/externalLinks'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import useAuthStore from '../../store/authStore'
@@ -48,7 +50,6 @@ const ApplicationDetail = () => {
   const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(false)
   const [selectedBaseResumeId, setSelectedBaseResumeId] = useState('')
   const [copyingGoogleDriveResume, setCopyingGoogleDriveResume] = useState(false)
-  const [lastCopiedResume, setLastCopiedResume] = useState(null)
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -166,7 +167,18 @@ const ApplicationDetail = () => {
         applicationId: id,
         baseResumeId: selectedBaseResumeId,
       })
-      setLastCopiedResume(response.data)
+      setApp((currentApp) => (
+        currentApp
+          ? {
+              ...currentApp,
+              driveVacancyFolderId: response.data?.vacancyFolderId ?? currentApp.driveVacancyFolderId,
+              driveResumeFileId: response.data?.copiedFileId ?? currentApp.driveResumeFileId,
+              driveResumeFileName: response.data?.copiedFileName ?? currentApp.driveResumeFileName,
+              driveResumeDocumentUrl: response.data?.googleDocUrl ?? currentApp.driveResumeDocumentUrl,
+              driveResumeGeneratedAt: response.data?.generatedAt ?? currentApp.driveResumeGeneratedAt,
+            }
+          : currentApp
+      ))
       toast.current?.show({
         severity: 'success',
         summary: 'Success',
@@ -194,8 +206,18 @@ const ApplicationDetail = () => {
     googleDriveState.connected &&
     googleDriveState.baseFolderId &&
     googleDriveState.baseResumes.length > 0
-  const baseResumeSelectClassName =
-    'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white'
+  const latestResumeCopy = app?.driveResumeDocumentUrl
+    ? {
+        copiedFileName: app.driveResumeFileName || 'Google Docs Resume',
+        googleDocUrl: app.driveResumeDocumentUrl,
+        vacancyFolderUrl: buildGoogleDriveFolderUrl(app.driveVacancyFolderId),
+        generatedAt: app.driveResumeGeneratedAt,
+      }
+    : null
+  const baseResumeOptions = googleDriveState.baseResumes.map((resume) => ({
+    label: resume.documentName,
+    value: resume.id,
+  }))
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -286,49 +308,51 @@ const ApplicationDetail = () => {
             </div>
 
             <div className="space-y-3">
-              <select
-                  id="googleDriveBaseResume"
+              <Dropdown
+                  inputId="googleDriveBaseResume"
                   value={selectedBaseResumeId}
-                  onChange={(e) => setSelectedBaseResumeId(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                  disabled={!googleDriveRequirementsMet}
-              >
-                <option value="">Choose a Google Docs base resume</option>
-                {googleDriveState.baseResumes.map((resume) => (
-                    <option key={resume.id} value={resume.id}>
-                      {resume.documentName}
-                    </option>
-                ))}
-              </select>
+                  options={baseResumeOptions}
+                  onChange={(e) => setSelectedBaseResumeId(e.value)}
+                  className="w-full"
+                  placeholder="Choose a Google Docs base resume"
+                  disabled={loadingGoogleDrive || !googleDriveRequirementsMet}
+              />
               <Button
                   type="button"
                   label="Create Google Docs Copy"
                   icon="pi pi-copy"
                   onClick={handleCreateGoogleDriveResume}
                   loading={copyingGoogleDriveResume}
-                  disabled={!googleDriveRequirementsMet || !selectedBaseResumeId}
+                  disabled={loadingGoogleDrive || !googleDriveRequirementsMet || !selectedBaseResumeId}
               />
             </div>
 
-            {lastCopiedResume && (
+            {latestResumeCopy && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
                   <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
-                    {lastCopiedResume.copiedFileName}
+                    {latestResumeCopy.copiedFileName}
                   </p>
+                  {latestResumeCopy.generatedAt && (
+                    <p className="mt-1 text-xs text-emerald-800 dark:text-emerald-300">
+                      Generated at {formatGoogleDriveDateTime(latestResumeCopy.generatedAt)}
+                    </p>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button
                         type="button"
                         label="Open Google Doc"
                         icon="pi pi-external-link"
-                        onClick={() => openExternalUrl(lastCopiedResume.googleDocUrl)}
+                        onClick={() => openExternalUrl(latestResumeCopy.googleDocUrl)}
                     />
-                    <Button
-                        type="button"
-                        label="Open Vacancy Folder"
-                        icon="pi pi-folder-open"
-                        outlined
-                        onClick={() => openExternalUrl(lastCopiedResume.vacancyFolderUrl)}
-                    />
+                    {latestResumeCopy.vacancyFolderUrl && (
+                      <Button
+                          type="button"
+                          label="Open Vacancy Folder"
+                          icon="pi pi-folder-open"
+                          outlined
+                          onClick={() => openExternalUrl(latestResumeCopy.vacancyFolderUrl)}
+                      />
+                    )}
                   </div>
                 </div>
             )}
