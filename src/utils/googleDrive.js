@@ -1,5 +1,3 @@
-export const GOOGLE_DRIVE_GEMINI_URL = 'https://gemini.google.com/gem/f8ed7c14b062'
-
 const GOOGLE_DOC_URL_PREFIX = 'https://docs.google.com/document/d/'
 const GOOGLE_DRIVE_FOLDER_URL_PREFIX = 'https://drive.google.com/drive/folders/'
 const ID_PATTERN = /^[A-Za-z0-9_-]{20,}$/

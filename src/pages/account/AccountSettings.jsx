@@ -20,7 +20,6 @@ import {
 } from '../../api/googleDrive'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import {
-  GOOGLE_DRIVE_GEMINI_URL,
   buildGoogleDriveFolderUrl,
   extractGoogleDocId,
   extractGoogleDriveFolderId,
@@ -597,13 +596,6 @@ const AccountSettings = () => {
                     icon="pi pi-external-link"
                     outlined
                     onClick={() => openExternalUrl(googleDriveSettings.baseFolderUrl)}
-                  />
-                  <Button
-                    type="button"
-                    label="Gemini Helper"
-                    icon="pi pi-sparkles"
-                    text
-                    onClick={() => openExternalUrl(GOOGLE_DRIVE_GEMINI_URL)}
                   />
                 </div>
               </div>

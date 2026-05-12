@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
-import { Edit, Bell, Calendar } from 'lucide-react'
+import { Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication, archiveApplication } from '../../api/applications'
 import { createGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -11,7 +11,6 @@ import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import RichLinkPreview from '../../components/ui/RichLinkPreview'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { canUseGoogleIntegration } from '../../utils/googleDriveAccess'
-import { formatGoogleDriveDateTime } from '../../utils/googleDrive'
 import { openExternalUrl } from '../../utils/externalLinks'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import useAuthStore from '../../store/authStore'
@@ -242,121 +241,6 @@ const ApplicationDetail = () => {
         </div>
       </div>
 
-      {googleDriveEnabled && (
-        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive Resume Copy</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Use one of your Google Docs base resumes to create a copy for this application.
-              </p>
-            </div>
-            <Button
-              type="button"
-              label="Refresh"
-              icon="pi pi-refresh"
-              outlined
-              onClick={() => loadGoogleDriveSettings().catch(() => null)}
-              loading={loadingGoogleDrive}
-            />
-          </div>
-
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 space-y-2">
-            {!googleDriveState.configured ? (
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                Google Drive integration is not configured on the server yet.
-              </p>
-            ) : !googleDriveState.connected ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Connect your Google account in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button> before creating resume copies.
-              </p>
-            ) : !googleDriveState.baseFolderId ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Configure your Google Drive root folder in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
-              </p>
-            ) : !googleDriveState.baseResumes.length ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Add at least one Google Docs base resume in <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={() => navigate('/account')}>Account Settings</button>.
-              </p>
-            ) : (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {googleDriveState.accountDisplayName || 'Google account'}
-                    {googleDriveState.accountEmail ? ` • ${googleDriveState.accountEmail}` : ''}
-                  </p>
-                  {googleDriveState.connectedAt && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Connected at {formatGoogleDriveDateTime(googleDriveState.connectedAt)}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    label={googleDriveState.baseFolderName || 'Open Root Folder'}
-                    icon="pi pi-folder-open"
-                    outlined
-                    onClick={() => openExternalUrl(googleDriveState.baseFolderUrl)}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <label htmlFor="googleDriveBaseResume" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Base resume
-            </label>
-            <select
-              id="googleDriveBaseResume"
-              value={selectedBaseResumeId}
-              onChange={(e) => setSelectedBaseResumeId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-              disabled={!googleDriveRequirementsMet}
-            >
-              <option value="">Choose a Google Docs base resume</option>
-              {googleDriveState.baseResumes.map((resume) => (
-                <option key={resume.id} value={resume.id}>
-                  {resume.documentName}
-                </option>
-              ))}
-            </select>
-            <Button
-              type="button"
-              label="Create Google Docs Copy"
-              icon="pi pi-copy"
-              onClick={handleCreateGoogleDriveResume}
-              loading={copyingGoogleDriveResume}
-              disabled={!googleDriveRequirementsMet || !selectedBaseResumeId}
-            />
-          </div>
-
-          {lastCopiedResume && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
-              <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
-                {lastCopiedResume.copiedFileName}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  label="Open Google Doc"
-                  icon="pi pi-external-link"
-                  onClick={() => openExternalUrl(lastCopiedResume.googleDocUrl)}
-                />
-                <Button
-                  type="button"
-                  label="Open Vacancy Folder"
-                  icon="pi pi-folder-open"
-                  outlined
-                  onClick={() => openExternalUrl(lastCopiedResume.vacancyFolderUrl)}
-                />
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
       {app.nextStepDateTime && (
         <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 flex items-center gap-3">
           <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -387,6 +271,67 @@ const ApplicationDetail = () => {
           value={app.interviewScheduled ? 'Yes' : 'No'}
         />
       </div>
+
+      {googleDriveEnabled && (
+          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Google Drive Resume Copy</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Use one of your Google Docs base resumes to create a copy for this application.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <select
+                  id="googleDriveBaseResume"
+                  value={selectedBaseResumeId}
+                  onChange={(e) => setSelectedBaseResumeId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                  disabled={!googleDriveRequirementsMet}
+              >
+                <option value="">Choose a Google Docs base resume</option>
+                {googleDriveState.baseResumes.map((resume) => (
+                    <option key={resume.id} value={resume.id}>
+                      {resume.documentName}
+                    </option>
+                ))}
+              </select>
+              <Button
+                  type="button"
+                  label="Create Google Docs Copy"
+                  icon="pi pi-copy"
+                  onClick={handleCreateGoogleDriveResume}
+                  loading={copyingGoogleDriveResume}
+                  disabled={!googleDriveRequirementsMet || !selectedBaseResumeId}
+              />
+            </div>
+
+            {lastCopiedResume && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
+                    {lastCopiedResume.copiedFileName}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        label="Open Google Doc"
+                        icon="pi pi-external-link"
+                        onClick={() => openExternalUrl(lastCopiedResume.googleDocUrl)}
+                    />
+                    <Button
+                        type="button"
+                        label="Open Vacancy Folder"
+                        icon="pi pi-folder-open"
+                        outlined
+                        onClick={() => openExternalUrl(lastCopiedResume.vacancyFolderUrl)}
+                    />
+                  </div>
+                </div>
+            )}
+          </section>
+      )}
 
       {app.recruiterName && (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${
