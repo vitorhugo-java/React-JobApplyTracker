@@ -140,6 +140,7 @@ export function setupMockApplicationsApi(page: Page, initialApps: Partial<AppRec
 
     if (method === 'GET') {
       const recruiterName = (url.searchParams.get('recruiterName') || '').toLowerCase()
+      const organization = (url.searchParams.get('organization') || '').toLowerCase()
       const status = url.searchParams.get('status')
       const applicationDateFrom = url.searchParams.get('applicationDateFrom')
       const applicationDateTo = url.searchParams.get('applicationDateTo')
@@ -151,6 +152,9 @@ export function setupMockApplicationsApi(page: Page, initialApps: Partial<AppRec
       let filtered = apps.filter((app) => app.archived === archived)
       if (recruiterName) {
         filtered = filtered.filter((app) => (app.recruiterName || '').toLowerCase().includes(recruiterName))
+      }
+      if (organization) {
+        filtered = filtered.filter((app) => (app.organization || '').toLowerCase().includes(organization))
       }
       if (status) {
         if (status === 'TO_SEND_LATER') {

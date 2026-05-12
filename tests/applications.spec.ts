@@ -27,7 +27,8 @@ async function injectAuth(page: Page) {
 async function createApplication(
   page: Page,
   vacancyName: string,
-  recruiterName = ''
+  recruiterName = '',
+  organization = ''
 ): Promise<void> {
   await page.getByTestId('new-application-btn').click()
   await page.waitForURL('**/applications/new')
@@ -35,6 +36,9 @@ async function createApplication(
   await page.getByTestId('app-vacancy-name').fill(vacancyName)
   if (recruiterName) {
     await page.getByTestId('app-recruiter-name').fill(recruiterName)
+  }
+  if (organization) {
+    await page.getByTestId('app-organization').fill(organization)
   }
 
   // Force date value directly into the DOM - Absolute PrimeReact CI fix
@@ -80,6 +84,15 @@ test.describe('Application flow', () => {
     await createApplication(page, vacancy, uniqueRecruiter)
 
     await page.getByTestId('filter-recruiter').fill(uniqueRecruiter)
+    await expect(page.getByTestId('app-row').filter({ hasText: vacancy })).toBeVisible()
+  })
+
+  test('filter applications by company name', async ({ page }) => {
+    const uniqueCompany = `Company_${Date.now()}`
+    const vacancy = `Job for company filter ${Date.now()}`
+    await createApplication(page, vacancy, '', uniqueCompany)
+
+    await page.getByTestId('filter-company').fill(uniqueCompany)
     await expect(page.getByTestId('app-row').filter({ hasText: vacancy })).toBeVisible()
   })
 
