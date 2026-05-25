@@ -25,6 +25,7 @@ test.describe('Dashboard', () => {
     const metricIds = [
       'metric-total',
       'metric-waiting',
+      'metric-interview-count',
       'metric-interviews',
       'metric-overdue',
       'metric-reminders',
@@ -45,6 +46,7 @@ test.describe('Dashboard', () => {
     const metricIds = [
       'metric-total-value',
       'metric-waiting-value',
+      'metric-interview-count-value',
       'metric-interviews-value',
       'metric-overdue-value',
       'metric-reminders-value',

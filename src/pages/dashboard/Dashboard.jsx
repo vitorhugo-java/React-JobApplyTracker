@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost, CalendarDays, CalendarRange, CalendarClock } from 'lucide-react'
+import { BarChart2, Clock, TrendingUp, AlertTriangle, MessageCircle, Send, XCircle, Ghost, CalendarDays, CalendarRange, CalendarClock, Users } from 'lucide-react'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Button } from 'primereact/button'
@@ -160,6 +160,7 @@ const Dashboard = () => {
   const metrics = [
     { icon: BarChart2, label: 'Total Applications', value: summary?.totalApplications, color: 'bg-indigo-500', testId: 'metric-total' },
     { icon: Clock, label: 'Waiting Responses', value: summary?.waitingResponses, color: 'bg-yellow-500', testId: 'metric-waiting' },
+    { icon: Users, label: 'Interview Total', value: summary?.interviewCount, color: 'bg-emerald-500', testId: 'metric-interview-count' },
     { icon: TrendingUp, label: 'Interviews Scheduled', value: summary?.interviewsScheduled, color: 'bg-green-500', testId: 'metric-interviews' },
     { icon: AlertTriangle, label: 'Overdue Follow-ups', value: summary?.overdueFollowUps, color: 'bg-red-500', testId: 'metric-overdue' },
     { icon: MessageCircle, label: 'DM Reminders Enabled', value: summary?.dmRemindersEnabled, color: 'bg-purple-500', testId: 'metric-reminders' },

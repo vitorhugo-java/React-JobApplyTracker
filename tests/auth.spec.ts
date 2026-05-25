@@ -6,6 +6,7 @@ const DASHBOARD_FIXTURE = {
   totalApplications: 7,
   waitingResponses: 3,
   interviewsScheduled: 2,
+  interviewCount: 5,
   overdueFollowUps: 1,
   dmRemindersEnabled: 4,
   toSendLater: 1,

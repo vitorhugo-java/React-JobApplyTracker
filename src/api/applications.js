@@ -2,6 +2,7 @@ import api from './axios'
 
 export const APPLICATION_STATUSES = [
   'RH',
+  'Entrevista marcada',
   'Fiz a RH - Aguardando Atualização',
   'Fiz a Hiring Manager - Aguardando Atualização',
   'Teste Técnico',
