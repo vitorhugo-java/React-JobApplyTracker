@@ -3,6 +3,7 @@ import { Edit, Trash2, Check, X, Archive } from 'lucide-react'
 import { Dropdown } from 'primereact/dropdown'
 import { InputText } from 'primereact/inputtext'
 import StatusBadge from './StatusBadge'
+import RecruiterNameLink from './RecruiterNameLink'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { TO_SEND_LATER_STATUS } from '../../api/applications'
 
@@ -85,7 +86,9 @@ const JobApplicationCard = ({
                 data-testid="inline-edit-recruiter-card"
               />
             ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-300">{app.recruiterName}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                <RecruiterNameLink recruiterName={app.recruiterName} className="text-sm text-gray-600 dark:text-gray-300" />
+              </p>
             )}
           </div>
         )}

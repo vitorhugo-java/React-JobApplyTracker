@@ -13,6 +13,7 @@ import AchievementsList from '../../components/ui/AchievementsList'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import RecruiterNameLink from '../../components/ui/RecruiterNameLink'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import useGamificationStore from '../../store/gamificationStore'
@@ -35,15 +36,19 @@ const MetricCard = ({ icon, label, value, color, testId }) => (
 
 const AppRow = ({ app, onMarkDmSent }) => (
   <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-    <Link
-      to={`/applications/${app.id}`}
-      className="flex-1"
-    >
-      <div>
+    <div className="flex-1 min-w-0">
+      <Link
+        to={`/applications/${app.id}`}
+        className="block"
+      >
         <p className="text-sm font-medium text-gray-900 dark:text-white">{getVacancyLabel(app.vacancyName)}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{app.recruiterName}</p>
+      </Link>
+      <div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 break-all">
+          <RecruiterNameLink recruiterName={app.recruiterName} className="text-xs text-gray-500 dark:text-gray-400" />
+        </p>
       </div>
-    </Link>
+    </div>
     <div className="flex items-center gap-3">
       {app.nextStepDateTime && (
         <span className="text-xs text-gray-400 dark:text-gray-500">

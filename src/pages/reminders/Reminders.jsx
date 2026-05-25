@@ -8,6 +8,7 @@ import { getUpcoming, getOverdue, patchReminder, markDmSent } from '../../api/ap
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import RecruiterNameLink from '../../components/ui/RecruiterNameLink'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
@@ -18,9 +19,17 @@ const ReminderCard = ({ app, onToggle, onMarkDmSent }) => {
 
   return (
     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors">
-      <Link to={`/applications/${app.id}`} className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{app.recruiterName || 'No recruiter'}</p>
+      <div className="flex-1 min-w-0">
+        <Link to={`/applications/${app.id}`} className="block min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getVacancyLabel(app.vacancyName)}</p>
+        </Link>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <RecruiterNameLink
+            recruiterName={app.recruiterName}
+            className="text-xs text-gray-500 dark:text-gray-400"
+            fallback="No recruiter"
+          />
+        </p>
         <div className="flex items-center gap-3 mt-2">
           <StatusBadge status={app.status || 'TO_SEND_LATER'} />
           {reminderAt && (
@@ -30,7 +39,7 @@ const ReminderCard = ({ app, onToggle, onMarkDmSent }) => {
             </span>
           )}
         </div>
-      </Link>
+      </div>
       <div className="flex items-center gap-3 ml-4 shrink-0">
         <button
           onClick={() => onMarkDmSent(app)}

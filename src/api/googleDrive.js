@@ -109,3 +109,38 @@ export const createGoogleDriveResume = async (payload) => {
     },
   }
 }
+
+const normalizeResumeGenerationResponse = (data = {}) => ({
+  ...data,
+  googleDocUrl: data.documentWebViewLink ?? data.googleDocUrl ?? data.documentUrl ?? '',
+  pdfUrl: data.pdfWebViewLink ?? data.pdfUrl ?? '',
+  vacancyFolderUrl: data.vacancyFolderWebViewLink ?? data.vacancyFolderUrl ?? '',
+  generatedAt: data.generatedAt ?? data.createdAt ?? null,
+  placeholders: data.placeholders ?? [],
+  values: data.values ?? {},
+})
+
+export const detectResumePlaceholders = async (baseResumeId) => {
+  const response = await api.post('/google-drive/resume-placeholders', {
+    baseResumeId,
+    values: {},
+  })
+  return {
+    ...response,
+    data: normalizeResumeGenerationResponse(response.data),
+  }
+}
+
+export const generateGoogleDriveResume = async (payload) => {
+  const response = await api.post(
+    `/google-drive/applications/${payload.applicationId}/generated-resumes`,
+    {
+      baseResumeId: payload.baseResumeId,
+      values: payload.values ?? {},
+    }
+  )
+  return {
+    ...response,
+    data: normalizeResumeGenerationResponse(response.data),
+  }
+}

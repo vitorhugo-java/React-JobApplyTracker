@@ -6,10 +6,12 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Dropdown } from 'primereact/dropdown'
 import { Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication, archiveApplication } from '../../api/applications'
-import { createGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
+import { detectResumePlaceholders, generateGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import RichLinkPreview from '../../components/ui/RichLinkPreview'
+import RecruiterNameLink from '../../components/ui/RecruiterNameLink'
+import ResumePlaceholderDialog from '../../components/ui/ResumePlaceholderDialog'
 import { getVacancyLabel } from '../../utils/applicationDisplay'
 import { canUseGoogleIntegration } from '../../utils/googleDriveAccess'
 import { buildGoogleDriveFolderUrl, formatGoogleDriveDateTime } from '../../utils/googleDrive'
@@ -50,6 +52,10 @@ const ApplicationDetail = () => {
   const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(false)
   const [selectedBaseResumeId, setSelectedBaseResumeId] = useState('')
   const [copyingGoogleDriveResume, setCopyingGoogleDriveResume] = useState(false)
+  const [placeholderDialogVisible, setPlaceholderDialogVisible] = useState(false)
+  const [resumePlaceholders, setResumePlaceholders] = useState([])
+  const [resumeInitialValues, setResumeInitialValues] = useState({})
+  const [latestGeneratedResume, setLatestGeneratedResume] = useState(null)
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -163,10 +169,28 @@ const ApplicationDetail = () => {
     setCopyingGoogleDriveResume(true)
 
     try {
-      const response = await createGoogleDriveResume({
+      const response = await detectResumePlaceholders(selectedBaseResumeId)
+      setResumePlaceholders(response.data?.placeholders ?? [])
+      setResumeInitialValues(response.data?.values ?? {})
+      setPlaceholderDialogVisible(true)
+    } catch (err) {
+      const detail = err.response?.data?.message || 'Could not scan the selected resume template.'
+      toast.current?.show({ severity: 'error', summary: 'Error', detail })
+    } finally {
+      setCopyingGoogleDriveResume(false)
+    }
+  }
+
+  const handleSubmitResumePlaceholders = async (values) => {
+    setCopyingGoogleDriveResume(true)
+
+    try {
+      const response = await generateGoogleDriveResume({
         applicationId: id,
         baseResumeId: selectedBaseResumeId,
+        values,
       })
+      setLatestGeneratedResume(response.data)
       setApp((currentApp) => (
         currentApp
           ? {
@@ -179,14 +203,15 @@ const ApplicationDetail = () => {
             }
           : currentApp
       ))
+      setPlaceholderDialogVisible(false)
       toast.current?.show({
         severity: 'success',
         summary: 'Success',
-        detail: 'Google Docs resume copy created successfully.',
+        detail: 'Resume generated, placeholders replaced, and PDF exported.',
       })
       await loadGoogleDriveSettings().catch(() => null)
     } catch (err) {
-      const detail = err.response?.data?.message || 'Could not create the Google Drive resume copy.'
+      const detail = err.response?.data?.message || 'Could not generate the Google Drive resume.'
       toast.current?.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setCopyingGoogleDriveResume(false)
@@ -210,6 +235,7 @@ const ApplicationDetail = () => {
     ? {
         copiedFileName: app.driveResumeFileName || 'Google Docs Resume',
         googleDocUrl: app.driveResumeDocumentUrl,
+        pdfUrl: latestGeneratedResume?.pdfUrl ?? '',
         vacancyFolderUrl: buildGoogleDriveFolderUrl(app.driveVacancyFolderId),
         generatedAt: app.driveResumeGeneratedAt,
       }
@@ -223,6 +249,13 @@ const ApplicationDetail = () => {
     <div className="max-w-2xl mx-auto space-y-6">
       <Toast ref={toast} />
       <ConfirmDialog />
+      <ResumePlaceholderDialog
+        visible={placeholderDialogVisible}
+        placeholders={resumePlaceholders}
+        initialValues={resumeInitialValues}
+        onSubmit={handleSubmitResumePlaceholders}
+        onClose={() => setPlaceholderDialogVisible(false)}
+      />
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -282,7 +315,10 @@ const ApplicationDetail = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Field label="Recruiter Name" value={app.recruiterName} />
+        <Field
+          label="Recruiter Name"
+          value={<RecruiterNameLink recruiterName={app.recruiterName} className="text-sm text-gray-900 dark:text-white break-all" fallback="-" />}
+        />
         <Field label="Organization" value={app.organization} />
         <Field label="Note" value={app.note} />
         <Field label="Previous Status" value={app.previousStatus} />
@@ -317,14 +353,14 @@ const ApplicationDetail = () => {
                   placeholder="Choose a Google Docs base resume"
                   disabled={loadingGoogleDrive || !googleDriveRequirementsMet}
               />
-              <Button
-                  type="button"
-                  label="Create Google Docs Copy"
-                  icon="pi pi-copy"
-                  onClick={handleCreateGoogleDriveResume}
-                  loading={copyingGoogleDriveResume}
-                  disabled={loadingGoogleDrive || !googleDriveRequirementsMet || !selectedBaseResumeId}
-              />
+                  <Button
+                      type="button"
+                      label="Generate Resume"
+                      icon="pi pi-copy"
+                      onClick={handleCreateGoogleDriveResume}
+                      loading={copyingGoogleDriveResume}
+                      disabled={loadingGoogleDrive || !googleDriveRequirementsMet || !selectedBaseResumeId}
+                  />
             </div>
 
             {latestResumeCopy && (
@@ -344,6 +380,15 @@ const ApplicationDetail = () => {
                         icon="pi pi-external-link"
                         onClick={() => openExternalUrl(latestResumeCopy.googleDocUrl)}
                     />
+                    {latestResumeCopy.pdfUrl && (
+                      <Button
+                          type="button"
+                          label="Open PDF"
+                          icon="pi pi-file-pdf"
+                          outlined
+                          onClick={() => openExternalUrl(latestResumeCopy.pdfUrl)}
+                      />
+                    )}
                     {latestResumeCopy.vacancyFolderUrl && (
                       <Button
                           type="button"
