@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import MobileNav from './MobileNav'
 import Sidebar from './Sidebar'
@@ -30,6 +30,7 @@ const Layout = () => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === 'true'
   })
+  const navigate = useNavigate()
 
   const isSidebarCollapsed = isDesktop && (isCompactDesktop || isDesktopSidebarCollapsed)
 
@@ -64,7 +65,7 @@ const Layout = () => {
   const handleLogout = async () => {
     await logoutApi().catch(() => null)
     logoutStore()
-    window.location.href = '/login'
+    navigate('/login', { replace: true })
   }
 
   if (isGuestAboutPage) {
