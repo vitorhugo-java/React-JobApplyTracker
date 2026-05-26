@@ -7,7 +7,9 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import useAuthStore from '../../store/authStore'
 import {
   changePassword as changePasswordApi,
+  finishPasskeyRegistration,
   sendTestEmail as sendTestEmailApi,
+  startPasskeyRegistration,
   updateProfile as updateProfileApi,
 } from '../../api/auth'
 import {
@@ -27,6 +29,12 @@ import {
 } from '../../utils/googleDrive'
 import { canUseGoogleIntegration as userCanUseGoogleIntegration } from '../../utils/googleDriveAccess'
 import { openExternalUrl } from '../../utils/externalLinks'
+import {
+  browserSupportsWebAuthn,
+  getWebAuthnErrorMessage,
+  serializePublicKeyCredential,
+  toPublicKeyCredentialCreationOptions,
+} from '../../utils/webauthn'
 
 const createEmptyGoogleDriveSettings = () => ({
   configured: true,
@@ -53,6 +61,7 @@ const AccountSettings = () => {
   const [reminderTime, setReminderTime] = useState((user?.reminderTime || '19:00:00').slice(0, 5))
   const [savingName, setSavingName] = useState(false)
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [registeringPasskey, setRegisteringPasskey] = useState(false)
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -256,6 +265,38 @@ const AccountSettings = () => {
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setSendingTestEmail(false)
+    }
+  }
+
+  const handleRegisterPasskey = async () => {
+    if (!browserSupportsWebAuthn()) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Passkeys unavailable',
+        detail: 'Passkeys are not available in this browser. Use a supported browser or another sign-in method.',
+      })
+      return
+    }
+
+    setRegisteringPasskey(true)
+
+    try {
+      const optionsRes = await startPasskeyRegistration()
+      const publicKey = toPublicKeyCredentialCreationOptions(optionsRes.data)
+      const credential = await navigator.credentials.create({ publicKey })
+
+      if (!credential) {
+        throw new Error('No passkey was returned by the browser.')
+      }
+
+      const verifyRes = await finishPasskeyRegistration(serializePublicKeyCredential(credential))
+      const detail = verifyRes.data?.message || 'Passkey registered successfully.'
+      toast.current?.show({ severity: 'success', summary: 'Success', detail })
+    } catch (err) {
+      const detail = getWebAuthnErrorMessage(err, 'Could not register your passkey. Please try again.')
+      toast.current?.show({ severity: 'error', summary: 'Passkey registration failed', detail })
+    } finally {
+      setRegisteringPasskey(false)
     }
   }
 
@@ -479,6 +520,29 @@ const AccountSettings = () => {
 
           <Button type="submit" label="Save Profile" loading={savingName} />
         </form>
+      </section>
+
+      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Passkey</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Register a passkey to sign in with your device biometrics or PIN without typing your password.
+            </p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Passkeys work in supported browsers and on localhost during local development.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            label="Register Passkey"
+            icon="pi pi-shield"
+            onClick={handleRegisterPasskey}
+            loading={registeringPasskey}
+            data-testid="register-passkey-btn"
+          />
+        </div>
       </section>
 
       {canUseGoogleIntegration && (

@@ -4,9 +4,20 @@ import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
-import { login as loginApi } from '../../api/auth'
+import {
+  finishPasskeyLogin,
+  login as loginApi,
+  me as meApi,
+  startPasskeyLogin,
+} from '../../api/auth'
 import useAuthStore from '../../store/authStore'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import {
+  browserSupportsWebAuthn,
+  getWebAuthnErrorMessage,
+  serializePublicKeyCredential,
+  toPublicKeyCredentialRequestOptions,
+} from '../../utils/webauthn'
 
 const Login = () => {
   usePageTitle('Entrar')
@@ -17,6 +28,26 @@ const Login = () => {
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
+
+  const applyAuthenticatedSession = async (payload) => {
+    const accessToken = payload?.accessToken
+
+    if (!accessToken) {
+      throw new Error('The server did not return an access token.')
+    }
+
+    setTokens(accessToken)
+
+    if (payload?.user) {
+      setUser(payload.user)
+    } else {
+      const userRes = await meApi()
+      setUser(userRes.data)
+    }
+
+    navigate('/dashboard')
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,10 +58,7 @@ const Login = () => {
     setLoading(true)
     try {
       const res = await loginApi(form)
-      const { accessToken, refreshToken, user } = res.data
-      setTokens(accessToken, refreshToken)
-      setUser(user)
-      navigate('/dashboard')
+      await applyAuthenticatedSession(res.data)
     } catch (err) {
       let detail = err.response?.data?.message
       if (!detail) {
@@ -47,6 +75,36 @@ const Login = () => {
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePasskeyLogin = async () => {
+    if (!browserSupportsWebAuthn()) {
+      toast.current.show({
+        severity: 'warn',
+        summary: 'Passkeys unavailable',
+        detail: 'Passkeys are not available in this browser. Use a supported browser or continue with your password.',
+      })
+      return
+    }
+
+    setPasskeyLoading(true)
+    try {
+      const optionsRes = await startPasskeyLogin()
+      const publicKey = toPublicKeyCredentialRequestOptions(optionsRes.data)
+      const credential = await navigator.credentials.get({ publicKey })
+
+      if (!credential) {
+        throw new Error('No passkey was returned by the browser.')
+      }
+
+      const verifyRes = await finishPasskeyLogin(serializePublicKeyCredential(credential))
+      await applyAuthenticatedSession(verifyRes.data)
+    } catch (err) {
+      const detail = getWebAuthnErrorMessage(err, 'Passkey login failed. Please try again or use your password.')
+      toast.current.show({ severity: 'error', summary: 'Passkey login failed', detail })
+    } finally {
+      setPasskeyLoading(false)
     }
   }
 
@@ -91,9 +149,25 @@ const Login = () => {
             type="submit"
             label="Sign In"
             loading={loading}
+            disabled={passkeyLoading}
             className="w-full mt-2"
             data-testid="login-submit"
           />
+          <Button
+            type="button"
+            label="Sign in with Passkey"
+            aria-label="Use passkey"
+            icon="pi pi-shield"
+            loading={passkeyLoading}
+            disabled={loading}
+            onClick={handlePasskeyLogin}
+            outlined
+            className="w-full"
+            data-testid="login-passkey-submit"
+          />
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+            Use your device passkey for a faster sign-in on supported browsers and localhost.
+          </p>
         </form>
         <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400 space-y-2">
           <p>

@@ -36,6 +36,12 @@ type SetupMockAuthOptions = {
   canUseGoogleIntegration?: boolean
 }
 
+type SetupMockPasskeyBrowserOptions = {
+  supported?: boolean
+  createErrorName?: string
+  getErrorName?: string
+}
+
 const buildMockUser = (
   email: string,
   name: string,
@@ -141,6 +147,104 @@ export function setupMockAuth(page: Page, email: string, name: string, options: 
       }),
     })
   })
+}
+
+export async function setupMockPasskeyBrowser(
+  page: Page,
+  options: SetupMockPasskeyBrowserOptions = {}
+): Promise<void> {
+  await page.addInitScript((config: SetupMockPasskeyBrowserOptions) => {
+    const toBuffer = (value: string): ArrayBuffer => {
+      const bytes = new TextEncoder().encode(value)
+      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+    }
+
+    if (config.supported === false) {
+      Object.defineProperty(window, 'PublicKeyCredential', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      })
+
+      Object.defineProperty(navigator, 'credentials', {
+        configurable: true,
+        value: {
+          create: undefined,
+          get: undefined,
+        },
+      })
+
+      return
+    }
+
+    class MockPublicKeyCredential {}
+
+    Object.defineProperty(window, 'PublicKeyCredential', {
+      configurable: true,
+      writable: true,
+      value: MockPublicKeyCredential,
+    })
+
+    Object.defineProperty(navigator, 'credentials', {
+      configurable: true,
+      value: {
+        create: async ({ publicKey }: { publicKey: PublicKeyCredentialCreationOptions }) => {
+          ;(window as Window & { __mockPasskeyCreate?: unknown }).__mockPasskeyCreate = {
+            challengeLength: publicKey.challenge instanceof ArrayBuffer ? publicKey.challenge.byteLength : 0,
+            userIdLength: publicKey.user.id instanceof ArrayBuffer ? publicKey.user.id.byteLength : 0,
+          }
+
+          if (config.createErrorName) {
+            const error = new Error(config.createErrorName)
+            error.name = config.createErrorName
+            throw error
+          }
+
+          return {
+            id: 'created-passkey-id',
+            type: 'public-key',
+            rawId: toBuffer('created-passkey-raw'),
+            authenticatorAttachment: 'platform',
+            response: {
+              attestationObject: toBuffer('attestation-object'),
+              clientDataJSON: toBuffer('client-data-json'),
+              getTransports: () => ['internal'],
+            },
+            getClientExtensionResults: () => ({ credProps: { rk: true } }),
+          }
+        },
+        get: async ({ publicKey }: { publicKey: PublicKeyCredentialRequestOptions }) => {
+          ;(window as Window & { __mockPasskeyGet?: unknown }).__mockPasskeyGet = {
+            challengeLength: publicKey.challenge instanceof ArrayBuffer ? publicKey.challenge.byteLength : 0,
+            allowCredentialLength:
+              publicKey.allowCredentials?.[0]?.id instanceof ArrayBuffer
+                ? publicKey.allowCredentials[0].id.byteLength
+                : 0,
+          }
+
+          if (config.getErrorName) {
+            const error = new Error(config.getErrorName)
+            error.name = config.getErrorName
+            throw error
+          }
+
+          return {
+            id: 'login-passkey-id',
+            type: 'public-key',
+            rawId: toBuffer('login-passkey-raw'),
+            authenticatorAttachment: 'platform',
+            response: {
+              authenticatorData: toBuffer('authenticator-data'),
+              clientDataJSON: toBuffer('client-data-json'),
+              signature: toBuffer('signature-data'),
+              userHandle: toBuffer('user-handle'),
+            },
+            getClientExtensionResults: () => ({}),
+          }
+        },
+      },
+    })
+  }, options)
 }
 
 async function seedAuthenticatedSession(
