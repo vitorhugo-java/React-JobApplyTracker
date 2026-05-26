@@ -4,9 +4,8 @@ import useAuthStore from '../../store/authStore'
 
 const ProtectedRoute = ({ children }) => {
   const accessToken = useAuthStore((s) => s.accessToken)
-  const isAuthenticated = !!accessToken
 
-  if (!isAuthenticated) {
+  if (!accessToken) {
     return <Navigate to="/login" replace />
   }
 

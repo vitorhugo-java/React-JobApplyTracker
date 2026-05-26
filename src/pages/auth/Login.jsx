@@ -4,14 +4,16 @@ import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
-import { login as loginApi } from '../../api/auth'
+import { login as loginApi, me as meApi } from '../../api/auth'
 import useAuthStore from '../../store/authStore'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
 const Login = () => {
   usePageTitle('Entrar')
+
   const toast = useRef(null)
   const navigate = useNavigate()
+
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
 
@@ -20,19 +22,36 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     if (!form.email || !form.password) {
-      toast.current.show({ severity: 'warn', summary: 'Validation', detail: 'Please fill in all fields.' })
+      toast.current.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill in all fields.',
+      })
       return
     }
+
     setLoading(true)
+
     try {
       const res = await loginApi(form)
-      const { accessToken, refreshToken, user } = res.data
-      setTokens(accessToken, refreshToken)
-      setUser(user)
-      navigate('/dashboard')
+      const { accessToken } = res.data
+
+      setTokens(accessToken)
+
+      // Se a API já devolver user, ótimo. Se não devolver, pega no /me.
+      if (res.data.user) {
+        setUser(res.data.user)
+      } else {
+        const userRes = await meApi()
+        setUser(userRes.data)
+      }
+
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       let detail = err.response?.data?.message
+
       if (!detail) {
         if (err.response?.status === 401) {
           detail = 'Invalid email or password. Please check and try again.'
@@ -44,6 +63,7 @@ const Login = () => {
           detail = 'Login failed. Please check your email and password and try again.'
         }
       }
+
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)

@@ -5,7 +5,7 @@ const loadPrimeReactTheme = (theme) => {
   const themeLink = document.getElementById('primereact-theme')
   const themeName = theme === 'dark' ? 'lara-dark-indigo' : 'lara-light-indigo'
   const themePath = `https://unpkg.com/primereact/resources/themes/${themeName}/theme.css`
-  
+
   if (themeLink) {
     themeLink.href = themePath
   } else {
@@ -29,32 +29,33 @@ const useAuthStore = create(
         return !!get().accessToken
       },
 
-      setTokens: (accessToken) =>
-        set({ accessToken }),
-
+      setTokens: (accessToken) => set({ accessToken }),
       setUser: (user) => set({ user }),
 
-      logout: () =>
-        set({ user: null, accessToken: null }),
+      logout: () => set({ user: null, accessToken: null }),
 
       setTheme: (theme) => {
         localStorage.setItem('theme', theme)
+
         if (theme === 'dark') {
           document.documentElement.classList.add('dark')
         } else {
           document.documentElement.classList.remove('dark')
         }
+
         loadPrimeReactTheme(theme)
         set({ theme })
       },
 
       initTheme: () => {
         const stored = localStorage.getItem('theme') || 'light'
+
         if (stored === 'dark') {
           document.documentElement.classList.add('dark')
         } else {
           document.documentElement.classList.remove('dark')
         }
+
         loadPrimeReactTheme(stored)
         set({ theme: stored })
       },
@@ -64,8 +65,6 @@ const useAuthStore = create(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        accessToken: state.accessToken,
-        user: state.user,
         theme: state.theme,
       }),
     }
