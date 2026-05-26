@@ -4,9 +4,20 @@ import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
-import { login as loginApi, me as meApi } from '../../api/auth'
+import {
+  finishPasskeyLogin,
+  login as loginApi,
+  me as meApi,
+  startPasskeyLogin,
+} from '../../api/auth'
 import useAuthStore from '../../store/authStore'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import {
+  browserSupportsWebAuthn,
+  getWebAuthnErrorMessage,
+  serializePublicKeyCredential,
+  toPublicKeyCredentialRequestOptions,
+} from '../../utils/webauthn'
 
 const Login = () => {
   usePageTitle('Entrar')
@@ -19,6 +30,26 @@ const Login = () => {
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
+
+  const applyAuthenticatedSession = async (payload) => {
+    const accessToken = payload?.accessToken
+
+    if (!accessToken) {
+      throw new Error('Authentication failed: no access token was returned by the server.')
+    }
+
+    setTokens(accessToken)
+
+    if (payload?.user) {
+      setUser(payload.user)
+    } else {
+      const userRes = await meApi()
+      setUser(userRes.data)
+    }
+
+    navigate('/dashboard')
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,19 +67,7 @@ const Login = () => {
 
     try {
       const res = await loginApi(form)
-      const { accessToken } = res.data
-
-      setTokens(accessToken)
-
-      // Se a API já devolver user, ótimo. Se não devolver, pega no /me.
-      if (res.data.user) {
-        setUser(res.data.user)
-      } else {
-        const userRes = await meApi()
-        setUser(userRes.data)
-      }
-
-      navigate('/dashboard', { replace: true })
+      await applyAuthenticatedSession(res.data)
     } catch (err) {
       let detail = err.response?.data?.message
 
@@ -67,6 +86,36 @@ const Login = () => {
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePasskeyLogin = async () => {
+    if (!browserSupportsWebAuthn()) {
+      toast.current.show({
+        severity: 'warn',
+        summary: 'Passkeys unavailable',
+        detail: 'Passkeys are not available in this browser. Use a supported browser or continue with your password.',
+      })
+      return
+    }
+
+    setPasskeyLoading(true)
+    try {
+      const optionsRes = await startPasskeyLogin()
+      const publicKey = toPublicKeyCredentialRequestOptions(optionsRes.data)
+      const credential = await navigator.credentials.get({ publicKey })
+
+      if (!credential) {
+        throw new Error('No passkey credential was returned. Please try again or use password login.')
+      }
+
+      const verifyRes = await finishPasskeyLogin(serializePublicKeyCredential(credential))
+      await applyAuthenticatedSession(verifyRes.data)
+    } catch (err) {
+      const detail = getWebAuthnErrorMessage(err, 'Passkey login failed. Please try again or use your password.')
+      toast.current.show({ severity: 'error', summary: 'Passkey login failed', detail })
+    } finally {
+      setPasskeyLoading(false)
     }
   }
 
@@ -111,9 +160,25 @@ const Login = () => {
             type="submit"
             label="Sign In"
             loading={loading}
+            disabled={passkeyLoading}
             className="w-full mt-2"
             data-testid="login-submit"
           />
+          <Button
+            type="button"
+            label="Sign in with Passkey"
+            aria-label="Use passkey"
+            icon="pi pi-shield"
+            loading={passkeyLoading}
+            disabled={loading}
+            onClick={handlePasskeyLogin}
+            outlined
+            className="w-full"
+            data-testid="login-passkey-submit"
+          />
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+            Use your device passkey for a faster sign-in on supported browsers and localhost.
+          </p>
         </form>
         <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400 space-y-2">
           <p>

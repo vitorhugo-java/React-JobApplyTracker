@@ -2,6 +2,10 @@ import api from './axios'
 
 export const register = (data) => api.post('/auth/register', data)
 export const login = (data) => api.post('/auth/login', data)
+export const startPasskeyRegistration = () => api.post('/auth/passkeys/register/options', {})
+export const finishPasskeyRegistration = (data) => api.post('/auth/passkeys/register/verify', data)
+export const startPasskeyLogin = () => api.post('/auth/passkeys/login/options', {})
+export const finishPasskeyLogin = (data) => api.post('/auth/passkeys/login/verify', data)
 export const refresh = () => api.post('/auth/refresh', {})
 export const forgotPassword = (data) => api.post('/auth/forgot-password', data)
 export const resetPassword = (data) => api.post('/auth/reset-password', data)
