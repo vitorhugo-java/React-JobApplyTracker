@@ -286,7 +286,7 @@ const AccountSettings = () => {
       const credential = await navigator.credentials.create({ publicKey })
 
       if (!credential) {
-        throw new Error('No passkey was returned by the browser.')
+        throw new Error('Passkey registration failed: no credential was created. Please try again.')
       }
 
       const verifyRes = await finishPasskeyRegistration(serializePublicKeyCredential(credential))

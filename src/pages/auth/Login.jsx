@@ -34,7 +34,7 @@ const Login = () => {
     const accessToken = payload?.accessToken
 
     if (!accessToken) {
-      throw new Error('The server did not return an access token.')
+      throw new Error('Authentication failed: no access token was returned by the server.')
     }
 
     setTokens(accessToken)
@@ -95,7 +95,7 @@ const Login = () => {
       const credential = await navigator.credentials.get({ publicKey })
 
       if (!credential) {
-        throw new Error('No passkey was returned by the browser.')
+        throw new Error('No passkey credential was returned. Please try again or use password login.')
       }
 
       const verifyRes = await finishPasskeyLogin(serializePublicKeyCredential(credential))
