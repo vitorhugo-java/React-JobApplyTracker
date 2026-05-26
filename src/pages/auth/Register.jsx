@@ -4,22 +4,28 @@ import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
-import { register as registerApi } from '../../api/auth'
+import { register as registerApi, me as meApi } from '../../api/auth'
 import useAuthStore from '../../store/authStore'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
 const Register = () => {
   usePageTitle('Registrar')
+
   const toast = useRef(null)
   const navigate = useNavigate()
+
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  })
   const [loading, setLoading] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
 
-  // Password strength evaluation
   const passwordStrength = useMemo(() => {
     const pwd = form.password
     if (!pwd) return { score: 0, label: '', color: '', requirements: {} }
@@ -81,26 +87,35 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     const error = validate()
     if (error) {
       toast.current.show({ severity: 'warn', summary: 'Validation', detail: error })
       return
     }
+
     setLoading(true)
+
     try {
       const res = await registerApi(form)
-      const { accessToken, refreshToken, user } = res.data
-      setTokens(accessToken, refreshToken)
-      setUser(user)
-      navigate('/dashboard')
+      const { accessToken } = res.data
+
+      setTokens(accessToken)
+
+      if (res.data.user) {
+        setUser(res.data.user)
+      } else {
+        const userRes = await meApi()
+        setUser(userRes.data)
+      }
+
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       let detail = 'Registration failed. Please try again.'
-      
-      // Handle specific API error messages
+
       if (err.response?.data?.message) {
         detail = err.response.data.message
       } else if (err.response?.data?.errors) {
-        // Handle validation errors array
         const errorMessages = Object.values(err.response.data.errors).flat()
         detail = errorMessages.join(' ')
       } else if (err.response?.status === 409) {
@@ -108,7 +123,7 @@ const Register = () => {
       } else if (err.response?.status === 400) {
         detail = 'Invalid registration data. Please check your inputs.'
       }
-      
+
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)

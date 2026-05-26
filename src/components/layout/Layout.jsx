@@ -1,5 +1,21 @@
+import React from 'react'
+import { Navigate } from 'react-router-dom'
+import useAuthStore from '../../store/authStore'
+
+const ProtectedRoute = ({ children }) => {
+  const accessToken = useAuthStore((s) => s.accessToken)
+
+  if (!accessToken) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
+
+export default ProtectedRoute
+src/components/layout/Layout.jsx
 import React, { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import MobileNav from './MobileNav'
 import Sidebar from './Sidebar'
@@ -14,17 +30,20 @@ import { logout as logoutApi } from '../../api/auth'
 const SIDEBAR_COLLAPSE_STORAGE_KEY = 'jobtracker-sidebar-collapsed'
 
 const Layout = () => {
+  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const accessToken = useAuthStore((s) => s.accessToken)
   const logoutStore = useAuthStore((s) => s.logout)
   const profile = useGamificationStore((s) => s.profile)
   const location = useLocation()
+
   const isGuestAboutPage = !accessToken && location.pathname === '/about'
+
   const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true
   )
   const [isCompactDesktop, setIsCompactDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px) and (max-width: 1023px)').matches : false,
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px) and (max-width: 1023px)').matches : false
   )
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -39,13 +58,8 @@ const Layout = () => {
     const desktopMedia = window.matchMedia('(min-width: 768px)')
     const compactDesktopMedia = window.matchMedia('(min-width: 768px) and (max-width: 1023px)')
 
-    const handleDesktopChange = (event) => {
-      setIsDesktop(event.matches)
-    }
-
-    const handleCompactDesktopChange = (event) => {
-      setIsCompactDesktop(event.matches)
-    }
+    const handleDesktopChange = (event) => setIsDesktop(event.matches)
+    const handleCompactDesktopChange = (event) => setIsCompactDesktop(event.matches)
 
     desktopMedia.addEventListener('change', handleDesktopChange)
     compactDesktopMedia.addEventListener('change', handleCompactDesktopChange)
@@ -64,7 +78,7 @@ const Layout = () => {
   const handleLogout = async () => {
     await logoutApi().catch(() => null)
     logoutStore()
-    window.location.href = '/login'
+    navigate('/login', { replace: true })
   }
 
   if (isGuestAboutPage) {

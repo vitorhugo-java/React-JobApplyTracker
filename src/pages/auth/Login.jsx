@@ -21,8 +21,10 @@ import {
 
 const Login = () => {
   usePageTitle('Entrar')
+
   const toast = useRef(null)
   const navigate = useNavigate()
+
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
 
@@ -51,16 +53,24 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     if (!form.email || !form.password) {
-      toast.current.show({ severity: 'warn', summary: 'Validation', detail: 'Please fill in all fields.' })
+      toast.current.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill in all fields.',
+      })
       return
     }
+
     setLoading(true)
+
     try {
       const res = await loginApi(form)
       await applyAuthenticatedSession(res.data)
     } catch (err) {
       let detail = err.response?.data?.message
+
       if (!detail) {
         if (err.response?.status === 401) {
           detail = 'Invalid email or password. Please check and try again.'
@@ -72,6 +82,7 @@ const Login = () => {
           detail = 'Login failed. Please check your email and password and try again.'
         }
       }
+
       toast.current.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setLoading(false)

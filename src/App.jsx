@@ -24,69 +24,45 @@ import { warmOfflineData } from './api/offlineWarmup'
 
 const App = () => {
   const [appReady, setAppReady] = useState(false)
+
   const accessToken = useAuthStore((s) => s.accessToken)
-  const isAuthenticated = Boolean(accessToken)
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
   const initTheme = useAuthStore((s) => s.initTheme)
+
   const loadGamification = useGamificationStore((s) => s.loadGamification)
   const resetGamification = useGamificationStore((s) => s.reset)
 
   useEffect(() => {
     let cancelled = false
-    const restoreSession = async () => {
-      // Ensure persisted auth state is loaded before making any auth decision.
-      await useAuthStore.persist.rehydrate()
 
-      // Theme update uses store.set, so it must run after auth hydration.
+    const restoreSession = async () => {
       initTheme()
 
-      const { accessToken } = useAuthStore.getState()
-
-      if (!accessToken) {
-        // Try to refresh using the stored refresh token cookie
-        try {
-          const res = await refreshApi()
-          const { accessToken: newAccess } = res.data
-          setTokens(newAccess)
-          const userRes = await meApi()
-          setUser(userRes.data)
-          if (!cancelled) setAppReady(true)
-          return
-        } catch (err) {
-          // Network error — keep the session and let user try again
-          if (!err.response) {
-            if (!cancelled) setAppReady(true)
-            return
-          }
-
-          // Only clear persisted session for definitive auth failures.
-          if (err.response.status === 401 || err.response.status === 403) {
-            logout()
-          }
-          if (!cancelled) setAppReady(true)
-          return
-        }
-      }
-
-      // Validate the existing access token
       try {
-        const res = await meApi()
-        setUser(res.data)
+        const res = await refreshApi()
+        const { accessToken: newAccess } = res.data
+
+        setTokens(newAccess)
+
+        const userRes = await meApi()
+        setUser(userRes.data)
+
         if (!cancelled) setAppReady(true)
-        return
       } catch (err) {
-        // Network error (backend unreachable) — keep persisted session intact
+        // Network down / backend unavailable: keep app usable and let the user try again.
         if (!err.response) {
           if (!cancelled) setAppReady(true)
           return
         }
 
-        // For auth failures, the axios interceptor will handle token refresh
-        // via the cookie-based mechanism. Just set app ready.
+        // Definitive auth failure: no refresh token / expired refresh token.
+        if (err.response.status === 401 || err.response.status === 403) {
+          logout()
+        }
+
         if (!cancelled) setAppReady(true)
-        return
       }
     }
 
@@ -133,11 +109,10 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/settings/google-drive/callback" element={<GoogleDriveCallback />} />
-
-        {!isAuthenticated && <Route path="/about" element={<About />} />}
+        <Route path="/about" element={<About />} />
 
         <Route
+          path="/"
           element={
             <ProtectedRoute>
               <Layout />
@@ -145,16 +120,16 @@ const App = () => {
           }
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/metrics" element={<MetricsPage />} />
-          <Route path="/applications" element={<ApplicationsList />} />
-          <Route path="/applications/new" element={<ApplicationForm />} />
-          <Route path="/applications/:id" element={<ApplicationDetail />} />
-          <Route path="/applications/:id/edit" element={<ApplicationForm />} />
-          <Route path="/reminders" element={<Reminders />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/developer" element={<Developer />} />
-          <Route path="/account" element={<AccountSettings />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard/metrics" element={<MetricsPage />} />
+          <Route path="applications" element={<ApplicationsList />} />
+          <Route path="applications/new" element={<ApplicationForm />} />
+          <Route path="applications/:id" element={<ApplicationDetail />} />
+          <Route path="applications/:id/edit" element={<ApplicationForm />} />
+          <Route path="reminders" element={<Reminders />} />
+          <Route path="developer" element={<Developer />} />
+          <Route path="account" element={<AccountSettings />} />
+          <Route path="account/google-drive/callback" element={<GoogleDriveCallback />} />
         </Route>
       </Routes>
     </PrimeReactProvider>
