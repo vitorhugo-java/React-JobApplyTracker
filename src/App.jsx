@@ -36,53 +36,38 @@ const App = () => {
   const resetGamification = useGamificationStore((s) => s.reset)
 
   useEffect(() => {
-    if (!hasHydrated) return
-
-    let cancelled = false
-
     const restoreSession = async () => {
       initTheme()
 
-      // No persisted token? Public routes should continue immediately.
-      const token = useAuthStore.getState().accessToken
+      const token =
+        useAuthStore.getState().accessToken
 
+      // anonymous user: continue immediately
       if (!token) {
-        if (!cancelled) setAppReady(true)
+        setAppReady(true)
         return
       }
 
       try {
-        // Token exists -> validate/refresh session
         const res = await refreshApi()
-        const { accessToken: newAccess } = res.data
-
-        setTokens(newAccess)
+        setTokens(res.data.accessToken)
 
         const userRes = await meApi()
         setUser(userRes.data)
+
       } catch (err) {
-        // Backend temporarily unavailable:
-        // preserve local session and continue
-        if (!err.response) {
-          console.warn('Backend unavailable, preserving session')
-        }
-        // definitive auth failure only
-        else if ([401, 403].includes(err.response.status)) {
+        if (err.response?.status === 401 ||
+            err.response?.status === 403) {
           logout()
         }
+        // network failures preserve session
       } finally {
-        if (!cancelled) {
-          setAppReady(true)
-        }
+        setAppReady(true)
       }
     }
 
     restoreSession()
-
-    return () => {
-      cancelled = true
-    }
-  }, [hasHydrated])
+  }, [])
 
   useEffect(() => {
     if (!appReady || !accessToken) return

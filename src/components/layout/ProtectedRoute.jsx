@@ -3,7 +3,8 @@ import useAuthStore from '../../store/authStore'
 
 const ProtectedRoute = ({ children }) => {
   const accessToken = useAuthStore((s) => s.accessToken)
-  const hasHydrated = useAuthStore((s) => s.hasHydrated)
+
+  const hasHydrated = useAuthStore.persist?.hasHydrated?.() ?? true
 
   if (!hasHydrated) {
     return null

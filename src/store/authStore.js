@@ -28,7 +28,6 @@ const useAuthStore = create(
       accessToken: null,
       theme: 'light',
       isLoading: false,
-      hasHydrated: false,
 
       get isAuthenticated() {
         return !!get().accessToken
@@ -85,11 +84,7 @@ const useAuthStore = create(
         user: state.user,
         accessToken: state.accessToken,
         theme: state.theme,
-      }),
-
-      onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true)
-      }
+      })
     }
   )
 )
