@@ -1,15 +1,90 @@
-import { Navigate } from 'react-router-dom'
-import useAuthStore from '../../store/authStore'
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-const ProtectedRoute = ({ children }) => {
-  const accessToken =
-    useAuthStore(s => s.accessToken)
+const loadPrimeReactTheme = (theme) => {
+  const themeLink = document.getElementById('primereact-theme')
+  const themeName = theme === 'dark'
+    ? 'lara-dark-indigo'
+    : 'lara-light-indigo'
 
-  if (!accessToken) {
-    return <Navigate to="/login" replace />
+  const themePath =
+    `https://unpkg.com/primereact/resources/themes/${themeName}/theme.css`
+
+  if (themeLink) {
+    themeLink.href = themePath
+  } else {
+    const link = document.createElement('link')
+    link.id = 'primereact-theme'
+    link.rel = 'stylesheet'
+    link.href = themePath
+    document.head.appendChild(link)
   }
-
-  return children
 }
 
-export default ProtectedRoute
+const useAuthStore = create(
+  persist(
+    (set, get) => ({
+      user: null,
+      accessToken: null,
+      theme: 'light',
+      isLoading: false,
+
+      get isAuthenticated() {
+        return !!get().accessToken
+      },
+
+      setTokens: (accessToken) =>
+        set({ accessToken }),
+
+      setUser: (user) =>
+        set({ user }),
+
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null
+        }),
+
+      setTheme: (theme) => {
+        localStorage.setItem('theme', theme)
+
+        document.documentElement.classList.toggle(
+          'dark',
+          theme === 'dark'
+        )
+
+        loadPrimeReactTheme(theme)
+
+        set({ theme })
+      },
+
+      initTheme: () => {
+        const stored =
+          localStorage.getItem('theme') || 'light'
+
+        document.documentElement.classList.toggle(
+          'dark',
+          stored === 'dark'
+        )
+
+        loadPrimeReactTheme(stored)
+
+        set({ theme: stored })
+      },
+
+      setLoading: (isLoading) =>
+        set({ isLoading }),
+    }),
+    {
+      name: 'auth-storage',
+
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        theme: state.theme
+      })
+    }
+  )
+)
+
+export default useAuthStore
