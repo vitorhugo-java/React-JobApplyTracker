@@ -9,6 +9,7 @@ type BaseResume = {
   name: string
   documentId: string
   isDefault?: boolean
+  templateEnabled?: boolean
 }
 
 type GoogleDriveStatusPayload = {
@@ -78,7 +79,7 @@ const connectedSettings: GoogleDriveStatusPayload = {
   connected: true,
   baseFolderId: 'folder-123',
   baseResumes: [
-    { id: 'resume-abc', name: 'Base Resume', documentId: 'doc-abc', isDefault: true },
+    { id: 'resume-abc', name: 'Base Resume', documentId: 'doc-abc', isDefault: true, templateEnabled: true },
   ],
 }
 
@@ -225,5 +226,70 @@ test.describe('Google Drive Resume Workflow', () => {
 
     await expect(page.getByRole('button', { name: 'Open Google Doc' })).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('APP-1 - Backend Engineer - Base Resume')).toBeVisible()
+  })
+
+  test('generates a template CV from placeholder values in details flow', async ({ page }) => {
+    await mockWindowOpen(page)
+    await setupPage(page)
+    await mockGoogleDriveStatus(page, connectedSettings)
+
+    setupMockApplicationsApi(page, [
+      {
+        id: 1,
+        vacancyName: 'Backend Engineer',
+        organization: 'Acme',
+        status: 'RH',
+        applicationDate: '2026-05-11',
+        createdAt: '2026-05-11T19:00:00',
+        updatedAt: '2026-05-11T20:00:00',
+      },
+    ])
+
+    let placeholderRequestCount = 0
+    await page.route(`${API_BASE}/cv/resume-abc/placeholders`, async (route) => {
+      placeholderRequestCount += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          cvId: 'resume-abc',
+          template: true,
+          placeholders: ['COMPANY_NAME', 'JOB_TITLE'],
+        }),
+      })
+    })
+
+    let generationBody: Record<string, unknown> | null = null
+    await page.route(`${API_BASE}/cv/resume-abc/generate-template`, async (route) => {
+      generationBody = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          generatedCvId: 'generated-cv-1',
+          documentUrl: 'https://docs.google.com/document/d/generated-cv-1/edit',
+        }),
+      })
+    })
+
+    await page.goto('/applications/1')
+
+    await page.locator('.p-selectbutton').getByText('Template').click()
+    await page.getByRole('button', { name: 'Generate Resume' }).click()
+
+    await expect.poll(() => placeholderRequestCount, { timeout: 10_000 }).toBe(1)
+    await expect(page.getByText('Resume placeholders')).toBeVisible()
+
+    await page.getByLabel('Company Name').fill('Google')
+    await page.getByLabel('Job Title').fill('Senior Java Developer')
+    await page.getByRole('button', { name: 'Generate resume' }).click()
+
+    await expect.poll(() => generationBody, { timeout: 10_000 }).not.toBeNull()
+    expect(generationBody).toEqual({
+      placeholders: {
+        COMPANY_NAME: 'Google',
+        JOB_TITLE: 'Senior Java Developer',
+      },
+    })
   })
 })

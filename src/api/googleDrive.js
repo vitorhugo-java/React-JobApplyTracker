@@ -8,6 +8,11 @@ const normalizeBaseResume = (resume, index) => {
     id: resume?.id ?? null,
     documentName: resume?.documentName ?? resume?.name ?? resume?.label ?? `Resume ${index + 1}`,
     documentId,
+    templateEnabled: Boolean(
+      resume?.templateEnabled ??
+      resume?.template ??
+      resume?.isTemplate
+    ),
     documentUrl:
       resume?.documentUrl ?? resume?.googleDocUrl ?? resume?.webViewLink ?? buildGoogleDocUrl(documentId),
     createdAt: resume?.createdAt ?? null,
@@ -142,5 +147,32 @@ export const generateGoogleDriveResume = async (payload) => {
   return {
     ...response,
     data: normalizeResumeGenerationResponse(response.data),
+  }
+}
+
+export const getCvPlaceholders = async (cvId) => {
+  const response = await api.get(`/cv/${cvId}/placeholders`)
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      cvId: response.data?.cvId ?? cvId,
+      template: Boolean(response.data?.template),
+      placeholders: response.data?.placeholders ?? [],
+    },
+  }
+}
+
+export const generateTemplateCv = async (cvId, placeholders = {}) => {
+  const response = await api.post(`/cv/${cvId}/generate-template`, {
+    placeholders,
+  })
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      generatedCvId: response.data?.generatedCvId ?? null,
+      documentUrl: response.data?.documentUrl ?? response.data?.googleDocUrl ?? '',
+    },
   }
 }
