@@ -36,37 +36,54 @@ const App = () => {
   const resetGamification = useGamificationStore((s) => s.reset)
 
   useEffect(() => {
+    let cancelled = false
+
     const restoreSession = async () => {
+      // force Zustand persist restoration
+      await useAuthStore.persist.rehydrate()
+
       initTheme()
 
-      const token =
-        useAuthStore.getState().accessToken
+      const { accessToken } =
+        useAuthStore.getState()
 
-      // anonymous user: continue immediately
-      if (!token) {
-        setAppReady(true)
+      // anonymous route
+      if (!accessToken) {
+        if (!cancelled)
+          setAppReady(true)
+
         return
       }
 
       try {
-        const res = await refreshApi()
-        setTokens(res.data.accessToken)
+        const userRes =
+          await meApi()
 
-        const userRes = await meApi()
         setUser(userRes.data)
 
       } catch (err) {
-        if (err.response?.status === 401 ||
-            err.response?.status === 403) {
-          logout()
+
+        // backend restart/offline
+        if (!err.response) {
+          if (!cancelled)
+            setAppReady(true)
+
+          return
         }
-        // network failures preserve session
-      } finally {
-        setAppReady(true)
+
+        // interceptor owns refresh logic
       }
+
+      if (!cancelled)
+        setAppReady(true)
     }
 
     restoreSession()
+
+    return () => {
+      cancelled = true
+    }
+
   }, [])
 
   useEffect(() => {
