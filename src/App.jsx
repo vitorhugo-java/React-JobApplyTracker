@@ -43,7 +43,16 @@ const App = () => {
     const restoreSession = async () => {
       initTheme()
 
+      // No persisted token? Public routes should continue immediately.
+      const token = useAuthStore.getState().accessToken
+
+      if (!token) {
+        if (!cancelled) setAppReady(true)
+        return
+      }
+
       try {
+        // Token exists -> validate/refresh session
         const res = await refreshApi()
         const { accessToken: newAccess } = res.data
 
@@ -51,21 +60,20 @@ const App = () => {
 
         const userRes = await meApi()
         setUser(userRes.data)
-
-        if (!cancelled) setAppReady(true)
       } catch (err) {
-        // Network down / backend unavailable: keep app usable and let the user try again.
+        // Backend temporarily unavailable:
+        // preserve local session and continue
         if (!err.response) {
-          if (!cancelled) setAppReady(true)
-          return
+          console.warn('Backend unavailable, preserving session')
         }
-
-        // Definitive auth failure: no refresh token / expired refresh token.
-        if (err.response.status === 401 || err.response.status === 403) {
+        // definitive auth failure only
+        else if ([401, 403].includes(err.response.status)) {
           logout()
         }
-
-        if (!cancelled) setAppReady(true)
+      } finally {
+        if (!cancelled) {
+          setAppReady(true)
+        }
       }
     }
 
@@ -74,7 +82,7 @@ const App = () => {
     return () => {
       cancelled = true
     }
-  }, [hasHydrated, initTheme, setTokens, setUser, logout])
+  }, [hasHydrated])
 
   useEffect(() => {
     if (!appReady || !accessToken) return

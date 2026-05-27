@@ -3,8 +3,12 @@ import { persist } from 'zustand/middleware'
 
 const loadPrimeReactTheme = (theme) => {
   const themeLink = document.getElementById('primereact-theme')
-  const themeName = theme === 'dark' ? 'lara-dark-indigo' : 'lara-light-indigo'
-  const themePath = `https://unpkg.com/primereact/resources/themes/${themeName}/theme.css`
+  const themeName = theme === 'dark'
+    ? 'lara-dark-indigo'
+    : 'lara-light-indigo'
+
+  const themePath =
+    `https://unpkg.com/primereact/resources/themes/${themeName}/theme.css`
 
   if (themeLink) {
     themeLink.href = themePath
@@ -32,47 +36,60 @@ const useAuthStore = create(
 
       setTokens: (accessToken) => set({ accessToken }),
       setUser: (user) => set({ user }),
-      logout: () => set({ user: null, accessToken: null }),
+
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null
+        }),
 
       setTheme: (theme) => {
         localStorage.setItem('theme', theme)
 
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
+        document.documentElement.classList.toggle(
+          'dark',
+          theme === 'dark'
+        )
 
         loadPrimeReactTheme(theme)
+
         set({ theme })
       },
 
       initTheme: () => {
-        const stored = localStorage.getItem('theme') || 'light'
+        const stored =
+          localStorage.getItem('theme') || 'light'
 
-        if (stored === 'dark') {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
+        document.documentElement.classList.toggle(
+          'dark',
+          stored === 'dark'
+        )
 
         loadPrimeReactTheme(stored)
+
         set({ theme: stored })
       },
 
-      setLoading: (isLoading) => set({ isLoading }),
-      setHydrated: (hasHydrated) => set({ hasHydrated }),
+      setLoading: (isLoading) =>
+        set({ isLoading }),
+
+      setHydrated: (value) =>
+        set({
+          hasHydrated: value
+        }),
     }),
     {
       name: 'auth-storage',
+
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         theme: state.theme,
       }),
-      onRehydrateStorage: () => () => {
-        useAuthStore.getState().setHydrated(true)
-      },
+
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated(true)
+      }
     }
   )
 )
