@@ -26,6 +26,7 @@ const App = () => {
   const [appReady, setAppReady] = useState(false)
 
   const accessToken = useAuthStore((s) => s.accessToken)
+  const hasHydrated = useAuthStore((s) => s.hasHydrated)
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
@@ -35,6 +36,8 @@ const App = () => {
   const resetGamification = useGamificationStore((s) => s.reset)
 
   useEffect(() => {
+    if (!hasHydrated) return
+
     let cancelled = false
 
     const restoreSession = async () => {
@@ -71,7 +74,7 @@ const App = () => {
     return () => {
       cancelled = true
     }
-  }, [initTheme, setTokens, setUser, logout])
+  }, [hasHydrated, initTheme, setTokens, setUser, logout])
 
   useEffect(() => {
     if (!appReady || !accessToken) return
@@ -91,7 +94,7 @@ const App = () => {
     loadGamification().catch(() => null)
   }, [appReady, accessToken, loadGamification, resetGamification])
 
-  if (!appReady) {
+  if (!hasHydrated || !appReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-3">

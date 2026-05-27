@@ -24,6 +24,7 @@ const useAuthStore = create(
       accessToken: null,
       theme: 'light',
       isLoading: false,
+      hasHydrated: false,
 
       get isAuthenticated() {
         return !!get().accessToken
@@ -31,7 +32,6 @@ const useAuthStore = create(
 
       setTokens: (accessToken) => set({ accessToken }),
       setUser: (user) => set({ user }),
-
       logout: () => set({ user: null, accessToken: null }),
 
       setTheme: (theme) => {
@@ -61,14 +61,18 @@ const useAuthStore = create(
       },
 
       setLoading: (isLoading) => set({ isLoading }),
+      setHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
       name: 'auth-storage',
-        partialize: (state) => ({
-            user: state.user,
-            accessToken: state.accessToken,
-            theme: state.theme,
-        }),
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        theme: state.theme,
+      }),
+      onRehydrateStorage: () => () => {
+        useAuthStore.getState().setHydrated(true)
+      },
     }
   )
 )
