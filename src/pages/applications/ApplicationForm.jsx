@@ -196,14 +196,13 @@ const ApplicationForm = () => {
     setShowImportAiJsonDialog(true)
   }
 
-  const handleCloseImportAiJsonDialog = (force = false) => {
-    if (importingAiJson && !force) return
+  const handleCloseImportAiJsonDialog = () => {
     setShowImportAiJsonDialog(false)
     setAiJsonInput('')
     setAiJsonError('')
   }
 
-  const handleImportAiJson = async () => {
+  const handleImportAiJson = () => {
     setImportingAiJson(true)
     setAiJsonError('')
 
@@ -211,7 +210,7 @@ const ApplicationForm = () => {
       const { nextForm, updatedFields } = importAiJsonToForm(aiJsonInput, form)
 
       if (!updatedFields.length) {
-        const detail = 'No fields were imported. Empty, null, missing, or unknown values are ignored.'
+        const detail = 'No valid fields found in the JSON to import.'
         setAiJsonError(detail)
         toast.current?.show({ severity: 'warn', summary: 'Nothing imported', detail })
         return
@@ -223,7 +222,7 @@ const ApplicationForm = () => {
         summary: 'Import completed',
         detail: `${updatedFields.length} field(s) imported from AI JSON.`,
       })
-      handleCloseImportAiJsonDialog(true)
+      handleCloseImportAiJsonDialog()
     } catch (error) {
       const detail = error?.message || 'Could not import AI JSON.'
       setAiJsonError(detail)

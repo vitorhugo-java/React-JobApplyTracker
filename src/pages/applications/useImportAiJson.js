@@ -24,9 +24,13 @@ export const extractJsonFromMarkdown = (rawInput) => {
     throw new Error('Please paste a JSON payload before importing.')
   }
 
-  const fencedMatch = input.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  if (fencedMatch?.[1]) {
-    return fencedMatch[1].trim()
+  const fencedGenericMatch = input.match(/```([A-Za-z0-9_-]*)\s*([\s\S]*?)\s*```/i)
+  if (fencedGenericMatch?.[2]) {
+    const languageLabel = String(fencedGenericMatch[1] ?? '').trim().toLowerCase()
+    if (languageLabel && languageLabel !== 'json') {
+      throw new Error('Unsupported markdown code block language. Please use a JSON block.')
+    }
+    return fencedGenericMatch[2].trim()
   }
 
   if (input.includes('```')) {
@@ -89,6 +93,7 @@ export const importAiJsonToForm = (rawInput, currentForm) => {
   }
 }
 
+// Example intentionally omits recruiterDmReminderEnabled per current product requirement.
 export const getAiJsonExample = () => `{
   "vacancyName": "Java Developer",
   "recruiterName": "Ana Recruiter",

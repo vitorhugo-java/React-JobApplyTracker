@@ -154,6 +154,7 @@ test.describe('Application flow', () => {
     await page.waitForURL('**/applications/new')
 
     await page.getByTestId('app-vacancy-name').fill('Already Filled Vacancy')
+    await page.getByTestId('app-recruiter-name').fill('Existing Recruiter')
 
     await page.getByTestId('import-ai-json-open').click()
     await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toBeVisible()
@@ -173,6 +174,7 @@ test.describe('Application flow', () => {
 
     await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toHaveCount(0)
     await expect(page.getByTestId('app-vacancy-name')).toHaveValue('Already Filled Vacancy')
+    await expect(page.getByTestId('app-recruiter-name')).toHaveValue('Existing Recruiter')
     await expect(page.getByTestId('app-organization')).toHaveValue('Imported Organization')
     await expect(page.getByTestId('app-vacancy-link')).toHaveValue('https://example.com/vacancy')
     await expect(page.getByTestId('app-note')).toHaveValue('Imported note')
