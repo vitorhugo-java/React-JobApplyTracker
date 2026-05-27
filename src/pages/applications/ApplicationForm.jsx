@@ -24,6 +24,8 @@ import useAuthStore from '../../store/authStore'
 import useGamificationStore from '../../store/gamificationStore'
 import { canUseGoogleIntegration } from '../../utils/googleDriveAccess'
 import { navigateOpenedTab, openPendingTab } from '../../utils/externalLinks'
+import ImportAiJsonDialog from './ImportAiJsonDialog'
+import { importAiJsonToForm } from './useImportAiJson'
 
 const defaultForm = {
   vacancyName: '',
@@ -124,6 +126,10 @@ const ApplicationForm = () => {
   const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(false)
   const [selectedBaseResumeId, setSelectedBaseResumeId] = useState('')
   const [creatingResume, setCreatingResume] = useState(false)
+  const [showImportAiJsonDialog, setShowImportAiJsonDialog] = useState(false)
+  const [aiJsonInput, setAiJsonInput] = useState('')
+  const [aiJsonError, setAiJsonError] = useState('')
+  const [importingAiJson, setImportingAiJson] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -184,6 +190,48 @@ const ApplicationForm = () => {
   }, [draftKey, draftReady, fetching, form])
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+
+  const handleOpenImportAiJsonDialog = () => {
+    setAiJsonError('')
+    setShowImportAiJsonDialog(true)
+  }
+
+  const handleCloseImportAiJsonDialog = (force = false) => {
+    if (importingAiJson && !force) return
+    setShowImportAiJsonDialog(false)
+    setAiJsonInput('')
+    setAiJsonError('')
+  }
+
+  const handleImportAiJson = async () => {
+    setImportingAiJson(true)
+    setAiJsonError('')
+
+    try {
+      const { nextForm, updatedFields } = importAiJsonToForm(aiJsonInput, form)
+
+      if (!updatedFields.length) {
+        const detail = 'No fields were imported. Empty, null, missing, or unknown values are ignored.'
+        setAiJsonError(detail)
+        toast.current?.show({ severity: 'warn', summary: 'Nothing imported', detail })
+        return
+      }
+
+      setForm(nextForm)
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Import completed',
+        detail: `${updatedFields.length} field(s) imported from AI JSON.`,
+      })
+      handleCloseImportAiJsonDialog(true)
+    } catch (error) {
+      const detail = error?.message || 'Could not import AI JSON.'
+      setAiJsonError(detail)
+      toast.current?.show({ severity: 'error', summary: 'Import failed', detail })
+    } finally {
+      setImportingAiJson(false)
+    }
+  }
 
   const loadGoogleDriveSettings = useCallback(async () => {
     if (!googleDriveEnabled) {
@@ -633,6 +681,14 @@ const ApplicationForm = () => {
 
         <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:gap-3">
           <Button
+            type="button"
+            label="Import AI JSON"
+            icon="pi pi-upload"
+            onClick={handleOpenImportAiJsonDialog}
+            className="w-full sm:w-auto"
+            data-testid="import-ai-json-open"
+          />
+          <Button
             type="submit"
             label={isEdit ? 'Save Changes' : 'Create Application'}
             loading={loading}
@@ -653,6 +709,15 @@ const ApplicationForm = () => {
           <Button type="button" label="Cancel" outlined onClick={handleCancel} className="w-full sm:w-auto" />
         </div>
       </form>
+      <ImportAiJsonDialog
+        visible={showImportAiJsonDialog}
+        value={aiJsonInput}
+        error={aiJsonError}
+        loading={importingAiJson}
+        onChange={setAiJsonInput}
+        onHide={handleCloseImportAiJsonDialog}
+        onImport={handleImportAiJson}
+      />
     </div>
   )
 }
