@@ -19,6 +19,7 @@ const defaultFilters = {
 }
 
 const MetricsPage = () => {
+  console.log('METRICS PAGE MOUNTED')
   usePageTitle('Métricas')
 
   const toast = useRef(null)
@@ -129,7 +130,7 @@ const MetricsPage = () => {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="metrics-page" >
       <Toast ref={toast} />
 
       <div>

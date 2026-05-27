@@ -120,16 +120,17 @@ const App = () => {
           }
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="dashboard/metrics" element={<MetricsPage />} />
-          <Route path="applications" element={<ApplicationsList />} />
-          <Route path="applications/new" element={<ApplicationForm />} />
-          <Route path="applications/:id" element={<ApplicationDetail />} />
-          <Route path="applications/:id/edit" element={<ApplicationForm />} />
-          <Route path="reminders" element={<Reminders />} />
-          <Route path="developer" element={<Developer />} />
-          <Route path="account" element={<AccountSettings />} />
-          <Route path="account/google-drive/callback" element={<GoogleDriveCallback />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/metrics" element={<MetricsPage />} />
+          <Route path="/dashboard/metrics" element={<MetricsPage />} />
+          <Route path="/applications" element={<ApplicationsList />} />
+          <Route path="/applications/new" element={<ApplicationForm />} />
+          <Route path="/applications/:id" element={<ApplicationDetail />} />
+          <Route path="/applications/:id/edit" element={<ApplicationForm />} />
+          <Route path="/reminders" element={<Reminders />} />
+          <Route path="/developer" element={<Developer />} />
+          <Route path="/account" element={<AccountSettings />} />
+          <Route path="/account/google-drive/callback" element={<GoogleDriveCallback />} />
         </Route>
       </Routes>
     </PrimeReactProvider>

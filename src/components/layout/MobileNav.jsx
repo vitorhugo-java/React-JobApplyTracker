@@ -12,6 +12,7 @@ const MobileNav = () => {
           <NavLink
             key={item.to}
             to={item.to}
+            aria-label={item.label}
             className={({ isActive }) =>
               `flex min-h-12 flex-col items-center justify-center px-0.5 py-1.5 text-[10px] leading-tight font-medium transition-colors ${
                 isActive

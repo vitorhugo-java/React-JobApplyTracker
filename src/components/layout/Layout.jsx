@@ -1,21 +1,5 @@
-import React from 'react'
-import { Navigate } from 'react-router-dom'
-import useAuthStore from '../../store/authStore'
-
-const ProtectedRoute = ({ children }) => {
-  const accessToken = useAuthStore((s) => s.accessToken)
-
-  if (!accessToken) {
-    return <Navigate to="/login" replace />
-  }
-
-  return children
-}
-
-export default ProtectedRoute
-src/components/layout/Layout.jsx
 import React, { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import {Outlet, useLocation, useNavigate} from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import MobileNav from './MobileNav'
 import Sidebar from './Sidebar'
@@ -78,7 +62,7 @@ const Layout = () => {
   const handleLogout = async () => {
     await logoutApi().catch(() => null)
     logoutStore()
-    window.location.href = '/login'
+    navigate('/login', { replace: true })
   }
 
   if (isGuestAboutPage) {

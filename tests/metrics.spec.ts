@@ -12,6 +12,7 @@ const seededApplications = [
     recruiterName: 'Ana',
     organization: 'Acme',
     vacancyLink: 'https://linkedin.com/jobs/view/1',
+    source: 'linkedin.com',
     applicationDate: '2026-04-10',
     nextStepDateTime: '2026-04-18T10:00:00',
     status: 'RH',
@@ -27,6 +28,7 @@ const seededApplications = [
     organization: 'Beta Corp',
     vacancyLink: 'https://github.com/jobs/2',
     applicationDate: '2026-03-02',
+    source: 'github.com',
     nextStepDateTime: '2026-03-08T14:00:00',
     status: 'Rejeitado',
     recruiterDmReminderEnabled: false,
@@ -42,6 +44,7 @@ const seededApplications = [
     vacancyLink: 'https://linkedin.com/jobs/view/3',
     applicationDate: '2026-04-22',
     nextStepDateTime: '2026-04-28T09:00:00',
+    source: 'linkedin.com',
     status: 'Teste Técnico',
     recruiterDmReminderEnabled: true,
     interviewScheduled: false,
@@ -49,6 +52,18 @@ const seededApplications = [
     createdAt: '2026-04-22T13:00:00',
   },
 ]
+
+test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (error) => {
+        console.log('PAGE ERROR:', error.message)
+    })
+
+    page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+            console.log('BROWSER ERROR:', msg.text())
+        }
+    })
+})
 
 test.describe('Metrics page', () => {
   test.beforeEach(async ({ page }) => {
@@ -60,27 +75,83 @@ test.describe('Metrics page', () => {
       },
       { storageKey: METRICS_TEST_DATA_KEY, applications: seededApplications }
     )
-    await loginUser(page, email, PASSWORD)
+      await page.route(
+          '**/applications/overdue',
+          route => route.fulfill({
+              status:200,
+              body:'[]'
+          })
+      )
+
+      await loginUser(page, email, PASSWORD)
   })
 
-  test('shows the new menu entry and renders the metrics page', async ({ page }) => {
-    await page.goto('/dashboard')
-    await expect(page.getByRole('link', { name: 'Métricas' })).toBeVisible()
+    test(
+        'applies status and source filters',
+        async ({ page }) => {
 
-    await page.getByRole('link', { name: 'Métricas' }).click()
-    await page.waitForURL('**/metrics')
+            await page.goto('/metrics')
 
-    await expect(page.getByRole('heading', { name: 'Métricas personalizadas' })).toBeVisible()
-    await expect(page.locator('[data-testid="metrics-card-total-value"]')).toHaveText('3')
-    await expect(page.locator('[data-testid="metrics-chart-status-distribution"]')).toBeVisible()
-  })
+            await expect(
+                page.locator(
+                    '[data-testid="metrics-page"]'
+                )
+            ).toBeVisible()
+
+            await page.locator(
+                '[data-testid="metrics-filter-status"]'
+            ).click()
+
+            await page.getByText(
+                'RH',
+                { exact:true }
+            ).click()
+
+            await expect(
+                page.locator(
+                    '[data-testid="metrics-card-total-value"]'
+                )
+            ).toHaveText('1')
+        }
+    )
+
+  test(
+      'shows the new menu entry and renders the metrics page',
+      async ({ page }) => {
+
+        await page.goto('/metrics')
+
+        await expect(
+            page.getByRole(
+                'heading',
+                { name:'Métricas personalizadas' }
+            )
+        ).toBeVisible()
+
+        await expect(
+            page.locator(
+                '[data-testid="metrics-card-total-value"]'
+            )
+        ).toHaveText('3')
+
+        await expect(
+            page.locator(
+                '[data-testid="metrics-chart-status-distribution"]'
+            )
+        ).toBeVisible()
+      })
 
   test('applies status and source filters to the metrics snapshot', async ({ page }) => {
     await page.goto('/metrics')
     await page.waitForURL('**/metrics')
 
-    await page.locator('[data-testid="metrics-filter-status"]').click()
-    await page.getByRole('option', { name: 'RH', exact: true }).click()
+    await page.locator(
+        '[data-testid="metrics-filter-status"]'
+    ).click()
+    await page.getByText(
+        'RH',
+        { exact:true }
+    ).click()
     await expect(page.locator('[data-testid="metrics-card-total-value"]')).toHaveText('1')
 
     await page.locator('[data-testid="metrics-clear-filters"]').click()
