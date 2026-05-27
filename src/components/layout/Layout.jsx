@@ -21,48 +21,91 @@ const Layout = () => {
   const profile = useGamificationStore((s) => s.profile)
   const location = useLocation()
 
-  const isGuestAboutPage = !accessToken && location.pathname === '/about'
+  const isGuestAboutPage =
+    !accessToken && location.pathname === '/about'
 
   const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width:768px)').matches
+      : true
   )
-  const [isCompactDesktop, setIsCompactDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px) and (max-width: 1023px)').matches : false
-  )
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === 'true'
-  })
 
-  const isSidebarCollapsed = isDesktop && (isCompactDesktop || isDesktopSidebarCollapsed)
+  const [isCompactDesktop, setIsCompactDesktop] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia(
+          '(min-width:768px) and (max-width:1023px)'
+        ).matches
+      : false
+  )
+
+  const [isDesktopSidebarCollapsed,
+    setIsDesktopSidebarCollapsed] = useState(() => {
+      if (typeof window === 'undefined') return false
+
+      return localStorage.getItem(
+        SIDEBAR_COLLAPSE_STORAGE_KEY
+      ) === 'true'
+    })
+
+  const isSidebarCollapsed =
+    isDesktop &&
+    (isCompactDesktop || isDesktopSidebarCollapsed)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined
+    if (typeof window === 'undefined') return
 
-    const desktopMedia = window.matchMedia('(min-width: 768px)')
-    const compactDesktopMedia = window.matchMedia('(min-width: 768px) and (max-width: 1023px)')
+    const desktopMedia =
+      window.matchMedia('(min-width:768px)')
 
-    const handleDesktopChange = (event) => setIsDesktop(event.matches)
-    const handleCompactDesktopChange = (event) => setIsCompactDesktop(event.matches)
+    const compactMedia =
+      window.matchMedia(
+        '(min-width:768px) and (max-width:1023px)'
+      )
 
-    desktopMedia.addEventListener('change', handleDesktopChange)
-    compactDesktopMedia.addEventListener('change', handleCompactDesktopChange)
+    const desktopHandler = (e) =>
+      setIsDesktop(e.matches)
+
+    const compactHandler = (e) =>
+      setIsCompactDesktop(e.matches)
+
+    desktopMedia.addEventListener(
+      'change',
+      desktopHandler
+    )
+
+    compactMedia.addEventListener(
+      'change',
+      compactHandler
+    )
 
     return () => {
-      desktopMedia.removeEventListener('change', handleDesktopChange)
-      compactDesktopMedia.removeEventListener('change', handleCompactDesktopChange)
+      desktopMedia.removeEventListener(
+        'change',
+        desktopHandler
+      )
+
+      compactMedia.removeEventListener(
+        'change',
+        compactHandler
+      )
     }
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, String(isDesktopSidebarCollapsed))
+    localStorage.setItem(
+      SIDEBAR_COLLAPSE_STORAGE_KEY,
+      String(isDesktopSidebarCollapsed)
+    )
   }, [isDesktopSidebarCollapsed])
 
   const handleLogout = async () => {
     await logoutApi().catch(() => null)
+
     logoutStore()
-    navigate('/login', { replace: true })
+
+    navigate('/login', {
+      replace: true,
+    })
   }
 
   if (isGuestAboutPage) {
@@ -76,43 +119,63 @@ const Layout = () => {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <GamificationToastHost />
+
       {isDesktop && (
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           showDesktopCollapseToggle={!isCompactDesktop}
-          onToggleCollapse={() => setIsDesktopSidebarCollapsed((current) => !current)}
+          onToggleCollapse={() =>
+            setIsDesktopSidebarCollapsed(
+              current => !current
+            )
+          }
         />
       )}
+
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="md:hidden w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center">
-              <span className="text-white text-xs font-bold">JT</span>
-            </div>
-          </div>
+        <header className="bg-white dark:bg-gray-800 border-b px-4 sm:px-6 py-3 flex items-center justify-between">
+
+          <div />
+
           <div className="flex items-center gap-3">
-            <LevelBadge profile={profile} compact />
+            <LevelBadge
+              profile={profile}
+              compact
+            />
+
             <SyncStatusIndicator />
+
             <ThemeToggle />
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+
+            <div className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              <span className="hidden sm:block">{user?.name || user?.email || 'User'}</span>
+
+              <span>
+                {user?.name ||
+                  user?.email ||
+                  'User'}
+              </span>
             </div>
+
             <button
-              type="button"
               onClick={handleLogout}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-label="Logout"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5"/>
             </button>
+
           </div>
+
         </header>
+
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
           <Outlet />
         </main>
+
       </div>
+
       {!isDesktop && <MobileNav />}
+
     </div>
   )
 }

@@ -23,6 +23,7 @@ Issue e discuções, devem ser centralizadas no [Backend](https://github.com/vit
 O frontend consome a API do backend Spring Boot e oferece:
 
 - autenticação com JWT e refresh token
+- login com senha e passkey (WebAuthn) em navegadores compatíveis
 - telas protegidas por rota autenticada
 - CRUD de candidaturas
 - dashboard com resumo de métricas
@@ -49,6 +50,7 @@ tests/                 # Testes E2E com Playwright
 ## Fluxo de Autenticação
 
 - Tokens e usuário são persistidos em `auth-storage` (localStorage) via Zustand persist.
+- O login continua disponível com email/senha e também pode usar passkeys registradas via WebAuthn.
 - O app tenta restaurar sessão no carregamento (`/auth/me` e refresh se necessário).
 - Requisições usam interceptor Axios com `Authorization: Bearer <token>`.
 - Em erro `401/403`, o cliente tenta refresh automático.
