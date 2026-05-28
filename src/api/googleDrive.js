@@ -8,6 +8,7 @@ const normalizeBaseResume = (resume, index) => {
     id: resume?.id ?? null,
     documentName: resume?.documentName ?? resume?.name ?? resume?.label ?? `Resume ${index + 1}`,
     documentId,
+    template: Boolean(resume?.template ?? resume?.isTemplate ?? false),
     documentUrl:
       resume?.documentUrl ?? resume?.googleDocUrl ?? resume?.webViewLink ?? buildGoogleDocUrl(documentId),
     createdAt: resume?.createdAt ?? null,
@@ -56,9 +57,10 @@ export const updateGoogleDriveRootFolder = async (folderIdOrUrl) => {
   }
 }
 
-export const addGoogleDriveBaseResume = async (documentIdOrUrl) => {
+export const addGoogleDriveBaseResume = async ({ documentIdOrUrl, template = false }) => {
   const response = await api.post('/google-drive/base-resumes', {
     documentIdOrUrl,
+    template,
   })
 
   return {

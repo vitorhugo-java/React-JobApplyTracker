@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { InputText } from 'primereact/inputtext'
+import { InputSwitch } from 'primereact/inputswitch'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
@@ -78,6 +79,7 @@ const AccountSettings = () => {
   const [googleDriveBaseFolderInput, setGoogleDriveBaseFolderInput] = useState('')
   const [initialGoogleDriveBaseFolderInput, setInitialGoogleDriveBaseFolderInput] = useState('')
   const [googleDriveResumeInput, setGoogleDriveResumeInput] = useState('')
+  const [googleDriveResumeTemplate, setGoogleDriveResumeTemplate] = useState(false)
   const [loadingGoogleDrive, setLoadingGoogleDrive] = useState(true)
   const [savingGoogleDriveFolder, setSavingGoogleDriveFolder] = useState(false)
   const [addingGoogleDriveResume, setAddingGoogleDriveResume] = useState(false)
@@ -108,6 +110,7 @@ const AccountSettings = () => {
     setGoogleDriveBaseFolderInput('')
     setInitialGoogleDriveBaseFolderInput('')
     setGoogleDriveResumeInput('')
+    setGoogleDriveResumeTemplate(false)
     setLoadingGoogleDrive(false)
   }, [])
 
@@ -421,8 +424,12 @@ const AccountSettings = () => {
     setAddingGoogleDriveResume(true)
 
     try {
-      await addGoogleDriveBaseResume(documentInput)
+      await addGoogleDriveBaseResume({
+        documentIdOrUrl: documentInput,
+        template: googleDriveResumeTemplate,
+      })
       setGoogleDriveResumeInput('')
+      setGoogleDriveResumeTemplate(false)
       await loadGoogleDriveSettings().catch(() => null)
       toast.current?.show({
         severity: 'success',
@@ -682,13 +689,28 @@ const AccountSettings = () => {
             </div>
 
             <form onSubmit={handleGoogleDriveResumeSubmit} className="flex flex-col gap-3 sm:flex-row">
-              <InputText
-                value={googleDriveResumeInput}
-                onChange={(e) => setGoogleDriveResumeInput(e.target.value)}
-                className="w-full"
-                placeholder="https://docs.google.com/document/d/..."
-                disabled={!googleDriveSettings.configured}
-              />
+              <div className="flex-1 space-y-3">
+                <InputText
+                  value={googleDriveResumeInput}
+                  onChange={(e) => setGoogleDriveResumeInput(e.target.value)}
+                  className="w-full"
+                  placeholder="https://docs.google.com/document/d/..."
+                  disabled={!googleDriveSettings.configured}
+                />
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Template</label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Send this base resume as a template when creating copies.
+                    </p>
+                  </div>
+                  <InputSwitch
+                    checked={googleDriveResumeTemplate}
+                    onChange={(e) => setGoogleDriveResumeTemplate(e.value)}
+                    disabled={!googleDriveSettings.configured}
+                  />
+                </div>
+              </div>
               <Button
                 type="submit"
                 label="Add Base Resume"
