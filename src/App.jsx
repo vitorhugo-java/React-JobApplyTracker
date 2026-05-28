@@ -19,14 +19,13 @@ import AccountSettings from './pages/account/AccountSettings'
 import GoogleDriveCallback from './pages/account/GoogleDriveCallback'
 import useAuthStore from './store/authStore'
 import useGamificationStore from './store/gamificationStore'
-import { me as meApi, refresh as refreshApi } from './api/auth'
+import { me as meApi } from './api/auth'
 import { warmOfflineData } from './api/offlineWarmup'
 
 const App = () => {
   const [appReady, setAppReady] = useState(false)
 
   const accessToken = useAuthStore((s) => s.accessToken)
-  const setTokens = useAuthStore((s) => s.setTokens)
   const setUser = useAuthStore((s) => s.setUser)
   const logout = useAuthStore((s) => s.logout)
   const initTheme = useAuthStore((s) => s.initTheme)
@@ -37,41 +36,50 @@ const App = () => {
   useEffect(() => {
     let cancelled = false
 
-    const restoreSession = async () => {
-      initTheme()
-
+    const boot = async () => {
       try {
-        const res = await refreshApi()
-        const { accessToken: newAccess } = res.data
+        // restore persisted zustand state
+        await useAuthStore.persist.rehydrate()
 
-        setTokens(newAccess)
+        initTheme()
 
-        const userRes = await meApi()
-        setUser(userRes.data)
+        const { accessToken } = useAuthStore.getState()
 
-        if (!cancelled) setAppReady(true)
-      } catch (err) {
-        // Network down / backend unavailable: keep app usable and let the user try again.
-        if (!err.response) {
-          if (!cancelled) setAppReady(true)
+        // anonymous user:
+        // app should render immediately
+        if (!accessToken) {
           return
         }
 
-        // Definitive auth failure: no refresh token / expired refresh token.
-        if (err.response.status === 401 || err.response.status === 403) {
+        // if token exists, try to get user
+        // interceptor handles refresh automatically
+        const userRes = await meApi()
+
+        if (!cancelled) {
+          setUser(userRes.data)
+        }
+      } catch (err) {
+        // backend unavailable:
+        // preserve local session
+        if (
+          err.response?.status === 401 ||
+          err.response?.status === 403
+        ) {
           logout()
         }
-
-        if (!cancelled) setAppReady(true)
+      } finally {
+        if (!cancelled) {
+          setAppReady(true)
+        }
       }
     }
 
-    restoreSession()
+    boot()
 
     return () => {
       cancelled = true
     }
-  }, [initTheme, setTokens, setUser, logout])
+  }, [])
 
   useEffect(() => {
     if (!appReady || !accessToken) return
@@ -92,14 +100,7 @@ const App = () => {
   }, [appReady, accessToken, loadGamification, resetGamification])
 
   if (!appReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl animate-pulse" />
-          <p className="text-sm text-gray-500">Loading...</p>
-        </div>
-      </div>
-    )
+    return <div>Loading...</div>
   }
 
   return (

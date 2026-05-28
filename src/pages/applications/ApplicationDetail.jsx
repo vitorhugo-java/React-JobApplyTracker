@@ -4,9 +4,15 @@ import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Dropdown } from 'primereact/dropdown'
+import { SelectButton } from 'primereact/selectbutton'
 import { Bell, Calendar } from 'lucide-react'
 import { getApplication, deleteApplication, archiveApplication } from '../../api/applications'
-import { detectResumePlaceholders, generateGoogleDriveResume, getGoogleDriveSettings } from '../../api/googleDrive'
+import {
+  createGoogleDriveResume,
+  generateTemplateCv,
+  getCvPlaceholders,
+  getGoogleDriveSettings,
+} from '../../api/googleDrive'
 import StatusBadge from '../../components/ui/StatusBadge'
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton'
 import RichLinkPreview from '../../components/ui/RichLinkPreview'
@@ -56,6 +62,7 @@ const ApplicationDetail = () => {
   const [resumePlaceholders, setResumePlaceholders] = useState([])
   const [resumeInitialValues, setResumeInitialValues] = useState({})
   const [latestGeneratedResume, setLatestGeneratedResume] = useState(null)
+  const [cvCopyMode, setCvCopyMode] = useState('base')
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -156,6 +163,9 @@ const ApplicationDetail = () => {
     })
   }
 
+  const selectedBaseResume = googleDriveState.baseResumes.find((resume) => resume.id === selectedBaseResumeId)
+  const templateModeEnabled = Boolean(selectedBaseResume?.templateEnabled)
+
   const handleCreateGoogleDriveResume = async () => {
     if (!selectedBaseResumeId) {
       toast.current?.show({
@@ -166,15 +176,51 @@ const ApplicationDetail = () => {
       return
     }
 
+    if (cvCopyMode === 'template' && !templateModeEnabled) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Template mode is only available for template-enabled CVs.',
+      })
+      return
+    }
+
     setCopyingGoogleDriveResume(true)
 
     try {
-      const response = await detectResumePlaceholders(selectedBaseResumeId)
+      if (cvCopyMode === 'base') {
+        const response = await createGoogleDriveResume({
+          applicationId: id,
+          baseResumeId: selectedBaseResumeId,
+        })
+        setLatestGeneratedResume(response.data)
+        setApp((currentApp) => (
+          currentApp
+            ? {
+                ...currentApp,
+                driveVacancyFolderId: response.data?.vacancyFolderId ?? currentApp.driveVacancyFolderId,
+                driveResumeFileId: response.data?.copiedFileId ?? currentApp.driveResumeFileId,
+                driveResumeFileName: response.data?.copiedFileName ?? currentApp.driveResumeFileName,
+                driveResumeDocumentUrl: response.data?.googleDocUrl ?? currentApp.driveResumeDocumentUrl,
+                driveResumeGeneratedAt: response.data?.generatedAt ?? currentApp.driveResumeGeneratedAt,
+              }
+            : currentApp
+        ))
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Resume copy generated successfully.',
+        })
+        await loadGoogleDriveSettings().catch(() => null)
+        return
+      }
+
+      const response = await getCvPlaceholders(selectedBaseResumeId)
       setResumePlaceholders(response.data?.placeholders ?? [])
-      setResumeInitialValues(response.data?.values ?? {})
+      setResumeInitialValues({})
       setPlaceholderDialogVisible(true)
     } catch (err) {
-      const detail = err.response?.data?.message || 'Could not scan the selected resume template.'
+      const detail = err.response?.data?.message || 'Could not prepare the selected CV.'
       toast.current?.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setCopyingGoogleDriveResume(false)
@@ -185,33 +231,25 @@ const ApplicationDetail = () => {
     setCopyingGoogleDriveResume(true)
 
     try {
-      const response = await generateGoogleDriveResume({
-        applicationId: id,
-        baseResumeId: selectedBaseResumeId,
-        values,
-      })
-      setLatestGeneratedResume(response.data)
-      setApp((currentApp) => (
-        currentApp
-          ? {
-              ...currentApp,
-              driveVacancyFolderId: response.data?.vacancyFolderId ?? currentApp.driveVacancyFolderId,
-              driveResumeFileId: response.data?.copiedFileId ?? currentApp.driveResumeFileId,
-              driveResumeFileName: response.data?.copiedFileName ?? currentApp.driveResumeFileName,
-              driveResumeDocumentUrl: response.data?.googleDocUrl ?? currentApp.driveResumeDocumentUrl,
-              driveResumeGeneratedAt: response.data?.generatedAt ?? currentApp.driveResumeGeneratedAt,
-            }
-          : currentApp
-      ))
+      const response = await generateTemplateCv(selectedBaseResumeId, values)
+      const generatedDocumentUrl = response.data?.documentUrl
+      setLatestGeneratedResume((current) => ({
+        ...current,
+        copiedFileName: selectedBaseResume?.documentName || current?.copiedFileName || 'Generated CV',
+        googleDocUrl: generatedDocumentUrl || current?.googleDocUrl || '',
+        generatedAt: current?.generatedAt ?? new Date().toISOString(),
+      }))
       setPlaceholderDialogVisible(false)
       toast.current?.show({
         severity: 'success',
         summary: 'Success',
-        detail: 'Resume generated, placeholders replaced, and PDF exported.',
+        detail: 'Template CV generated successfully.',
       })
-      await loadGoogleDriveSettings().catch(() => null)
+      if (generatedDocumentUrl) {
+        openExternalUrl(generatedDocumentUrl)
+      }
     } catch (err) {
-      const detail = err.response?.data?.message || 'Could not generate the Google Drive resume.'
+      const detail = err.response?.data?.message || 'Could not generate the template CV.'
       toast.current?.show({ severity: 'error', summary: 'Error', detail })
     } finally {
       setCopyingGoogleDriveResume(false)
@@ -231,19 +269,31 @@ const ApplicationDetail = () => {
     googleDriveState.connected &&
     googleDriveState.baseFolderId &&
     googleDriveState.baseResumes.length > 0
-  const latestResumeCopy = app?.driveResumeDocumentUrl
+  const latestResumeCopy = latestGeneratedResume?.googleDocUrl
     ? {
-        copiedFileName: app.driveResumeFileName || 'Google Docs Resume',
-        googleDocUrl: app.driveResumeDocumentUrl,
-        pdfUrl: latestGeneratedResume?.pdfUrl ?? '',
-        vacancyFolderUrl: buildGoogleDriveFolderUrl(app.driveVacancyFolderId),
-        generatedAt: app.driveResumeGeneratedAt,
+        copiedFileName: latestGeneratedResume.copiedFileName || 'Google Docs Resume',
+        googleDocUrl: latestGeneratedResume.googleDocUrl,
+        pdfUrl: latestGeneratedResume.pdfUrl ?? '',
+        vacancyFolderUrl: latestGeneratedResume.vacancyFolderUrl ?? buildGoogleDriveFolderUrl(app.driveVacancyFolderId),
+        generatedAt: latestGeneratedResume.generatedAt ?? app.driveResumeGeneratedAt,
       }
-    : null
+    : app?.driveResumeDocumentUrl
+      ? {
+          copiedFileName: app.driveResumeFileName || 'Google Docs Resume',
+          googleDocUrl: app.driveResumeDocumentUrl,
+          pdfUrl: '',
+          vacancyFolderUrl: buildGoogleDriveFolderUrl(app.driveVacancyFolderId),
+          generatedAt: app.driveResumeGeneratedAt,
+        }
+      : null
   const baseResumeOptions = googleDriveState.baseResumes.map((resume) => ({
     label: resume.documentName,
     value: resume.id,
   }))
+  const cvModeOptions = [
+    { label: 'Base', value: 'base' },
+    { label: 'Template', value: 'template', disabled: !templateModeEnabled },
+  ]
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -344,23 +394,44 @@ const ApplicationDetail = () => {
             </div>
 
             <div className="space-y-3">
+              <SelectButton
+                value={cvCopyMode}
+                options={cvModeOptions}
+                optionLabel="label"
+                optionValue="value"
+                optionDisabled="disabled"
+                onChange={(e) => setCvCopyMode(e.value)}
+                className="w-full"
+                disabled={loadingGoogleDrive || !googleDriveRequirementsMet}
+              />
               <Dropdown
                   inputId="googleDriveBaseResume"
                   value={selectedBaseResumeId}
                   options={baseResumeOptions}
-                  onChange={(e) => setSelectedBaseResumeId(e.value)}
+                  onChange={(e) => {
+                    const nextBaseResume = googleDriveState.baseResumes.find((resume) => resume.id === e.value)
+                    setSelectedBaseResumeId(e.value)
+                    if (cvCopyMode === 'template' && !nextBaseResume?.templateEnabled) {
+                      setCvCopyMode('base')
+                    }
+                  }}
                   className="w-full"
                   placeholder="Choose a Google Docs base resume"
                   disabled={loadingGoogleDrive || !googleDriveRequirementsMet}
               />
-                  <Button
-                      type="button"
-                      label="Generate Resume"
+                    <Button
+                        type="button"
+                        label="Generate Resume"
                       icon="pi pi-copy"
                       onClick={handleCreateGoogleDriveResume}
                       loading={copyingGoogleDriveResume}
-                      disabled={loadingGoogleDrive || !googleDriveRequirementsMet || !selectedBaseResumeId}
-                  />
+                       disabled={loadingGoogleDrive || !googleDriveRequirementsMet || !selectedBaseResumeId}
+                   />
+                  {cvCopyMode === 'template' && !templateModeEnabled && (
+                    <small className="block text-amber-600 dark:text-amber-400">
+                      Template mode is only available for template-enabled CVs.
+                    </small>
+                  )}
             </div>
 
             {latestResumeCopy && (

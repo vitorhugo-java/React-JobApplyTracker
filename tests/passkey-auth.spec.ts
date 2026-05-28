@@ -38,7 +38,7 @@ test.describe('Passkey auth flow', () => {
     setupMockAuth(page, email, name)
     await setupMockPasskeyBrowser(page)
 
-    await page.route(`${API_BASE}/auth/passkeys/login/options`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/login/options`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -51,7 +51,7 @@ test.describe('Passkey auth flow', () => {
       })
     })
 
-    await page.route(`${API_BASE}/auth/passkeys/login/verify`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/login/verify`, async (route) => {
       loginVerificationBody = route.request().postDataJSON()
       await route.fulfill({
         status: 200,
@@ -112,7 +112,7 @@ test.describe('Passkey auth flow', () => {
     await setupMockPasskeyBrowser(page)
     await seedAuthenticatedStorage(page, email, name)
 
-    await page.route(`${API_BASE}/auth/passkeys/register/options`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/register/options`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -130,7 +130,7 @@ test.describe('Passkey auth flow', () => {
       })
     })
 
-    await page.route(`${API_BASE}/auth/passkeys/register/verify`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/register/verify`, async (route) => {
       registrationVerificationBody = route.request().postDataJSON()
       await route.fulfill({
         status: 200,
@@ -169,7 +169,7 @@ test.describe('Passkey auth flow', () => {
     await setupMockPasskeyBrowser(page, { createErrorName: 'NotAllowedError' })
     await seedAuthenticatedStorage(page, email, name)
 
-    await page.route(`${API_BASE}/auth/passkeys/register/options`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/register/options`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -186,7 +186,7 @@ test.describe('Passkey auth flow', () => {
       })
     })
 
-    await page.route(`${API_BASE}/auth/passkeys/register/verify`, async (route) => {
+    await page.route(`${API_BASE}/auth/passkey/register/verify`, async (route) => {
       verifyCalled = true
       await route.abort()
     })

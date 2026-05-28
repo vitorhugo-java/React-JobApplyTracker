@@ -57,10 +57,9 @@ export const updateGoogleDriveRootFolder = async (folderIdOrUrl) => {
   }
 }
 
-export const addGoogleDriveBaseResume = async ({ documentIdOrUrl, template = false }) => {
+export const addGoogleDriveBaseResume = async (documentIdOrUrl) => {
   const response = await api.post('/google-drive/base-resumes', {
     documentIdOrUrl,
-    template,
   })
 
   return {
@@ -144,5 +143,32 @@ export const generateGoogleDriveResume = async (payload) => {
   return {
     ...response,
     data: normalizeResumeGenerationResponse(response.data),
+  }
+}
+
+export const getCvPlaceholders = async (cvId) => {
+  const response = await api.get(`/cv/${cvId}/placeholders`)
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      cvId: response.data?.cvId ?? cvId,
+      template: Boolean(response.data?.template),
+      placeholders: response.data?.placeholders ?? [],
+    },
+  }
+}
+
+export const generateTemplateCv = async (cvId, placeholders = {}) => {
+  const response = await api.post(`/cv/${cvId}/generate-template`, {
+    placeholders,
+  })
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      generatedCvId: response.data?.generatedCvId ?? null,
+      documentUrl: response.data?.documentUrl ?? response.data?.googleDocUrl ?? '',
+    },
   }
 }
