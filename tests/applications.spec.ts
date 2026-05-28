@@ -148,4 +148,49 @@ test.describe('Application flow', () => {
 
     await expect(page.getByTestId('app-row').filter({ hasText: vacancy })).toHaveCount(0)
   })
+
+  test('import AI JSON keeps existing values when imported values are null or empty', async ({ page }) => {
+    await page.getByTestId('new-application-btn').click()
+    await page.waitForURL('**/applications/new')
+
+    await page.getByTestId('app-vacancy-name').fill('Already Filled Vacancy')
+    await page.getByTestId('app-recruiter-name').fill('Existing Recruiter')
+
+    await page.getByTestId('import-ai-json-open').click()
+    await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toBeVisible()
+
+    await page.getByTestId('import-ai-json-input').fill(`\`\`\`json
+{
+  "vacancyName": "",
+  "recruiterName": null,
+  "organization": "Imported Organization",
+  "vacancyLink": "https://example.com/vacancy",
+  "note": "Imported note",
+  "unknownField": "ignored"
+}
+\`\`\``)
+
+    await page.getByTestId('import-ai-json-confirm').click()
+
+    await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toHaveCount(0)
+    await expect(page.getByTestId('app-vacancy-name')).toHaveValue('Already Filled Vacancy')
+    await expect(page.getByTestId('app-recruiter-name')).toHaveValue('Existing Recruiter')
+    await expect(page.getByTestId('app-organization')).toHaveValue('Imported Organization')
+    await expect(page.getByTestId('app-vacancy-link')).toHaveValue('https://example.com/vacancy')
+    await expect(page.getByTestId('app-note')).toHaveValue('Imported note')
+  })
+
+  test('import AI JSON shows friendly error for invalid payload', async ({ page }) => {
+    await page.getByTestId('new-application-btn').click()
+    await page.waitForURL('**/applications/new')
+
+    await page.getByTestId('import-ai-json-open').click()
+    await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toBeVisible()
+
+    await page.getByTestId('import-ai-json-input').fill('```json\n{ invalid json }\n```')
+    await page.getByTestId('import-ai-json-confirm').click()
+
+    await expect(page.getByTestId('import-ai-json-error')).toContainText('Invalid JSON format')
+    await expect(page.getByRole('dialog', { name: 'Import AI JSON' })).toBeVisible()
+  })
 })
