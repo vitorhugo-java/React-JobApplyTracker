@@ -43,8 +43,7 @@ const App = () => {
 
         initTheme()
 
-        const { accessToken } =
-          useAuthStore.getState()
+        const { accessToken } = useAuthStore.getState()
 
         // anonymous user:
         // app should render immediately
@@ -59,7 +58,6 @@ const App = () => {
         if (!cancelled) {
           setUser(userRes.data)
         }
-
       } catch (err) {
         // backend unavailable:
         // preserve local session
@@ -81,12 +79,7 @@ const App = () => {
     return () => {
       cancelled = true
     }
-
   }, [])
-
-  if (!appReady) {
-    return <div>Loading...</div>
-  }
 
   useEffect(() => {
     if (!appReady || !accessToken) return
@@ -105,6 +98,10 @@ const App = () => {
 
     loadGamification().catch(() => null)
   }, [appReady, accessToken, loadGamification, resetGamification])
+
+  if (!appReady) {
+    return <div>Loading...</div>
+  }
 
   return (
     <PrimeReactProvider>
