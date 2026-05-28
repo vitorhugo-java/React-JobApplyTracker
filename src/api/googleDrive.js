@@ -58,9 +58,7 @@ export const updateGoogleDriveRootFolder = async (folderIdOrUrl) => {
 }
 
 export const addGoogleDriveBaseResume = async (documentIdOrUrl) => {
-  const response = await api.post('/google-drive/base-resumes', {
-    documentIdOrUrl,
-  })
+  const response = await api.post('/google-drive/base-resumes', documentIdOrUrl)
 
   return {
     ...response,
