@@ -4,11 +4,14 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import {
+  buildCacheKey,
+  cacheApiResponse,
+  getCachedApiResponse,
+  invalidateCacheForMutation,
+} from './offlineStore'
+import { enqueueOfflineMutation, type SyncQueueItem } from './syncQueue'
 
-/**
- * Resolve the API base URL. The backend serves everything under `/api/v1`;
- * callers pass relative paths like `/applications`.
- */
 function resolveBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
   const base = (configured || 'http://localhost:8080').replace(/\/+$/, '')
@@ -25,12 +28,16 @@ export const api = axios.create({
 
 const REFRESH_ENDPOINT = '/auth/refresh'
 const AUTH_FAILURE = new Set([401, 403])
+const NO_CACHE_PREFIXES = ['/auth/']
+const MUTATION_METHODS = new Set(['post', 'put', 'patch', 'delete'])
+
+function shouldCache(url: string): boolean {
+  return !NO_CACHE_PREFIXES.some((p) => url.startsWith(p))
+}
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
@@ -40,16 +47,69 @@ let refreshPromise: Promise<string> | null = null
 type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 
 api.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    const method = response.config.method?.toLowerCase()
+    const url = response.config.url
+    if (!url) return response
+
+    if (method === 'get' && shouldCache(url)) {
+      const key = buildCacheKey(url, response.config.params as Record<string, unknown> | undefined)
+      cacheApiResponse(key, response.data).catch(() => {})
+    } else if (url && MUTATION_METHODS.has(method || '')) {
+      invalidateCacheForMutation(url).catch(() => {})
+    }
+
+    return response
+  },
   async (error: AxiosError) => {
     const original = error.config as RetriableConfig | undefined
     const status = error.response?.status
+
+    // Offline: no HTTP response and the browser confirms no network.
+    if (!status && !navigator.onLine && original?.url) {
+      const method = original.method?.toLowerCase() ?? ''
+      const key = buildCacheKey(
+        original.url,
+        original.params as Record<string, unknown> | undefined,
+      )
+
+      if (method === 'get' && shouldCache(original.url)) {
+        const cached = await getCachedApiResponse(key)
+        if (cached) {
+          return {
+            data: cached,
+            status: 200,
+            statusText: 'cached',
+            headers: {},
+            config: original,
+            request: null,
+          } as AxiosResponse
+        }
+      }
+
+      if (MUTATION_METHODS.has(method)) {
+        const raw = original.data
+        const payload = raw
+          ? typeof raw === 'string'
+            ? (JSON.parse(raw) as unknown)
+            : raw
+          : undefined
+        await enqueueOfflineMutation({
+          method: method.toUpperCase() as SyncQueueItem['method'],
+          url: original.url,
+          payload,
+        })
+        const queued = Object.assign(new Error('Request queued for offline sync'), {
+          isOfflineQueued: true as const,
+        })
+        return Promise.reject(queued)
+      }
+    }
 
     if (!original || !status || !AUTH_FAILURE.has(status) || original._retry) {
       return Promise.reject(error)
     }
 
-    // A failure on the refresh endpoint itself means the session is dead.
     if (original.url === REFRESH_ENDPOINT) {
       refreshPromise = null
       useAuthStore.getState().logout()
@@ -85,5 +145,4 @@ api.interceptors.response.use(
   },
 )
 
-/** Unwrap an axios response to its data payload. */
 export const unwrap = <T>(p: Promise<AxiosResponse<T>>): Promise<T> => p.then((r) => r.data)

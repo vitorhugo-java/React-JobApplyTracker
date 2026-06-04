@@ -1,0 +1,13 @@
+User-agent: *
+# Allow public-facing pages
+Allow: /login
+Allow: /register
+
+# Protect all authenticated routes
+Disallow: /dashboard
+Disallow: /applications
+Disallow: /metrics
+Disallow: /account
+Disallow: /developer
+
+Sitemap: https://applywell.hugojava.dev/sitemap.xml

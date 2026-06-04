@@ -3,8 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { CenteredSpinner } from '@/components/ui/feedback'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { me } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import { useSyncReplay } from '@/hooks/useSyncReplay'
 import Login from '@/pages/auth/Login'
 import Register from '@/pages/auth/Register'
 import ForgotPassword from '@/pages/auth/ForgotPassword'
@@ -16,6 +18,7 @@ import Developer from '@/pages/developer/Developer'
 import AccountSettings from '@/pages/account/AccountSettings'
 
 export default function App() {
+  useSyncReplay()
   const [booted, setBooted] = useState(false)
   const accessToken = useAuthStore((s) => s.accessToken)
   const setUser = useAuthStore((s) => s.setUser)
@@ -54,7 +57,9 @@ export default function App() {
   if (!booted) return <CenteredSpinner label="Starting Applywell…" />
 
   return (
-    <Routes>
+    <>
+      <OfflineBanner />
+      <Routes>
       <Route path="/login" element={accessToken ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/register" element={accessToken ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -78,5 +83,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   )
 }
