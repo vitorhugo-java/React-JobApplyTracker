@@ -54,3 +54,11 @@ Thumbs.db
 .claude/settings.local.json
 .aiox/install-log.txt
 /.aiox-core
+
+# design handoff bundle + analysis artifacts (local reference only)
+.design-bundle/
+test-results/
+test-results*.json
+test-results*.txt
+latest-test-output.log
+playwright-report/
