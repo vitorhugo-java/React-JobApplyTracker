@@ -1,1 +1,0 @@
-export const getVacancyLabel = (vacancyName) => vacancyName?.trim() || 'Untitled vacancy'
