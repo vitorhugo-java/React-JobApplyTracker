@@ -9,6 +9,8 @@ import Login from '@/pages/auth/Login'
 import Register from '@/pages/auth/Register'
 import ForgotPassword from '@/pages/auth/ForgotPassword'
 import Dashboard from '@/pages/dashboard/Dashboard'
+import ApplicationsList from '@/pages/applications/ApplicationsList'
+import ApplicationForm from '@/pages/applications/ApplicationForm'
 
 export default function App() {
   const [booted, setBooted] = useState(false)
@@ -63,6 +65,9 @@ export default function App() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/applications" element={<ApplicationsList />} />
+        <Route path="/applications/new" element={<ApplicationForm />} />
+        <Route path="/applications/:id/edit" element={<ApplicationForm />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
