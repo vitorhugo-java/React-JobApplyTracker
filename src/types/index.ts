@@ -67,10 +67,14 @@ export interface ApplicationRequest {
   organization?: string
   vacancyLink?: string
   applicationDate?: string | null
-  interviewScheduled?: boolean
+  /** Required by the backend: whether the recruiter accepted the LinkedIn connection. */
+  rhAcceptedConnection: boolean
+  /** Required by the backend: whether an interview has been scheduled. */
+  interviewScheduled: boolean
   nextStepDateTime?: string | null
   status: string
-  recruiterDmReminderEnabled?: boolean
+  /** Required by the backend: whether the recruiter DM reminder is enabled. */
+  recruiterDmReminderEnabled: boolean
   note?: string
 }
 

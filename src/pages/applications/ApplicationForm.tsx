@@ -48,7 +48,12 @@ const EMPTY: FormValues = {
   markDmSent: false,
 }
 
-function buildRequest(values: FormValues, reminderEnabled: boolean, interviewScheduled: boolean): ApplicationRequest {
+function buildRequest(
+  values: FormValues,
+  reminderEnabled: boolean,
+  interviewScheduled: boolean,
+  rhAcceptedConnection: boolean,
+): ApplicationRequest {
   const nextStep = values.nextStepDate
     ? `${values.nextStepDate}T${values.nextStepTime || '09:00'}:00`
     : null
@@ -63,6 +68,7 @@ function buildRequest(values: FormValues, reminderEnabled: boolean, interviewSch
     note: values.note.trim() || undefined,
     interviewScheduled,
     recruiterDmReminderEnabled: reminderEnabled,
+    rhAcceptedConnection,
   }
 }
 
@@ -76,6 +82,7 @@ export default function ApplicationForm() {
   // preserved fields not directly edited in the form
   const [reminderEnabled, setReminderEnabled] = useState(true)
   const [interviewScheduled, setInterviewScheduled] = useState(false)
+  const [rhAcceptedConnection, setRhAcceptedConnection] = useState(false)
   const [alreadyDmSent, setAlreadyDmSent] = useState(false)
 
   const {
@@ -121,6 +128,7 @@ export default function ApplicationForm() {
     })
     setReminderEnabled(app.recruiterDmReminderEnabled ?? true)
     setInterviewScheduled(app.interviewScheduled ?? false)
+    setRhAcceptedConnection(app.rhAcceptedConnection ?? false)
     setAlreadyDmSent(!!app.recruiterDmSentAt)
   }, [existing.data, reset])
 
@@ -130,7 +138,7 @@ export default function ApplicationForm() {
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null)
     try {
-      const payload = buildRequest(values, reminderEnabled, interviewScheduled)
+      const payload = buildRequest(values, reminderEnabled, interviewScheduled, rhAcceptedConnection)
       const saved = isEdit && id ? await updateApplication(id, payload) : await createApplication(payload)
       // Mark recruiter DM as sent if newly checked.
       if (values.markDmSent && !alreadyDmSent) {
@@ -235,6 +243,20 @@ export default function ApplicationForm() {
         </div>
 
         <div className="mt-5 border-t border-mono-e5">
+          <ToggleRow title="Recruiter Accepted Connection" sub="The recruiter accepted my LinkedIn connection request">
+            <Switch
+              aria-label="Recruiter accepted connection"
+              checked={rhAcceptedConnection}
+              onChange={setRhAcceptedConnection}
+            />
+          </ToggleRow>
+          <ToggleRow title="Interview Scheduled" sub="An interview has been booked">
+            <Switch
+              aria-label="Interview scheduled"
+              checked={interviewScheduled}
+              onChange={setInterviewScheduled}
+            />
+          </ToggleRow>
           <ToggleRow title="To Send Later" sub="Keep as a draft and remind me to send it">
             <Switch
               aria-label="To send later"
