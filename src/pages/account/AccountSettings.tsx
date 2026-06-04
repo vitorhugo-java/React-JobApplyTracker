@@ -8,6 +8,7 @@ import { ErrorNote, Spinner } from '@/components/ui/feedback'
 import { useAsync } from '@/hooks/useAsync'
 import { changePassword, updateProfile } from '@/api/auth'
 import { getGoogleDriveStatus, type GoogleDriveStatus } from '@/api/resumes'
+import { getPasskeyStatus, registerPasskey, isPasskeySupported } from '@/api/passkey'
 import { useAuthStore } from '@/store/authStore'
 
 function SetCard({
@@ -193,6 +194,59 @@ function GoogleDriveSection() {
   )
 }
 
+function PasskeySection() {
+  const supported = isPasskeySupported()
+  const { data, loading, reload } = useAsync<{ hasPasskeys: boolean }>(
+    () => getPasskeyStatus().catch(() => ({ hasPasskeys: false })),
+    [],
+  )
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const hasPasskeys = data?.hasPasskeys
+
+  const onAdd = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      await registerPasskey()
+      reload()
+    } catch (err) {
+      // A cancelled WebAuthn prompt rejects with a DOMException — treat as a no-op.
+      if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
+        return
+      }
+      setError('Could not register a passkey. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <SetCard title="Passkeys" sub="Sign in without a password">
+      {error && (
+        <div className="mb-4">
+          <ErrorNote message={error} />
+        </div>
+      )}
+      <div className="flex items-center gap-3 py-2.5">
+        <div className="grid h-10 w-10 place-items-center rounded border border-mono-e5 text-mono-5">⌘</div>
+        <div className="flex-1 text-[13px] text-mono-9">
+          {!supported
+            ? 'This browser does not support passkeys.'
+            : loading
+              ? 'Checking…'
+              : hasPasskeys
+                ? 'A passkey is registered for your account.'
+                : 'No passkeys registered yet.'}
+        </div>
+        <Button size="sm" onClick={onAdd} disabled={!supported || busy}>
+          {busy ? <Spinner /> : '+ Add a passkey'}
+        </Button>
+      </div>
+    </SetCard>
+  )
+}
+
 export default function AccountSettings() {
   const logout = useAuthStore((s) => s.logout)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -203,15 +257,7 @@ export default function AccountSettings() {
       <div className="max-w-settings">
         <ProfileSection />
         <PasswordSection />
-
-        <SetCard title="Passkeys" sub="Sign in without a password">
-          <div className="flex items-center gap-3 py-2.5">
-            <div className="grid h-10 w-10 place-items-center rounded border border-mono-e5 text-mono-5">⌘</div>
-            <div className="flex-1 text-[13px] text-mono-9">No passkeys registered yet.</div>
-            <Button size="sm">+ Add a passkey</Button>
-          </div>
-        </SetCard>
-
+        <PasskeySection />
         <GoogleDriveSection />
 
         <SetCard title="Danger Zone" sub="Irreversible and destructive actions" danger>

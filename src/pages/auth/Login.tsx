@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { login } from '@/api/auth'
+import { loginWithPasskey, isPasskeySupported } from '@/api/passkey'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Field'
 import { ErrorNote, Spinner } from '@/components/ui/feedback'
@@ -18,10 +19,13 @@ export default function Login() {
   const location = useLocation()
   const setSession = useAuthStore((s) => s.setSession)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [passkeyBusy, setPasskeyBusy] = useState(false)
+  const passkeySupported = isPasskeySupported()
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ defaultValues: { email: '', password: '' } })
 
@@ -37,6 +41,33 @@ export default function Login() {
       setSubmitError(authErrorMessage(error, 'Invalid email or password.'))
     }
   })
+
+  const onPasskey = async () => {
+    setSubmitError(null)
+    const email = getValues('email').trim()
+    if (!email) {
+      setSubmitError('Enter your email first, then sign in with a passkey.')
+      return
+    }
+    setPasskeyBusy(true)
+    try {
+      const result = await loginWithPasskey(email)
+      if (!result) {
+        setSubmitError('No passkey is registered for this account.')
+        return
+      }
+      setSession(result.accessToken, result.user)
+      navigate(from, { replace: true })
+    } catch (error) {
+      // A cancelled WebAuthn prompt rejects with a DOMException — stay silent.
+      if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'AbortError')) {
+        return
+      }
+      setSubmitError(authErrorMessage(error, 'Could not sign in with a passkey.'))
+    } finally {
+      setPasskeyBusy(false)
+    }
+  }
 
   return (
     <AuthShell
@@ -85,6 +116,24 @@ export default function Login() {
         <Button type="submit" variant="primary" disabled={isSubmitting} className="justify-center">
           {isSubmitting ? <Spinner className="border-white/40 border-t-white" /> : 'Sign in'}
         </Button>
+
+        {passkeySupported && (
+          <>
+            <div className="flex items-center gap-3 text-[11.5px] uppercase tracking-wider text-mono-9">
+              <span className="h-px flex-1 bg-mono-e5" />
+              or
+              <span className="h-px flex-1 bg-mono-e5" />
+            </div>
+            <Button
+              type="button"
+              onClick={onPasskey}
+              disabled={passkeyBusy}
+              className="justify-center"
+            >
+              {passkeyBusy ? <Spinner /> : 'Sign in with a passkey'}
+            </Button>
+          </>
+        )}
       </form>
     </AuthShell>
   )
