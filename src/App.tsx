@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import Login from '@/pages/auth/Login'
 import Register from '@/pages/auth/Register'
 import ForgotPassword from '@/pages/auth/ForgotPassword'
+import Dashboard from '@/pages/dashboard/Dashboard'
 
 export default function App() {
   const [booted, setBooted] = useState(false)
@@ -61,14 +62,7 @@ export default function App() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route
-          path="/dashboard"
-          element={
-            <div className="mx-auto max-w-page px-[30px] py-[26px] font-mono text-[13px] text-mono-9">
-              Dashboard coming up next…
-            </div>
-          }
-        />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
