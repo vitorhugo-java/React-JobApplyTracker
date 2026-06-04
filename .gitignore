@@ -62,3 +62,4 @@ test-results*.json
 test-results*.txt
 latest-test-output.log
 playwright-report/
+*.tsbuildinfo
