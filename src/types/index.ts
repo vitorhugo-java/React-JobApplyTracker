@@ -17,10 +17,12 @@ export interface AuthResponse {
   user: User
 }
 
-/** Canonical application status values accepted by the backend. */
+/**
+ * Canonical application status values accepted by the backend. Must mirror the
+ * `status` enum in the OpenAPI ApplicationRequest schema exactly — no more, no less.
+ */
 export const APPLICATION_STATUSES = [
   'RH',
-  'Entrevista marcada',
   'Fiz a RH - Aguardando Atualização',
   'Fiz a Hiring Manager - Aguardando Atualização',
   'Teste Técnico',

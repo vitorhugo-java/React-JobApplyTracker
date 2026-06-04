@@ -58,7 +58,7 @@ const day = (offset: number) => {
 
 export function seedApplications(): Application[] {
   return [
-    mk('app-1', 'Senior Frontend Engineer', 'Linear', 'Priya Nayar', 'Entrevista marcada', -7, 2, true),
+    mk('app-1', 'Senior Frontend Engineer', 'Linear', 'Priya Nayar', 'Teste Técnico', -7, 2, true),
     mk('app-2', 'Product Designer, Growth', 'Vercel', 'Marcus Webb', 'RH', -5, -6, false),
     mk('app-3', 'Full-stack Developer', 'Supabase', 'Dana Klein', 'Fiz a RH - Aguardando Atualização', -9, -1, true),
     mk('app-4', 'Design Engineer', 'Raycast', 'Tom Asante', 'RH (Negociação)', -21, 5, true),
@@ -91,7 +91,8 @@ export function seedApplications(): Application[] {
       applicationDate: appliedOffset === null ? null : day(appliedOffset),
       nextStepDateTime: nextOffset === null ? null : day(nextOffset),
       status,
-      interviewScheduled: status === 'Entrevista marcada',
+      // interviewScheduled is now an independent flag; app-1 is the seeded example.
+      interviewScheduled: id === 'app-1',
       recruiterDmReminderEnabled: true,
       recruiterDmSentAt: null,
       note: note ? 'Follow up with the hiring manager about timeline.' : null,

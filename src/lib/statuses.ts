@@ -55,7 +55,6 @@ const FAMILY_BY_STATUS: Record<string, StatusFamily> = {
   RH: 'sent',
   'Fiz a RH - Aguardando Atualização': 'replied',
   'Fiz a Hiring Manager - Aguardando Atualização': 'replied',
-  'Entrevista marcada': 'interview',
   'Teste Técnico': 'interview',
   'Fiz teste Técnico - aguardando atualização': 'interview',
   'RH (Negociação)': 'offer',
