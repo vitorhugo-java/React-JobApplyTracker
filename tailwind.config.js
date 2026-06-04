@@ -1,22 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Monochrome design system (Notion + Vercel vibe)
+        // Monochrome design system driven by CSS custom properties so dark mode
+        // is a single class toggle on <html> with no per-component dark: prefixes.
         mono: {
-          0: '#000',
-          1: '#111',
-          2: '#222',
-          5: '#555',
-          9: '#999',
-          c: '#cfcfcf',
-          e5: '#e5e5e5',
-          f5: '#f5f5f5',
-          w: '#fff',
+          0: 'var(--mono-0)',
+          1: 'var(--mono-1)',
+          2: 'var(--mono-2)',
+          5: 'var(--mono-5)',
+          9: 'var(--mono-9)',
+          c: 'var(--mono-c)',
+          e5: 'var(--mono-e5)',
+          f5: 'var(--mono-f5)',
+          w: 'var(--mono-w)',
         },
-        danger: '#7a2e2e',
+        danger: 'var(--danger)',
+        surface: {
+          subtle: 'var(--surface-subtle)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

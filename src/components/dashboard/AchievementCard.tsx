@@ -25,7 +25,7 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
         className={cn(
           'grid h-[34px] w-[34px] place-items-center rounded',
           unlocked
-            ? 'bg-mono-0 text-white'
+            ? 'bg-mono-0 text-mono-w'
             : 'border-[1.5px] border-dashed border-mono-c bg-mono-w text-mono-c',
         )}
       >

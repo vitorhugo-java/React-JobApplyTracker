@@ -65,7 +65,7 @@ function PageBtn({
       className={cn(
         'grid h-[26px] min-w-[26px] place-items-center rounded border px-1.5 font-mono text-[12px]',
         active
-          ? 'border-mono-0 bg-mono-0 text-white'
+          ? 'border-mono-0 bg-mono-0 text-mono-w'
           : 'border-mono-e5 bg-mono-w text-mono-5 hover:bg-mono-f5',
         disabled && 'cursor-not-allowed opacity-40 hover:bg-mono-w',
       )}

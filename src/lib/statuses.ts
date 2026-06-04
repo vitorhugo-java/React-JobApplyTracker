@@ -36,17 +36,17 @@ export const STATUS_FAMILY_BADGE: Record<StatusFamily, string> = {
   draft: 'bg-mono-f5 text-mono-5',
   sent: 'bg-mono-f5 text-mono-2',
   replied: 'bg-mono-e5 text-mono-1',
-  interview: 'bg-mono-2 text-white',
-  offer: 'bg-mono-0 text-white',
-  rejected: 'bg-white text-mono-9 border border-mono-e5',
+  interview: 'bg-mono-2 text-mono-w',
+  offer: 'bg-mono-0 text-mono-w',
+  rejected: 'bg-mono-w text-mono-9 border border-mono-e5',
 }
 
 export const STATUS_FAMILY_DOT: Record<StatusFamily, string> = {
   draft: 'bg-mono-9',
   sent: 'bg-mono-5',
   replied: 'bg-mono-1',
-  interview: 'bg-white',
-  offer: 'bg-white',
+  interview: 'bg-mono-w',
+  offer: 'bg-mono-w',
   rejected: 'border-[1.5px] border-mono-9 bg-transparent',
 }
 

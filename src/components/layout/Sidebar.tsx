@@ -18,7 +18,7 @@ export function Sidebar({ collapsed, activeCount }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex flex-col border-r border-mono-e5 bg-mono-w transition-[width] duration-150',
+        'hidden md:flex flex-col border-r border-mono-e5 bg-mono-w transition-[width] duration-150',
         collapsed ? 'w-16' : 'w-[244px]',
       )}
     >
@@ -29,7 +29,7 @@ export function Sidebar({ collapsed, activeCount }: SidebarProps) {
           collapsed ? 'justify-center px-0' : 'px-4',
         )}
       >
-        <div className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[5px] bg-mono-0 text-sm font-bold text-white">
+        <div className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[5px] bg-mono-0 text-sm font-bold text-mono-w">
           A
         </div>
         {!collapsed && (
@@ -68,7 +68,7 @@ export function Sidebar({ collapsed, activeCount }: SidebarProps) {
         )}
       >
         <div className="flex items-center gap-2.5">
-          <div className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-mono-1 text-xs font-semibold text-white">
+          <div className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-mono-1 text-xs font-semibold text-mono-w">
             {initials(user?.name)}
           </div>
           {!collapsed && (
@@ -120,7 +120,7 @@ function NavRow({
           'flex items-center gap-[11px] rounded border border-transparent px-2.5 py-[7px] text-[13.5px] transition-colors',
           collapsed && 'justify-center px-0 py-2',
           isActive
-            ? 'bg-mono-0 text-white'
+            ? 'bg-mono-0 text-mono-w'
             : 'text-mono-2 hover:bg-mono-f5',
         )
       }
@@ -130,7 +130,7 @@ function NavRow({
           <span
             className={cn(
               'grid h-4 w-4 shrink-0 place-items-center',
-              isActive ? 'text-white' : 'text-mono-5',
+              isActive ? 'text-mono-w' : 'text-mono-5',
             )}
           >
             {Icon ? <Icon size={15} /> : <span className="font-mono text-xs font-semibold">{item.glyph}</span>}
@@ -140,7 +140,7 @@ function NavRow({
             <span
               className={cn(
                 'ml-auto rounded-full px-[7px] py-px font-mono text-[11px]',
-                isActive ? 'bg-white/[0.16] text-white' : 'bg-mono-f5 text-mono-9',
+                isActive ? 'bg-mono-w/[0.16] text-mono-w' : 'bg-mono-f5 text-mono-9',
               )}
             >
               {badge}

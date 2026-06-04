@@ -56,7 +56,7 @@ export function ApplicationsTable({
                   key={col.key}
                   onClick={col.sortable ? () => onSort(col.key) : undefined}
                   className={cn(
-                    'whitespace-nowrap border-b border-mono-e5 bg-[#fcfcfc] px-3.5 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.06em] text-mono-9 select-none',
+                    'whitespace-nowrap border-b border-mono-e5 bg-surface-subtle px-3.5 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.06em] text-mono-9 select-none',
                     col.sortable && 'cursor-pointer hover:text-mono-2',
                     sorted && 'text-mono-1',
                   )}

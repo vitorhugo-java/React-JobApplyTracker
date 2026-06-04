@@ -35,7 +35,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(opt.value)}
             className={cn(
               'border-r border-mono-e5 px-[13px] py-1.5 text-[12.5px] transition-colors last:border-r-0',
-              active ? 'bg-mono-0 text-white' : 'bg-mono-w text-mono-5 hover:bg-mono-f5 hover:text-mono-1',
+              active ? 'bg-mono-0 text-mono-w' : 'bg-mono-w text-mono-5 hover:bg-mono-f5 hover:text-mono-1',
             )}
           >
             {opt.label}

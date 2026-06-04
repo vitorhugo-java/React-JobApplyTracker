@@ -3,13 +3,22 @@ import { useForm } from 'react-hook-form'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Field'
+import { Switch } from '@/components/ui/Toggle'
 import { ConfirmDialog } from '@/components/ui/Dialog'
-import { ErrorNote, Spinner } from '@/components/ui/feedback'
+import { CenteredSpinner, ErrorNote, Spinner } from '@/components/ui/feedback'
 import { useAsync } from '@/hooks/useAsync'
 import { changePassword, updateProfile } from '@/api/auth'
-import { getGoogleDriveStatus, type GoogleDriveStatus } from '@/api/resumes'
+import {
+  getGoogleDriveStatus,
+  getBaseResumes,
+  createBaseResume,
+  updateBaseResume,
+  deleteBaseResume,
+  type GoogleDriveStatus,
+} from '@/api/resumes'
 import { getPasskeyStatus, registerPasskey, isPasskeySupported } from '@/api/passkey'
 import { useAuthStore } from '@/store/authStore'
+import type { BaseResume } from '@/types'
 
 function SetCard({
   title,
@@ -23,7 +32,13 @@ function SetCard({
   children: React.ReactNode
 }) {
   return (
-    <div className={`mb-4 rounded border ${danger ? 'border-[#e0d4d4]' : 'border-mono-e5'}`}>
+    <div
+      className={`mb-4 rounded border ${
+        danger
+          ? 'border-[#e0d4d4] dark:border-[#3a2020]'
+          : 'border-mono-e5'
+      }`}
+    >
       <div className="px-[18px] pb-3.5 pt-4">
         <div className="text-[14.5px] font-semibold">{title}</div>
         {sub && <div className="mt-0.5 text-[12.5px] text-mono-9">{sub}</div>}
@@ -163,6 +178,143 @@ function PasswordSection() {
   )
 }
 
+function ResumeManager() {
+  const { data: resumes, loading, reload } = useAsync<BaseResume[]>(
+    () => getBaseResumes().catch(() => []),
+    [],
+  )
+  const [name, setName] = useState('')
+  const [isTemplate, setIsTemplate] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editTemplate, setEditTemplate] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleAdd = async () => {
+    if (!name.trim()) return
+    setAdding(true)
+    setError(null)
+    try {
+      await createBaseResume({ name: name.trim(), template: isTemplate })
+      setName('')
+      setIsTemplate(false)
+      reload()
+    } catch {
+      setError('Could not add resume.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    setError(null)
+    try {
+      await deleteBaseResume(id)
+      reload()
+    } catch {
+      setError('Could not delete resume.')
+    }
+  }
+
+  const startEdit = (r: BaseResume) => {
+    setEditId(r.id)
+    setEditName(r.name)
+    setEditTemplate(r.template ?? false)
+  }
+
+  const handleUpdate = async () => {
+    if (!editId) return
+    setError(null)
+    try {
+      await updateBaseResume(editId, { name: editName, template: editTemplate })
+      setEditId(null)
+      reload()
+    } catch {
+      setError('Could not update resume.')
+    }
+  }
+
+  return (
+    <div className="mt-5 border-t border-mono-e5 pt-5">
+      <div className="mb-3 text-[13px] font-semibold">Resumes</div>
+
+      {error && (
+        <div className="mb-3">
+          <ErrorNote message={error} />
+        </div>
+      )}
+
+      {/* Add form */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input
+          className="field-input min-w-[180px] flex-1"
+          placeholder="Resume name…"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <div className="flex shrink-0 items-center gap-2">
+          <Switch checked={isTemplate} onChange={setIsTemplate} aria-label="Mark as template" />
+          <span className="select-none text-[12.5px] text-mono-5">Template</span>
+        </div>
+        <Button onClick={handleAdd} disabled={adding || !name.trim()} size="sm">
+          {adding ? <Spinner /> : '+ Add'}
+        </Button>
+      </div>
+
+      {/* Resume list */}
+      {loading ? (
+        <CenteredSpinner />
+      ) : resumes && resumes.length > 0 ? (
+        <div className="flex flex-col divide-y divide-mono-e5 overflow-hidden rounded border border-mono-e5">
+          {resumes.map((r) =>
+            editId === r.id ? (
+              <div key={r.id} className="flex flex-wrap items-center gap-2 px-3.5 py-2.5">
+                <input
+                  className="field-input min-w-[160px] flex-1"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
+                />
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Switch checked={editTemplate} onChange={setEditTemplate} aria-label="Template" />
+                  <span className="text-[12px] text-mono-5">Template</span>
+                </div>
+                <Button size="sm" variant="primary" onClick={handleUpdate}>
+                  Save
+                </Button>
+                <Button size="sm" onClick={() => setEditId(null)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div key={r.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                <div className="flex-1 truncate text-[13px] text-mono-1">{r.name}</div>
+                {r.template && (
+                  <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
+                    template
+                  </span>
+                )}
+                <Button size="sm" onClick={() => startEdit(r)}>
+                  Edit
+                </Button>
+                <Button size="sm" onClick={() => handleDelete(r.id)} className="text-danger">
+                  Delete
+                </Button>
+              </div>
+            ),
+          )}
+        </div>
+      ) : (
+        <div className="py-3 text-center font-mono text-[11.5px] text-mono-9">
+          No resumes added yet.
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GoogleDriveSection() {
   const { data, loading } = useAsync<GoogleDriveStatus>(
     () => getGoogleDriveStatus().catch(() => ({ connected: false })),
@@ -190,6 +342,8 @@ function GoogleDriveSection() {
         </span>
         <Button size="sm">{connected ? 'Disconnect' : 'Connect'}</Button>
       </div>
+
+      {connected && <ResumeManager />}
     </SetCard>
   )
 }
@@ -211,7 +365,6 @@ function PasskeySection() {
       await registerPasskey()
       reload()
     } catch (err) {
-      // A cancelled WebAuthn prompt rejects with a DOMException — treat as a no-op.
       if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
         return
       }
@@ -270,7 +423,7 @@ export default function AccountSettings() {
             </div>
             <Button
               onClick={() => setConfirmDelete(true)}
-              className="border-[#d8c4c4] text-danger hover:bg-[#fcf7f7]"
+              className="border-[#d8c4c4] text-danger hover:bg-[#fcf7f7] dark:border-[#3a2020] dark:hover:bg-[#1a1010]"
             >
               Delete account
             </Button>

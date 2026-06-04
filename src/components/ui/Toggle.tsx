@@ -50,7 +50,7 @@ export function Checkbox({ checked, onChange, id, 'aria-label': ariaLabel }: Che
       onClick={() => onChange(!checked)}
       className={cn(
         'grid h-[18px] w-[18px] shrink-0 place-items-center rounded border transition-colors',
-        checked ? 'border-mono-0 bg-mono-0 text-white' : 'border-[#d8d8d8] bg-white text-transparent',
+        checked ? 'border-mono-0 bg-mono-0 text-mono-w' : 'border-mono-c bg-mono-w text-transparent',
       )}
     >
       <CheckIcon />

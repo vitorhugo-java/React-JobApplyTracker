@@ -1,21 +1,30 @@
 import { useNavigate } from 'react-router-dom'
-import { FamilyBadge } from '@/components/ui/StatusBadge'
+import { cn } from '@/lib/utils'
 import { NoteIcon } from '@/components/ui/icons'
 import { formatDate } from '@/lib/format'
-import { familyOf, STATUS_FAMILY_ORDER } from '@/lib/statuses'
+import { familyOf, statusLabel, STATUS_FAMILY_BADGE, STATUS_FAMILY_DOT, STATUS_OPTIONS } from '@/lib/statuses'
 import type { Application } from '@/types'
 
 export function ApplicationsBoard({ items }: { items: Application[] }) {
   const navigate = useNavigate()
 
   return (
-    <div className="grid auto-cols-[minmax(220px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
-      {STATUS_FAMILY_ORDER.map((family) => {
-        const cards = items.filter((a) => familyOf(a.status) === family)
+    <div className="grid auto-cols-[minmax(190px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
+      {STATUS_OPTIONS.map(({ value: status, label }) => {
+        const cards = items.filter((a) => a.status === status)
+        const family = familyOf(status)
         return (
-          <div key={family} className="flex min-h-[200px] flex-col rounded border border-mono-e5 bg-[#fcfcfc]">
+          <div key={status} className="flex min-h-[200px] flex-col rounded border border-mono-e5 bg-surface-subtle">
             <div className="flex items-center gap-2 border-b border-mono-e5 px-3 py-[11px]">
-              <FamilyBadge family={family} />
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2 py-0.5 text-xs leading-none',
+                  STATUS_FAMILY_BADGE[family],
+                )}
+              >
+                <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STATUS_FAMILY_DOT[family])} />
+                <span className="max-w-[130px] truncate" title={statusLabel(status)}>{label}</span>
+              </span>
               <span className="ml-auto font-mono text-[11px] text-mono-9">{cards.length}</span>
             </div>
             <div className="flex flex-col gap-2 p-2.5">

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { STATUS_OPTIONS } from '@/lib/statuses'
 import { useAsync } from '@/hooks/useAsync'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import {
   archiveApplication,
   deleteApplication,
@@ -23,7 +24,7 @@ import { ApplicationsBoard } from '@/components/applications/ApplicationsBoard'
 import { ApplicationsCards } from '@/components/applications/ApplicationsCards'
 
 type Tab = 'active' | 'archived'
-type View = 'table' | 'board' | 'mobile'
+type View = 'table' | 'board'
 
 const SORT_OPTIONS = [
   { value: 'applicationDate,desc', label: 'Sort: Applied date' },
@@ -36,6 +37,7 @@ const PAGE_SIZE = 12
 
 export default function ApplicationsList() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [tab, setTab] = useState<Tab>('active')
   const [view, setView] = useState<View>('table')
   const [search, setSearch] = useState('')
@@ -46,6 +48,9 @@ export default function ApplicationsList() {
   const [pendingDelete, setPendingDelete] = useState<Application | null>(null)
 
   const debouncedSearch = useDebouncedValue(search, 350)
+
+  // On mobile viewport, always render the card view regardless of desktop selection
+  const effectiveView = isMobile ? 'mobile' : view
 
   const query: ApplicationQuery = useMemo(
     () => ({
@@ -138,7 +143,7 @@ export default function ApplicationsList() {
 
       {/* filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <label className="flex min-w-[230px] max-w-[360px] flex-1 items-center gap-2 rounded border border-mono-e5 px-3 py-[7px] text-mono-9">
+        <label className="flex min-w-[180px] max-w-[360px] flex-1 items-center gap-2 rounded border border-mono-e5 px-3 py-[7px] text-mono-9">
           <SearchIcon />
           <input
             value={search}
@@ -157,7 +162,7 @@ export default function ApplicationsList() {
             setStatus(e.target.value)
             setPage(0)
           }}
-          className="w-auto min-w-[150px]"
+          className="w-auto min-w-[140px]"
         >
           <option value="">All statuses</option>
           {STATUS_OPTIONS.map((o) => (
@@ -173,7 +178,7 @@ export default function ApplicationsList() {
             setSort(e.target.value)
             setPage(0)
           }}
-          className="w-auto min-w-[150px]"
+          className="w-auto min-w-[140px]"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -181,17 +186,21 @@ export default function ApplicationsList() {
             </option>
           ))}
         </Select>
-        <div className="flex-1" />
-        <Segmented<View>
-          aria-label="View mode"
-          options={[
-            { value: 'table', label: 'Table' },
-            { value: 'board', label: 'Board' },
-            { value: 'mobile', label: 'Mobile' },
-          ]}
-          value={view}
-          onChange={setView}
-        />
+        {/* view toggle — only shown on desktop */}
+        {!isMobile && (
+          <>
+            <div className="flex-1" />
+            <Segmented<View>
+              aria-label="View mode"
+              options={[
+                { value: 'table', label: 'Table' },
+                { value: 'board', label: 'Board' },
+              ]}
+              value={view}
+              onChange={setView}
+            />
+          </>
+        )}
       </div>
 
       {loading && <CenteredSpinner label="Loading applications…" />}
@@ -213,12 +222,10 @@ export default function ApplicationsList() {
                 </Button>
               }
             />
-          ) : view === 'board' ? (
+          ) : effectiveView === 'board' ? (
             <ApplicationsBoard items={items} />
-          ) : view === 'mobile' ? (
-            <div className="mx-auto max-w-[420px]">
-              <ApplicationsCards items={items} />
-            </div>
+          ) : effectiveView === 'mobile' ? (
+            <ApplicationsCards items={items} />
           ) : (
             <>
               <ApplicationsTable

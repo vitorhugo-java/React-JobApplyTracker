@@ -10,7 +10,7 @@ export interface Metric {
 
 export function MetricCard({ label, value, foot, spark }: Metric) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded border border-mono-e5 bg-mono-w p-3.5 hover:bg-[#fcfcfc]">
+    <div className="flex min-w-0 flex-col gap-2 rounded border border-mono-e5 bg-mono-w p-3.5 hover:bg-surface-subtle">
       <div className="truncate font-mono text-[10px] uppercase tracking-[0.05em] text-mono-9">
         {label}
       </div>
