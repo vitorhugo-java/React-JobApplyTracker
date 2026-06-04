@@ -1,153 +1,131 @@
-# Job Apply Tracker Frontend
+# Applywell — Job Apply Tracker Frontend
 
-[Backend - Spring Boot](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/)
+[Backend — Spring Boot](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/)
 
-Aplicação frontend do Job Apply Tracker, construída com React + Vite para gerenciar candidaturas, acompanhar status do processo seletivo, lembretes e métricas no dashboard.
+Frontend for the Job Apply Tracker: manage job applications, follow-ups,
+interview stages, and metrics. Rebuilt in **TypeScript + React + Tailwind CSS**
+following a monochrome "Notion + Vercel" design system (clean, typography-forward,
+1px borders, 4px radius, no decorative color).
 
-Issue e discuções, devem ser centralizadas no [Backend](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/)
+Issues and discussions are centralized in the
+[backend repo](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/).
 
 ## Stack
 
-- React 19
+- React 19 + TypeScript (strict)
 - Vite 7
 - React Router 7
-- Zustand (estado de autenticação e preferências)
-- Axios (cliente HTTP com interceptors)
-- PrimeReact + PrimeIcons
-- Tailwind CSS
-- Playwright (testes E2E)
-- PWA via `vite-plugin-pwa`
+- Tailwind CSS 3 (custom `mono` palette, Inter + JetBrains Mono)
+- Zustand (auth + gamification state, persisted)
+- Axios (typed client with bearer auth + single-flight token refresh)
+- React Hook Form (form state & validation)
+- Playwright (E2E tests against a mocked API)
 
-## Visão Geral
+## Design System
 
-O frontend consome a API do backend Spring Boot e oferece:
+The UI implements the Applywell wireframe handoff (`claude.ai/design`):
 
-- autenticação com JWT e refresh token
-- login com senha e passkey (WebAuthn) em navegadores compatíveis
-- telas protegidas por rota autenticada
-- CRUD de candidaturas
-- dashboard com resumo de métricas
-- lembretes de follow-up
-- preferências de conta e tema
+- **Palette:** `#000 → #fff` only, exposed as Tailwind `mono-{0,1,2,5,9,c,e5,f5,w}`
+- **Type:** Inter (UI) + JetBrains Mono (numbers, hints, eyebrows)
+- **Components:** square-ish controls, hover `bg-mono-f5`, selected `bg-black text-white`
+- **Status badges:** backend statuses map to six monochrome "families"
+  (draft → sent → replied → interview → offer → rejected) in `src/lib/statuses.ts`
 
-## Estrutura do Projeto
+## Screens
+
+- **Auth** — Login, Register, Forgot Password
+- **Dashboard** — metric cards, achievement badges, To Send Later / Overdue
+  follow-up panels, and a Standard ↔ Gamified variant toggle
+- **Applications** — Active/Archived tabs, search + status + sort filters,
+  Table / Board / Mobile views, server-side pagination, create/edit form with
+  unsaved-changes banner, archive & delete confirmations
+- **Metrics** — conversion funnel, applications-by-status bars, weekly-volume
+  line chart, pipeline averages (pure CSS/SVG, monochrome)
+- **Developer Tools** — API info, JSON/CSV export, environment panel
+- **Account Settings** — profile, change password, passkeys, Google Drive
+  status, danger zone
+
+## Project Structure
 
 ```text
 src/
-	api/                 # Camada de acesso HTTP (auth, applications, dashboard)
-	components/          # Componentes reutilizáveis e layout
-		layout/            # Sidebar, navegação móvel, layout protegido
-		ui/                # EmptyState, badges, skeletons, etc.
-	hooks/               # Hooks customizados
-	pages/               # Páginas por domínio (auth, applications, dashboard...)
-	store/               # Zustand store (auth, tokens, tema)
-	utils/               # Logger, performance, helpers de exibição
-	App.jsx              # Rotas públicas e privadas
-	main.jsx             # Bootstrap da aplicação
-tests/                 # Testes E2E com Playwright
+  api/          # Typed HTTP modules (auth, applications, dashboard, gamification, resumes)
+  components/
+    applications/  # Table / Board / Cards views
+    dashboard/     # MetricCard, AchievementCard, ListPanel
+    metrics/       # Monochrome chart primitives
+    layout/        # Sidebar, Topbar, AppLayout, ProtectedRoute, navigation
+    ui/            # Button, StatusBadge, Field, Segmented, Panel, Dialog, Pager, icons…
+  hooks/        # useAsync, useDebouncedValue
+  lib/          # api (axios), statuses, format, utils
+  pages/        # Screens grouped by domain
+  store/        # Zustand stores (auth, gamification)
+  types/        # Domain types mirroring the OpenAPI contract
+  App.tsx       # Route tree + boot-time session restore
+  main.tsx      # Entry point
+tests/
+  support/      # Mock API (stateful) + fixtures + seed data
+  *.spec.ts     # E2E specs
 ```
 
-## Fluxo de Autenticação
+## Authentication
 
-- Tokens e usuário são persistidos em `auth-storage` (localStorage) via Zustand persist.
-- O login continua disponível com email/senha e também pode usar passkeys registradas via WebAuthn.
-- O app tenta restaurar sessão no carregamento (`/auth/me` e refresh se necessário).
-- Requisições usam interceptor Axios com `Authorization: Bearer <token>`.
-- Em erro `401/403`, o cliente tenta refresh automático.
-- Falha definitiva de refresh encerra sessão e redireciona para `/login`.
+- Token + user persisted in `applywell-auth` (localStorage) via Zustand persist.
+- Axios request interceptor attaches `Authorization: Bearer <token>`.
+- On `401/403`, a single-flight refresh retries the original request; a definitive
+  failure clears the session and `ProtectedRoute` redirects to `/login`.
 
-## Rotas Principais
-
-Públicas:
-
-- `/login`
-- `/register`
-- `/forgot-password`
-- `/reset-password`
-
-Protegidas:
-
-- `/dashboard`
-- `/applications`
-- `/applications/new`
-- `/applications/:id`
-- `/applications/:id/edit`
-- `/reminders`
-- `/developer`
-- `/about`
-- `/account`
-
-## Pré-requisitos
+## Prerequisites
 
 - Node.js 20+
 - npm 10+
-- Backend disponível em `http://localhost:8080` (padrão)
+- Backend at `http://localhost:8080` (default)
 
-## Configuração de Ambiente
+## Environment
 
-Variáveis relevantes:
-
-- `VITE_API_URL`: base da API sem `/api` (padrão: `http://localhost:8080`)
-- `VITE_BASE_PATH`: base path de deploy do app (padrão: `/`)
-- `API_TARGET`: alvo do proxy de desenvolvimento no Vite (padrão: `http://localhost:8080`)
-
-Exemplo (`.env`):
+- `VITE_API_BASE_URL` (or `VITE_API_URL`): API base; `/api/v1` is appended if absent
+- `VITE_BASE_PATH`: deploy base path (default `/`)
+- `API_TARGET`: dev proxy target for `/api` (default `http://localhost:8080`)
 
 ```env
-VITE_API_URL=http://localhost:8080
+VITE_API_BASE_URL=http://localhost:8080
 VITE_BASE_PATH=/
 API_TARGET=http://localhost:8080
 ```
 
-## Rodando Localmente
+## Running Locally
 
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:5173
 ```
 
-Aplicação disponível em `http://localhost:5173`.
-
-## Scripts Disponíveis
+## Scripts
 
 ```bash
-npm run dev              # Desenvolvimento
-npm run build            # Build de produção
-npm run preview          # Preview do build
+npm run dev              # Dev server
+npm run build            # tsc + production build
+npm run preview          # Preview the build
+npm run typecheck        # tsc --noEmit
 npm run lint             # ESLint
-npm run test:e2e         # Testes E2E Playwright
+npm run test:e2e         # Playwright E2E (mocked API, no backend needed)
 npm run test:e2e:ui      # Playwright UI mode
-npm run test:e2e:debug   # Playwright debug mode
-npm run test:e2e:report  # Abre relatório Playwright
+npm run test:e2e:report  # Open the HTML report
 ```
 
-## Docker
+## E2E Tests
 
-Build e execução do frontend com Nginx:
-
-```bash
-docker compose up --build
-```
-
-O `Dockerfile` aceita build arg `VITE_API_URL` para apontar o backend em tempo de build.
-
-## Testes E2E
-
-Os testes ficam em `tests/` e usam Playwright com execução serial (`workers: 1`) para maior estabilidade.
-
-Para executar:
+Tests live in `tests/` and run against a **stateful in-memory mock** of the
+backend (`tests/support/mockApi.ts`) — no live API required. Mutations (create,
+archive, delete) are reflected within a test run, and an authenticated session is
+seeded into localStorage before navigation.
 
 ```bash
 npm run test:e2e
 ```
 
-Relatório HTML:
+## Integration
 
-```bash
-npm run test:e2e:report
-```
-
-## Integração com Backend
-
-- Este frontend consome endpoints em `/api` da API Spring Boot.
-- O backend esperado está no diretório irmão: [../SpringBoot-JobApplyTracker](../SpringBoot-JobApplyTracker/).
+This frontend consumes the Spring Boot API under `/api/v1`. The expected backend
+lives in the sibling repo:
+[SpringBoot-JobApplyTracker](https://github.com/vitorhugo-java/SpringBoot-JobApplyTracker/).
