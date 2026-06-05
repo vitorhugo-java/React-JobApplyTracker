@@ -23,13 +23,41 @@ export const STATUS_FAMILY_ORDER: StatusFamily[] = [
 ]
 
 export const STATUS_FAMILY_LABEL: Record<StatusFamily, string> = {
-  draft: 'Draft',
-  sent: 'Sent',
-  replied: 'Replied',
-  interview: 'Interview',
-  offer: 'Offer',
+  draft: 'To Send Later',
+  sent: 'Applied (RH)',
+  replied: 'Post-Interview',
+  interview: 'Technical Test',
+  offer: 'Negotiation',
   rejected: 'Rejected',
 }
+
+/** Short display labels for individual API status values, used in charts. */
+export const STATUS_SHORT_LABEL: Record<string, string> = {
+  [TO_SEND_LATER_STATUS]: 'Draft',
+  RH: 'RH',
+  'Fiz a RH - Aguardando Atualização': 'Post-RH',
+  'Fiz a Hiring Manager - Aguardando Atualização': 'Post-HM',
+  'Teste Técnico': 'Tech Test',
+  'Fiz teste Técnico - aguardando atualização': 'Tech Done',
+  'RH (Negociação)': 'Negotiation',
+  Rejeitado: 'Rejected',
+  'Tarde demais': 'Too Late',
+  Ghosting: 'Ghosting',
+}
+
+/** Canonical order of individual API statuses for display. */
+export const STATUS_DISPLAY_ORDER: string[] = [
+  TO_SEND_LATER_STATUS,
+  'RH',
+  'Fiz a RH - Aguardando Atualização',
+  'Fiz a Hiring Manager - Aguardando Atualização',
+  'Teste Técnico',
+  'Fiz teste Técnico - aguardando atualização',
+  'RH (Negociação)',
+  'Rejeitado',
+  'Tarde demais',
+  'Ghosting',
+]
 
 /** Tailwind classes per family, mirroring the wireframe badge hierarchy. */
 export const STATUS_FAMILY_BADGE: Record<StatusFamily, string> = {

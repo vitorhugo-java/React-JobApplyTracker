@@ -7,9 +7,9 @@ import { CalendarIcon } from '@/components/ui/icons'
 import { useAsync } from '@/hooks/useAsync'
 import { getApplications } from '@/api/applications'
 import { getDashboardSummary } from '@/api/dashboard'
-import { familyOf, STATUS_FAMILY_LABEL, STATUS_FAMILY_ORDER } from '@/lib/statuses'
+import { familyOf, STATUS_FAMILY_LABEL, STATUS_FAMILY_ORDER, STATUS_SHORT_LABEL, STATUS_DISPLAY_ORDER } from '@/lib/statuses'
 import type { Application } from '@/types'
-import { Funnel, LineChart, VerticalBars, type Bar } from '@/components/metrics/charts'
+import { Funnel, LineChart, HBars, type Bar } from '@/components/metrics/charts'
 
 const RANGES = [
   { value: '30', label: 'Last 30 days' },
@@ -66,21 +66,26 @@ export default function Metrics() {
     for (const fam of STATUS_FAMILY_ORDER) counts[fam] = 0
     for (const app of apps) counts[familyOf(app.status)] += 1
 
+    const statusCounts: Record<string, number> = {}
+    for (const app of apps) statusCounts[app.status] = (statusCounts[app.status] || 0) + 1
+
     const total = apps.length
     const reached = (...fams: string[]) => fams.reduce((sum, f) => sum + (counts[f] || 0), 0)
 
     const funnel = [
-      { label: 'Applied', value: total },
-      { label: 'Sent', value: total - counts.draft },
-      { label: 'Replied', value: reached('replied', 'interview', 'offer') },
-      { label: 'Interview', value: reached('interview', 'offer') },
-      { label: 'Offer', value: counts.offer },
+      { label: 'Applications', value: total },
+      { label: 'Applied (RH)', value: total - counts.draft },
+      { label: 'Interviewed', value: reached('replied', 'interview', 'offer') },
+      { label: 'Tech Test', value: reached('interview', 'offer') },
+      { label: 'Negotiation', value: counts.offer },
     ]
 
-    const byStatus: Bar[] = STATUS_FAMILY_ORDER.map((fam) => ({
-      label: STATUS_FAMILY_LABEL[fam],
-      value: counts[fam],
-    }))
+    const byStatus: Bar[] = STATUS_DISPLAY_ORDER
+      .filter((s) => (statusCounts[s] ?? 0) > 0)
+      .map((s) => ({
+        label: STATUS_SHORT_LABEL[s] ?? s,
+        value: statusCounts[s] ?? 0,
+      }))
 
     return { funnel, byStatus, weekly: weeklyVolume(apps), total }
   }, [data, range, statusFilter])
@@ -135,7 +140,7 @@ export default function Metrics() {
           <Panel>
             <PanelHead title="Applications by Status" />
             <div className="px-[18px] pb-5 pt-[18px]">
-              <VerticalBars bars={computed.byStatus} />
+              <HBars bars={computed.byStatus} />
             </div>
           </Panel>
 
