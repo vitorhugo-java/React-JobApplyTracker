@@ -31,6 +31,6 @@ test.describe('Developer tools', () => {
 
     await expect(page.getByRole('heading', { name: 'Developer Tools' })).toBeVisible()
     await expect(page.getByText('API base URL')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Export JSON' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Copy' })).toBeVisible()
   })
 })

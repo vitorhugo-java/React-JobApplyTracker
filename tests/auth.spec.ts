@@ -14,7 +14,7 @@ test.describe('Authentication', () => {
 
     await page.getByLabel('Email').fill('jordan@diaz.dev')
     await page.getByLabel('Password').fill('supersecret')
-    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()

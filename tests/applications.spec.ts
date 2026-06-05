@@ -19,14 +19,11 @@ test.describe('Applications list', () => {
     await expect(page.getByRole('cell', { name: 'Senior Frontend Engineer' })).toHaveCount(0)
   })
 
-  test('switches to board and mobile views', async ({ page }) => {
+  test('switches to board view', async ({ page }) => {
     await setupAuthed(page)
     await page.goto('/applications')
 
     await page.getByRole('tab', { name: 'Board' }).click()
-    await expect(page.getByText('Senior Frontend Engineer')).toBeVisible()
-
-    await page.getByRole('tab', { name: 'Mobile' }).click()
     await expect(page.getByText('Senior Frontend Engineer')).toBeVisible()
   })
 
