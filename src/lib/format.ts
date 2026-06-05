@@ -4,6 +4,11 @@ const MONTH_DAY: Intl.DateTimeFormatOptions = { month: 'short', day: '2-digit' }
 
 function parse(value?: string | null): Date | null {
   if (!value) return null
+  // "YYYY-MM-DD" is parsed as UTC midnight by spec; use local time to avoid off-by-one in negative-offset timezones
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
   const d = new Date(value)
   return Number.isNaN(d.getTime()) ? null : d
 }
@@ -27,7 +32,8 @@ export function formatDateTime(value?: string | null, fallback = '—'): string 
 export function toDateInputValue(value?: string | null): string {
   const d = parse(value)
   if (!d) return ''
-  return d.toISOString().slice(0, 10)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 /** "value" formatted for a datetime-local input. */
