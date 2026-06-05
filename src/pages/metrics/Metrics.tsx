@@ -74,10 +74,10 @@ export default function Metrics() {
 
     const funnel = [
       { label: 'Applications', value: total },
-      { label: 'Applied (RH)', value: total - counts.draft },
-      { label: 'Interviewed', value: reached('replied', 'interview', 'offer') },
+      { label: 'Applied', value: total - counts.draft },
+      { label: 'Interview', value: reached('replied', 'interview', 'offer') },
       { label: 'Tech Test', value: reached('interview', 'offer') },
-      { label: 'Negotiation', value: counts.offer },
+      { label: 'Offer', value: counts.offer },
     ]
 
     const byStatus: Bar[] = STATUS_DISPLAY_ORDER
