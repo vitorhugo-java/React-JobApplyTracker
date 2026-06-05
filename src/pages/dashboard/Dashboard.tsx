@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from 'react'
+import { useMemo, useState } from 'react'
 import { Page, PageHeader, SectionLabel } from '@/components/ui/PageHeader'
 import { Segmented } from '@/components/ui/Segmented'
 import { CenteredSpinner, ErrorNote } from '@/components/ui/feedback'
@@ -6,7 +6,7 @@ import { MetricCard, type Metric } from '@/components/dashboard/MetricCard'
 import { AchievementCard } from '@/components/dashboard/AchievementCard'
 import { ListPanel } from '@/components/dashboard/ListPanel'
 import { useAsync } from '@/hooks/useAsync'
-import { getDashboardSummary, updateInterviewCount } from '@/api/dashboard'
+import { getDashboardSummary } from '@/api/dashboard'
 import { getApplications, getOverdue } from '@/api/applications'
 import { useGamificationStore } from '@/store/gamificationStore'
 import { TO_SEND_LATER_STATUS, type Application, type DashboardSummary } from '@/types'
@@ -52,93 +52,8 @@ function buildMetrics(summary: DashboardSummary, streakDays: number): Metric[] {
   ]
 }
 
-function EditableInterviewCount({
-  value,
-  foot,
-  spark,
-  onSave,
-}: {
-  value: number
-  foot: string
-  spark: number
-  onSave: (n: number) => Promise<void>
-}) {
-  const [editing, setEditing] = useState(false)
-  const [input, setInput] = useState('')
-  const [saving, setSaving] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const startEdit = () => {
-    setInput(String(value))
-    setEditing(true)
-    setTimeout(() => inputRef.current?.select(), 0)
-  }
-
-  const cancel = () => setEditing(false)
-
-  const save = async () => {
-    const n = parseInt(input, 10)
-    if (isNaN(n) || n < 0) return
-    setSaving(true)
-    try {
-      await onSave(n)
-    } finally {
-      setSaving(false)
-      setEditing(false)
-    }
-  }
-
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') save()
-    if (e.key === 'Escape') cancel()
-  }
-
-  return (
-    <div className="flex min-w-0 flex-col gap-2 rounded border border-mono-e5 bg-mono-w p-3.5 hover:bg-surface-subtle">
-      <div className="flex items-center justify-between">
-        <div className="truncate font-mono text-[10px] uppercase tracking-[0.05em] text-mono-9">Interviews</div>
-        {!editing && (
-          <button
-            onClick={startEdit}
-            className="font-mono text-[10px] text-mono-9 underline hover:text-mono-0"
-          >
-            edit
-          </button>
-        )}
-      </div>
-      {editing ? (
-        <div className="flex items-center gap-1.5">
-          <input
-            ref={inputRef}
-            type="number"
-            min={0}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKey}
-            disabled={saving}
-            className="w-16 rounded border border-mono-e5 bg-mono-w px-1.5 py-0.5 font-mono text-[20px] font-semibold leading-none tracking-[-0.02em] focus:outline-none focus:ring-1 focus:ring-mono-0"
-          />
-          <button onClick={save} disabled={saving} className="font-mono text-[10px] text-mono-0 underline hover:opacity-70">
-            {saving ? '…' : 'save'}
-          </button>
-          <button onClick={cancel} className="font-mono text-[10px] text-mono-9 underline hover:opacity-70">
-            cancel
-          </button>
-        </div>
-      ) : (
-        <div className="font-mono text-[26px] font-semibold leading-none tracking-[-0.02em]">{value}</div>
-      )}
-      <div className="mt-0.5 h-[3px] overflow-hidden rounded-full bg-mono-e5">
-        <div className="h-full bg-mono-1" style={{ width: `${Math.min(100, Math.max(0, spark))}%` }} />
-      </div>
-      <div className="flex items-center gap-1.5 text-[11.5px] text-mono-5">{foot}</div>
-    </div>
-  )
-}
-
 export default function Dashboard() {
   const [variant, setVariant] = useState<Variant>('standard')
-  const [interviewCountOverride, setInterviewCountOverride] = useState<number | null>(null)
   const profile = useGamificationStore((s) => s.profile)
   const achievements = useGamificationStore((s) => s.achievements)
 
@@ -157,17 +72,9 @@ export default function Dashboard() {
     'Could not load your dashboard.',
   )
 
-  const handleInterviewCountSave = useCallback(async (n: number) => {
-    await updateInterviewCount(n)
-    setInterviewCountOverride(n)
-  }, [])
-
-  const effectiveInterviewCount =
-    interviewCountOverride !== null ? interviewCountOverride : (data?.summary.interviewCount ?? 0)
-
   const metrics = useMemo(
-    () => (data ? buildMetrics({ ...data.summary, interviewCount: effectiveInterviewCount }, profile?.streakDays ?? 0) : []),
-    [data, profile?.streakDays, effectiveInterviewCount],
+    () => (data ? buildMetrics(data.summary, profile?.streakDays ?? 0) : []),
+    [data, profile?.streakDays],
   )
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length
@@ -231,19 +138,9 @@ export default function Dashboard() {
                 : 'grid grid-cols-2 gap-3 sm:grid-cols-4'
             }
           >
-            {(variant === 'standard' ? metrics : metrics.slice(0, 4)).map((m) =>
-              m.label === 'Interviews' ? (
-                <EditableInterviewCount
-                  key="Interviews"
-                  value={effectiveInterviewCount}
-                  foot={`${data!.summary.interviewsScheduled} scheduled`}
-                  spark={data!.summary.totalApplications > 0 ? Math.round((effectiveInterviewCount / data!.summary.totalApplications) * 100) : 0}
-                  onSave={handleInterviewCountSave}
-                />
-              ) : (
-                <MetricCard key={m.label} {...m} />
-              )
-            )}
+            {(variant === 'standard' ? metrics : metrics.slice(0, 4)).map((m) => (
+              <MetricCard key={m.label} {...m} />
+            ))}
           </div>
 
           <SectionLabel
