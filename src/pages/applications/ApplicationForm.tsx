@@ -31,6 +31,7 @@ interface FormValues {
   baseResumeId: string
   toSendLater: boolean
   markDmSent: boolean
+  interviewCount: number
 }
 
 const EMPTY: FormValues = {
@@ -46,6 +47,7 @@ const EMPTY: FormValues = {
   baseResumeId: '',
   toSendLater: false,
   markDmSent: false,
+  interviewCount: 0,
 }
 
 function buildRequest(
@@ -69,6 +71,7 @@ function buildRequest(
     interviewScheduled,
     recruiterDmReminderEnabled: reminderEnabled,
     rhAcceptedConnection,
+    interviewCount: values.interviewCount,
   }
 }
 
@@ -125,6 +128,7 @@ export default function ApplicationForm() {
       baseResumeId: '',
       toSendLater: app.status === TO_SEND_LATER_STATUS,
       markDmSent: !!app.recruiterDmSentAt,
+      interviewCount: app.interviewCount ?? 0,
     })
     setReminderEnabled(app.recruiterDmReminderEnabled ?? true)
     setInterviewScheduled(app.interviewScheduled ?? false)
@@ -223,6 +227,15 @@ export default function ApplicationForm() {
           </Field>
           <Field label="Next Step — Time" htmlFor="nextStepTime">
             <Input id="nextStepTime" className="mono" type="time" {...register('nextStepTime')} />
+          </Field>
+
+          <Field label="Interviews" htmlFor="interviewCount" hint="how many interviews you've had">
+            <Input
+              id="interviewCount"
+              type="number"
+              min={0}
+              {...register('interviewCount', { valueAsNumber: true, min: 0 })}
+            />
           </Field>
 
           <Field label="Note" full htmlFor="note">

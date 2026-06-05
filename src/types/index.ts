@@ -53,6 +53,7 @@ export interface Application {
   recruiterDmReminderEnabled?: boolean
   recruiterDmSentAt?: string | null
   note?: string | null
+  interviewCount?: number
   archived?: boolean
   archivedAt?: string | null
   driveResumeFileId?: string | null
@@ -78,6 +79,7 @@ export interface ApplicationRequest {
   /** Required by the backend: whether the recruiter DM reminder is enabled. */
   recruiterDmReminderEnabled: boolean
   note?: string
+  interviewCount?: number
 }
 
 export interface ApplicationPage {
