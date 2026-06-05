@@ -14,6 +14,7 @@ import {
   createBaseResume,
   updateBaseResume,
   deleteBaseResume,
+  updateRootFolder,
   type GoogleDriveStatus,
 } from '@/api/resumes'
 import { getPasskeyStatus, registerPasskey, isPasskeySupported } from '@/api/passkey'
@@ -316,11 +317,32 @@ function ResumeManager() {
 }
 
 function GoogleDriveSection() {
-  const { data, loading } = useAsync<GoogleDriveStatus>(
+  const { data, loading, reload } = useAsync<GoogleDriveStatus>(
     () => getGoogleDriveStatus().catch(() => ({ connected: false })),
     [],
   )
   const connected = data?.connected
+  const [folderInput, setFolderInput] = useState('')
+  const [folderSaving, setFolderSaving] = useState(false)
+  const [folderError, setFolderError] = useState<string | null>(null)
+  const [folderSaved, setFolderSaved] = useState(false)
+
+  const handleSaveFolder = async () => {
+    if (!folderInput.trim()) return
+    setFolderSaving(true)
+    setFolderError(null)
+    setFolderSaved(false)
+    try {
+      await updateRootFolder(folderInput.trim())
+      setFolderInput('')
+      setFolderSaved(true)
+      reload()
+    } catch {
+      setFolderError('Could not update root folder. Check the folder ID or URL.')
+    } finally {
+      setFolderSaving(false)
+    }
+  }
 
   return (
     <SetCard title="Google Drive" sub="Store generated resumes in your Drive">
@@ -342,6 +364,34 @@ function GoogleDriveSection() {
         </span>
         <Button size="sm">{connected ? 'Disconnect' : 'Connect'}</Button>
       </div>
+
+      {connected && (
+        <div className="mt-5 border-t border-mono-e5 pt-5">
+          <div className="mb-3 text-[13px] font-semibold">Root Folder</div>
+          {folderError && (
+            <div className="mb-3">
+              <ErrorNote message={folderError} />
+            </div>
+          )}
+          <div className="mb-1 text-[12px] text-mono-9">
+            Current:{' '}
+            <span className="font-mono text-mono-5">{data?.rootFolderName ?? 'Default (Applywell)'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              className="field-input flex-1"
+              placeholder="Paste Drive folder ID or URL…"
+              value={folderInput}
+              onChange={(e) => { setFolderInput(e.target.value); setFolderSaved(false) }}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveFolder()}
+            />
+            <Button size="sm" onClick={handleSaveFolder} disabled={folderSaving || !folderInput.trim()}>
+              {folderSaving ? <Spinner /> : 'Save'}
+            </Button>
+            {folderSaved && <span className="font-mono text-[11px] text-mono-9">Saved ✓</span>}
+          </div>
+        </div>
+      )}
 
       {connected && <ResumeManager />}
     </SetCard>
@@ -368,7 +418,12 @@ function PasskeySection() {
       if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
         return
       }
-      setError('Could not register a passkey. Please try again.')
+      const detail = err instanceof DOMException
+        ? `${err.name}: ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : 'Unknown error'
+      setError(`Could not register a passkey. ${detail}`)
     } finally {
       setBusy(false)
     }

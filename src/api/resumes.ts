@@ -16,6 +16,7 @@ export const deleteBaseResume = (id: string) =>
 export interface GoogleDriveStatus {
   connected: boolean
   email?: string
+  rootFolderId?: string
   rootFolderName?: string
   fileCount?: number
   lastSyncedAt?: string
@@ -23,3 +24,6 @@ export interface GoogleDriveStatus {
 
 export const getGoogleDriveStatus = () =>
   unwrap(api.get<GoogleDriveStatus>('/google-drive/status'))
+
+export const updateRootFolder = (folderIdOrUrl: string) =>
+  unwrap(api.put<GoogleDriveStatus>('/google-drive/root-folder', { folderIdOrUrl }))

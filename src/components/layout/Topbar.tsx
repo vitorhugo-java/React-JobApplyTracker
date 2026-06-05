@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CollapseIcon, SearchIcon } from '@/components/ui/icons'
 import { toggleTheme } from '@/lib/theme'
+import { useAuthStore } from '@/store/authStore'
 
 interface TopbarProps {
   root: string
@@ -38,8 +39,19 @@ function MoonIcon() {
   )
 }
 
+function SignOutIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M6 2H2.5A1.5 1.5 0 001 3.5v8A1.5 1.5 0 002.5 13H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 10.5l3-3-3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="13" y1="7.5" x2="5.5" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function Topbar({ root, leaf, onToggleSidebar }: TopbarProps) {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const logout = useAuthStore((s) => s.logout)
 
   const handleToggleTheme = () => {
     const next = toggleTheme()
@@ -88,6 +100,17 @@ export function Topbar({ root, leaf, onToggleSidebar }: TopbarProps) {
           className="grid h-[30px] w-[30px] place-items-center rounded border border-mono-e5 bg-mono-w text-mono-5 transition-colors hover:bg-mono-f5 hover:text-mono-1"
         >
           {isDark ? <SunIcon /> : <MoonIcon />}
+        </button>
+
+        {/* sign out */}
+        <button
+          type="button"
+          onClick={logout}
+          title="Sign out"
+          aria-label="Sign out"
+          className="grid h-[30px] w-[30px] place-items-center rounded border border-mono-e5 bg-mono-w text-mono-5 transition-colors hover:bg-mono-f5 hover:text-mono-1"
+        >
+          <SignOutIcon />
         </button>
       </div>
     </header>
