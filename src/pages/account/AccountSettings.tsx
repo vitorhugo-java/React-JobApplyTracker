@@ -290,17 +290,17 @@ function ResumeManager() {
                 </Button>
               </div>
             ) : (
-              <div key={r.id} className="flex items-center gap-3 px-3.5 py-2.5">
-                <div className="flex-1 truncate text-[13px] text-mono-1">{r.name}</div>
+              <div key={r.id} className="flex min-w-0 items-center gap-3 px-3.5 py-2.5">
+                <div className="min-w-0 flex-1 truncate text-[13px] text-mono-1">{r.name}</div>
                 {r.template && (
                   <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
                     template
                   </span>
                 )}
-                <Button size="sm" onClick={() => startEdit(r)}>
+                <Button size="sm" className="shrink-0" onClick={() => startEdit(r)}>
                   Edit
                 </Button>
-                <Button size="sm" onClick={() => handleDelete(r.id)} className="text-danger">
+                <Button size="sm" className="shrink-0 text-danger" onClick={() => handleDelete(r.id)}>
                   Delete
                 </Button>
               </div>
@@ -346,23 +346,25 @@ function GoogleDriveSection() {
 
   return (
     <SetCard title="Google Drive" sub="Store generated resumes in your Drive">
-      <div className="flex items-center gap-3.5">
+      <div className="flex flex-wrap items-center gap-3.5">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded border border-mono-e5 text-mono-5">▲</div>
-        <div className="flex-1">
-          <div className="text-[13.5px] font-medium">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13.5px] font-medium">
             {loading ? 'Checking…' : connected ? `Connected as ${data?.email ?? 'your account'}` : 'Not connected'}
           </div>
-          <div className="mono text-xs text-mono-9">
+          <div className="mono truncate text-xs text-mono-9">
             {connected
               ? `${data?.rootFolderName ?? 'Applywell'} · ${data?.fileCount ?? 0} files`
               : 'Connect to enable resume generation'}
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-mono-e5 px-2.5 py-[3px] font-mono text-xs text-mono-2">
-          <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-mono-1' : 'bg-mono-c'}`} />
-          {connected ? 'Connected' : 'Offline'}
-        </span>
-        <Button size="sm">{connected ? 'Disconnect' : 'Connect'}</Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-mono-e5 px-2.5 py-[3px] font-mono text-xs text-mono-2">
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-mono-1' : 'bg-mono-c'}`} />
+            {connected ? 'Connected' : 'Offline'}
+          </span>
+          <Button size="sm">{connected ? 'Disconnect' : 'Connect'}</Button>
+        </div>
       </div>
 
       {connected && (
@@ -379,16 +381,16 @@ function GoogleDriveSection() {
           </div>
           <div className="flex items-center gap-2">
             <input
-              className="field-input flex-1"
+              className="field-input min-w-0 flex-1"
               placeholder="Paste Drive folder ID or URL…"
               value={folderInput}
               onChange={(e) => { setFolderInput(e.target.value); setFolderSaved(false) }}
               onKeyDown={(e) => e.key === 'Enter' && handleSaveFolder()}
             />
-            <Button size="sm" onClick={handleSaveFolder} disabled={folderSaving || !folderInput.trim()}>
+            <Button size="sm" className="shrink-0" onClick={handleSaveFolder} disabled={folderSaving || !folderInput.trim()}>
               {folderSaving ? <Spinner /> : 'Save'}
             </Button>
-            {folderSaved && <span className="font-mono text-[11px] text-mono-9">Saved ✓</span>}
+            {folderSaved && <span className="shrink-0 font-mono text-[11px] text-mono-9">Saved ✓</span>}
           </div>
         </div>
       )}
@@ -436,9 +438,9 @@ function PasskeySection() {
           <ErrorNote message={error} />
         </div>
       )}
-      <div className="flex items-center gap-3 py-2.5">
-        <div className="grid h-10 w-10 place-items-center rounded border border-mono-e5 text-mono-5">⌘</div>
-        <div className="flex-1 text-[13px] text-mono-9">
+      <div className="flex flex-wrap items-center gap-3 py-2.5">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded border border-mono-e5 text-mono-5">⌘</div>
+        <div className="min-w-0 flex-1 text-[13px] text-mono-9">
           {!supported
             ? 'This browser does not support passkeys.'
             : loading
@@ -447,7 +449,7 @@ function PasskeySection() {
                 ? 'A passkey is registered for your account.'
                 : 'No passkeys registered yet.'}
         </div>
-        <Button size="sm" onClick={onAdd} disabled={!supported || busy}>
+        <Button size="sm" className="shrink-0" onClick={onAdd} disabled={!supported || busy}>
           {busy ? <Spinner /> : '+ Add a passkey'}
         </Button>
       </div>
@@ -469,8 +471,8 @@ export default function AccountSettings() {
         <GoogleDriveSection />
 
         <SetCard title="Danger Zone" sub="Irreversible and destructive actions" danger>
-          <div className="flex items-center gap-3.5">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-3.5">
+            <div className="min-w-0 flex-1">
               <div className="text-[13.5px] font-medium">Delete account</div>
               <div className="text-xs text-mono-9">
                 Permanently remove your account, applications, and history.
@@ -478,7 +480,7 @@ export default function AccountSettings() {
             </div>
             <Button
               onClick={() => setConfirmDelete(true)}
-              className="border-[#d8c4c4] text-danger hover:bg-[#fcf7f7] dark:border-[#3a2020] dark:hover:bg-[#1a1010]"
+              className="shrink-0 border-[#d8c4c4] text-danger hover:bg-[#fcf7f7] dark:border-[#3a2020] dark:hover:bg-[#1a1010]"
             >
               Delete account
             </Button>
