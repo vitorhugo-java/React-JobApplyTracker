@@ -143,6 +143,7 @@ export interface BaseResume {
   name: string
   language?: string
   template?: boolean
+  readOnly?: boolean
   createdAt?: string
 }
 
