@@ -297,6 +297,11 @@ function ResumeManager() {
                     template
                   </span>
                 )}
+                {r.readOnly && (
+                  <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
+                    read only
+                  </span>
+                )}
                 <Button size="sm" className="shrink-0" onClick={() => startEdit(r)}>
                   Edit
                 </Button>
