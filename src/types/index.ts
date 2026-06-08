@@ -10,6 +10,7 @@ export interface User {
   reminderTime?: string | null
   roles: string[]
   canUseGoogleIntegration: boolean
+  privacyPolicyAccepted: boolean
 }
 
 export interface AuthResponse {
