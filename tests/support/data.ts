@@ -13,6 +13,7 @@ export const MOCK_USER: User = {
   reminderTime: '09:00',
   roles: ['USER'],
   canUseGoogleIntegration: true,
+  privacyPolicyAccepted: true,
 }
 
 export const MOCK_PROFILE: GamificationProfile = {
