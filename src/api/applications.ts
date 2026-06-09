@@ -42,3 +42,6 @@ export const getOverdue = () =>
 
 export const getLinkMetadata = (url: string) =>
   unwrap(api.get<LinkMetadata>('/applications/link-metadata', { params: { url } }))
+
+export const getStatuses = () =>
+  unwrap(api.get<string[]>('/applications/statuses'))

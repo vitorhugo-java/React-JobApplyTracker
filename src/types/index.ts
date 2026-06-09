@@ -19,19 +19,20 @@ export interface AuthResponse {
 }
 
 /**
- * Canonical application status values accepted by the backend. Must mirror the
- * `status` enum in the OpenAPI ApplicationRequest schema exactly — no more, no less.
+ * Canonical application status values served by GET /api/v1/applications/statuses.
+ * Used as a static fallback for non-form UI (charts, labels, filters).
+ * The ApplicationForm always fetches live values from the API.
  */
 export const APPLICATION_STATUSES = [
   'RH',
-  'Fiz a RH - Aguardando Atualização',
-  'Fiz a Hiring Manager - Aguardando Atualização',
-  'Teste Técnico',
-  'Fiz teste Técnico - aguardando atualização',
-  'RH (Negociação)',
-  'Rejeitado',
-  'Tarde demais',
+  'Pending HR Response',
+  'Pending Hiring Manager Response',
+  'Technical Test',
+  'Pending Technical Test Response',
+  'Offer Negotiation',
   'Ghosting',
+  'Rejected',
+  'Approved',
 ] as const
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]
@@ -54,16 +55,18 @@ export interface Application {
   recruiterDmReminderEnabled?: boolean
   recruiterDmSentAt?: string | null
   note?: string | null
-  interviewCount?: number
   archived?: boolean
   archivedAt?: string | null
   driveResumeFileId?: string | null
   driveResumeFileName?: string | null
   driveResumeDocumentUrl?: string | null
   driveResumeGeneratedAt?: string | null
+  toSendLater?: boolean
+  interviewCount?: number
   createdAt?: string
   updatedAt?: string
 }
+
 
 export interface ApplicationRequest {
   vacancyName: string
@@ -76,7 +79,7 @@ export interface ApplicationRequest {
   /** Required by the backend: whether an interview has been scheduled. */
   interviewScheduled: boolean
   nextStepDateTime?: string | null
-  status: string
+  status: string | null
   /** Required by the backend: whether the recruiter DM reminder is enabled. */
   recruiterDmReminderEnabled: boolean
   note?: string

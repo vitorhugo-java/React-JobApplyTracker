@@ -9,10 +9,11 @@ import { Dialog } from '@/components/ui/Dialog'
 import { CenteredSpinner, ErrorNote, Spinner } from '@/components/ui/feedback'
 import { useAsync } from '@/hooks/useAsync'
 import { toDateInputValue } from '@/lib/format'
-import { APPLICATION_STATUSES, TO_SEND_LATER_STATUS, type ApplicationRequest } from '@/types'
+import { type ApplicationRequest } from '@/types'
 import {
   createApplication,
   getApplication,
+  getStatuses,
   markDmSent,
   updateApplication,
 } from '@/api/applications'
@@ -64,7 +65,7 @@ function buildRequest(
     recruiterName: values.recruiterName.trim() || undefined,
     organization: values.organization.trim() || undefined,
     vacancyLink: values.vacancyLink.trim() || undefined,
-    status: values.toSendLater ? TO_SEND_LATER_STATUS : values.status,
+    status: values.toSendLater ? null : values.status,
     applicationDate: values.applicationDate || null,
     nextStepDateTime: nextStep,
     note: values.note.trim() || undefined,
@@ -109,6 +110,12 @@ export default function ApplicationForm() {
     'Could not load resumes.',
   )
 
+  const statuses = useAsync(
+    () => getStatuses(),
+    [],
+    'Could not load status options.',
+  )
+
   // hydrate the form once the application loads
   useEffect(() => {
     const app = existing.data
@@ -120,13 +127,13 @@ export default function ApplicationForm() {
       recruiterName: app.recruiterName ?? '',
       organization: app.organization ?? '',
       vacancyLink: app.vacancyLink ?? '',
-      status: app.status === TO_SEND_LATER_STATUS ? 'RH' : app.status ?? 'RH',
-      applicationDate: toDateInputValue(app.applicationDate),
+      status: app.toSendLater ? (statuses.data?.[0] ?? 'RH') : (app.status ?? statuses.data?.[0] ?? 'RH'),
+      applicationDate: app.toSendLater ? '' : toDateInputValue(app.applicationDate),
       nextStepDate: next ? `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}` : '',
       nextStepTime: next ? `${pad(next.getHours())}:${pad(next.getMinutes())}` : '',
       note: app.note ?? '',
       baseResumeId: '',
-      toSendLater: app.status === TO_SEND_LATER_STATUS,
+      toSendLater: app.toSendLater ?? !app.applicationDate,
       markDmSent: !!app.recruiterDmSentAt,
       interviewCount: app.interviewCount ?? 0,
     })
@@ -209,17 +216,33 @@ export default function ApplicationForm() {
             <Input id="vacancyLink" className="mono" placeholder="https://…" {...register('vacancyLink')} />
           </Field>
 
-          <Field label="Status" htmlFor="status">
-            <Select id="status" disabled={toSendLater} {...register('status')}>
-              {APPLICATION_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
+          <Field
+            label="Status"
+            htmlFor="status"
+            error={statuses.error ?? undefined}
+          >
+            {statuses.loading ? (
+              <div className="flex items-center gap-2 py-2 text-xs text-mono-9">
+                <Spinner />
+                Loading statuses…
+              </div>
+            ) : (
+              <Select id="status" disabled={toSendLater} {...register('status')}>
+                {(statuses.data ?? []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Select>
+            )}
           </Field>
           <Field label="Application Date" htmlFor="applicationDate">
-            <Input id="applicationDate" type="date" {...register('applicationDate')} />
+            <Input
+              id="applicationDate"
+              type="date"
+              disabled={toSendLater}
+              {...register('applicationDate')}
+            />
           </Field>
 
           <Field label="Next Step — Date" htmlFor="nextStepDate">
@@ -274,7 +297,13 @@ export default function ApplicationForm() {
             <Switch
               aria-label="To send later"
               checked={toSendLater}
-              onChange={(v) => setValue('toSendLater', v, { shouldDirty: true })}
+              onChange={(v) => {
+                setValue('toSendLater', v, { shouldDirty: true })
+                if (v) {
+                  setValue('applicationDate', '', { shouldDirty: true })
+                  setValue('status', '', { shouldDirty: true })
+                }
+              }}
             />
           </ToggleRow>
           <ToggleRow title="Mark DM Sent" sub="I've already messaged the recruiter directly">
