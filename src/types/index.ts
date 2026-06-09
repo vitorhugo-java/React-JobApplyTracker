@@ -50,7 +50,7 @@ export interface Application {
   rhAcceptedConnection?: boolean
   interviewScheduled?: boolean
   nextStepDateTime?: string | null
-  status: string
+  status: string | null
   previousStatus?: string | null
   recruiterDmReminderEnabled?: boolean
   recruiterDmSentAt?: string | null

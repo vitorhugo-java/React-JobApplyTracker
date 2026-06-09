@@ -67,7 +67,10 @@ export default function Metrics() {
     for (const app of apps) counts[familyOf(app.status)] += 1
 
     const statusCounts: Record<string, number> = {}
-    for (const app of apps) statusCounts[app.status] = (statusCounts[app.status] || 0) + 1
+    for (const app of apps) {
+      const s = app.status ?? 'To Send Later'
+      statusCounts[s] = (statusCounts[s] || 0) + 1
+    }
 
     const total = apps.length
     const reached = (...fams: string[]) => fams.reduce((sum, f) => sum + (counts[f] || 0), 0)

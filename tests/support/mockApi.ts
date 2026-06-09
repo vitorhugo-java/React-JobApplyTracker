@@ -71,6 +71,13 @@ export async function installMockApi(page: Page, options: MockOptions = {}): Pro
     if (path === '/google-drive/status') return json(route, { connected: false })
 
     // ---- applications collection ----
+    if (path === '/applications/statuses' && method === 'GET')
+      return json(route, [
+        'RH', 'Pending HR Response', 'Pending Hiring Manager Response',
+        'Technical Test', 'Pending Technical Test Response',
+        'Offer Negotiation', 'Ghosting', 'Rejected', 'Approved',
+      ])
+
     if (path === '/applications/overdue')
       return json(route, active.filter((a) => a.nextStepDateTime && new Date(a.nextStepDateTime) < new Date()))
     if (path === '/applications/upcoming') return json(route, [])
