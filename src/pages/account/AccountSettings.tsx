@@ -12,7 +12,6 @@ import {
   getGoogleDriveStatus,
   getBaseResumes,
   createBaseResume,
-  updateBaseResume,
   deleteBaseResume,
   updateRootFolder,
   startGoogleDriveOAuth,
@@ -186,25 +185,28 @@ function ResumeManager() {
     () => getBaseResumes().catch(() => []),
     [],
   )
-  const [name, setName] = useState('')
+  const [docInput, setDocInput] = useState('')
+  const [language, setLanguage] = useState('')
   const [isTemplate, setIsTemplate] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editTemplate, setEditTemplate] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleAdd = async () => {
-    if (!name.trim()) return
+    if (!docInput.trim()) return
     setAdding(true)
     setError(null)
     try {
-      await createBaseResume({ name: name.trim(), template: isTemplate })
-      setName('')
+      await createBaseResume({
+        documentIdOrUrl: docInput.trim(),
+        language: language.trim() || undefined,
+        template: isTemplate,
+      })
+      setDocInput('')
+      setLanguage('')
       setIsTemplate(false)
       reload()
     } catch {
-      setError('Could not add resume.')
+      setError('Could not add resume. Make sure the Google Docs link or ID is valid.')
     } finally {
       setAdding(false)
     }
@@ -217,24 +219,6 @@ function ResumeManager() {
       reload()
     } catch {
       setError('Could not delete resume.')
-    }
-  }
-
-  const startEdit = (r: BaseResume) => {
-    setEditId(r.id)
-    setEditName(r.name)
-    setEditTemplate(r.template ?? false)
-  }
-
-  const handleUpdate = async () => {
-    if (!editId) return
-    setError(null)
-    try {
-      await updateBaseResume(editId, { name: editName, template: editTemplate })
-      setEditId(null)
-      reload()
-    } catch {
-      setError('Could not update resume.')
     }
   }
 
@@ -251,17 +235,25 @@ function ResumeManager() {
       {/* Add form */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
-          className="field-input min-w-[180px] flex-1"
-          placeholder="Resume name…"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          className="field-input min-w-[220px] flex-1"
+          placeholder="Google Docs link or document ID…"
+          value={docInput}
+          onChange={(e) => setDocInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <input
+          className="field-input w-[88px] shrink-0"
+          placeholder="Lang"
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          aria-label="Language code (e.g. EN, PT)"
         />
         <div className="flex shrink-0 items-center gap-2">
           <Switch checked={isTemplate} onChange={setIsTemplate} aria-label="Mark as template" />
           <span className="select-none text-[12.5px] text-mono-5">Template</span>
         </div>
-        <Button onClick={handleAdd} disabled={adding || !name.trim()} size="sm">
+        <Button onClick={handleAdd} disabled={adding || !docInput.trim()} size="sm">
           {adding ? <Spinner /> : '+ Add'}
         </Button>
       </div>
@@ -271,48 +263,29 @@ function ResumeManager() {
         <CenteredSpinner />
       ) : resumes && resumes.length > 0 ? (
         <div className="flex flex-col divide-y divide-mono-e5 overflow-hidden rounded border border-mono-e5">
-          {resumes.map((r) =>
-            editId === r.id ? (
-              <div key={r.id} className="flex flex-wrap items-center gap-2 px-3.5 py-2.5">
-                <input
-                  className="field-input min-w-[160px] flex-1"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  autoFocus
-                />
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Switch checked={editTemplate} onChange={setEditTemplate} aria-label="Template" />
-                  <span className="text-[12px] text-mono-5">Template</span>
-                </div>
-                <Button size="sm" variant="primary" onClick={handleUpdate}>
-                  Save
-                </Button>
-                <Button size="sm" onClick={() => setEditId(null)}>
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <div key={r.id} className="flex min-w-0 items-center gap-3 px-3.5 py-2.5">
-                <div className="min-w-0 flex-1 truncate text-[13px] text-mono-1">{r.name}</div>
-                {r.template && (
-                  <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
-                    template
-                  </span>
-                )}
-                {r.readOnly && (
-                  <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
-                    read only
-                  </span>
-                )}
-                <Button size="sm" className="shrink-0" onClick={() => startEdit(r)}>
-                  Edit
-                </Button>
-                <Button size="sm" className="shrink-0 text-danger" onClick={() => handleDelete(r.id)}>
-                  Delete
-                </Button>
-              </div>
-            ),
-          )}
+          {resumes.map((r) => (
+            <div key={r.id} className="flex min-w-0 items-center gap-3 px-3.5 py-2.5">
+              <div className="min-w-0 flex-1 truncate text-[13px] text-mono-1">{r.name}</div>
+              {r.language && (
+                <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] uppercase text-mono-9">
+                  {r.language}
+                </span>
+              )}
+              {r.template && (
+                <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
+                  template
+                </span>
+              )}
+              {r.readOnly && (
+                <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] text-mono-9">
+                  read only
+                </span>
+              )}
+              <Button size="sm" className="shrink-0 text-danger" onClick={() => handleDelete(r.id)}>
+                Delete
+              </Button>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="py-3 text-center font-mono text-[11.5px] text-mono-9">
