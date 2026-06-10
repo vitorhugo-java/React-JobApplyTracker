@@ -50,7 +50,7 @@ export default function Metrics() {
         getDashboardSummary(),
         getApplications({ archived: false, size: 500 }),
       ])
-      return { summary, apps: page.content }
+      return { summary, apps: page.applications ?? [] }
     },
     [],
     'Could not load metrics.',

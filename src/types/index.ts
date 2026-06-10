@@ -87,7 +87,7 @@ export interface ApplicationRequest {
 }
 
 export interface ApplicationPage {
-  content: Application[]
+  applications: Application[]
   pageNumber: number
   pageSize: number
   totalElements: number

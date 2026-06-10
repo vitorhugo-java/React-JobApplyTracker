@@ -94,9 +94,9 @@ export async function installMockApi(page: Page, options: MockOptions = {}): Pro
       const page = Number(q.get('page') ?? '0')
       const size = Number(q.get('size') ?? '12')
       const start = page * size
-      const content = list.slice(start, start + size)
+      const applications = list.slice(start, start + size)
       return json(route, {
-        content,
+        applications,
         pageNumber: page,
         pageSize: size,
         totalElements: list.length,

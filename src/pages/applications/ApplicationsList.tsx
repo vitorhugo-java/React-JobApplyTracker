@@ -84,7 +84,7 @@ export default function ApplicationsList() {
     setPage(0)
   }
 
-  const items = data?.content ?? []
+  const items = data?.applications ?? []
 
   const confirmArchive = async () => {
     if (!pendingArchive) return
