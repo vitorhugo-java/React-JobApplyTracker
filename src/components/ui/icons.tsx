@@ -19,6 +19,14 @@ export const SearchIcon = (p: IconProps) => (
   </svg>
 )
 
+export const FilterIcon = (p: IconProps) => (
+  <svg {...base({ size: 14, ...p })}>
+    <line x1="1.5" y1="4" x2="13.5" y2="4" stroke="currentColor" strokeLinecap="round" />
+    <line x1="3.5" y1="7.5" x2="11.5" y2="7.5" stroke="currentColor" strokeLinecap="round" />
+    <line x1="5.5" y1="11" x2="9.5" y2="11" stroke="currentColor" strokeLinecap="round" />
+  </svg>
+)
+
 export const PlusIcon = (p: IconProps) => (
   <svg {...base({ size: 14, ...p })}>
     <line x1="7.5" y1="2" x2="7.5" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />

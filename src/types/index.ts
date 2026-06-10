@@ -95,12 +95,24 @@ export interface ApplicationPage {
 }
 
 export interface ApplicationQuery {
+  /** Global free-text query matched across every meaningful field on the backend. */
+  search?: string
   status?: string
+  vacancyName?: string
   recruiterName?: string
+  organization?: string
+  note?: string
+  platform?: string
   applicationDateFrom?: string
   applicationDateTo?: string
+  nextStepDateFrom?: string
+  nextStepDateTo?: string
   interviewScheduled?: boolean
   recruiterDmReminderEnabled?: boolean
+  rhAcceptedConnection?: boolean
+  toSendLater?: boolean
+  interviewCountMin?: number
+  interviewCountMax?: number
   archived?: boolean
   page?: number
   size?: number
