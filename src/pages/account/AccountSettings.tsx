@@ -15,6 +15,8 @@ import {
   updateBaseResume,
   deleteBaseResume,
   updateRootFolder,
+  startGoogleDriveOAuth,
+  disconnectGoogleDrive,
   type GoogleDriveStatus,
 } from '@/api/resumes'
 import { getPasskeyStatus, registerPasskey, isPasskeySupported } from '@/api/passkey'
@@ -331,6 +333,35 @@ function GoogleDriveSection() {
   const [folderSaving, setFolderSaving] = useState(false)
   const [folderError, setFolderError] = useState<string | null>(null)
   const [folderSaved, setFolderSaved] = useState(false)
+  const [conn, setConn] = useState(false)
+  const [connError, setConnError] = useState<string | null>(null)
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+
+  const handleConnect = async () => {
+    setConn(true)
+    setConnError(null)
+    try {
+      const { authorizationUrl } = await startGoogleDriveOAuth()
+      window.location.href = authorizationUrl
+    } catch {
+      setConnError('Could not start the Google Drive connection.')
+      setConn(false)
+    }
+  }
+
+  const handleDisconnect = async () => {
+    setConfirmDisconnect(false)
+    setConn(true)
+    setConnError(null)
+    try {
+      await disconnectGoogleDrive()
+      reload()
+    } catch {
+      setConnError('Could not disconnect Google Drive.')
+    } finally {
+      setConn(false)
+    }
+  }
 
   const handleSaveFolder = async () => {
     if (!folderInput.trim()) return
@@ -351,6 +382,11 @@ function GoogleDriveSection() {
 
   return (
     <SetCard title="Google Drive" sub="Store generated resumes in your Drive">
+      {connError && (
+        <div className="mb-4">
+          <ErrorNote message={connError} />
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3.5">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded border border-mono-e5 text-mono-5">▲</div>
         <div className="min-w-0 flex-1">
@@ -368,7 +404,13 @@ function GoogleDriveSection() {
             <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-mono-1' : 'bg-mono-c'}`} />
             {connected ? 'Connected' : 'Offline'}
           </span>
-          <Button size="sm">{connected ? 'Disconnect' : 'Connect'}</Button>
+          <Button
+            size="sm"
+            onClick={connected ? () => setConfirmDisconnect(true) : handleConnect}
+            disabled={loading || conn}
+          >
+            {conn ? <Spinner /> : connected ? 'Disconnect' : 'Connect'}
+          </Button>
         </div>
       </div>
 
@@ -401,6 +443,16 @@ function GoogleDriveSection() {
       )}
 
       {connected && <ResumeManager />}
+
+      <ConfirmDialog
+        open={confirmDisconnect}
+        title="Disconnect Google Drive?"
+        message="Resume generation will be disabled until you reconnect. Your registered base resumes are kept."
+        confirmLabel="Disconnect"
+        destructive
+        onConfirm={handleDisconnect}
+        onCancel={() => setConfirmDisconnect(false)}
+      />
     </SetCard>
   )
 }

@@ -27,3 +27,16 @@ export const getGoogleDriveStatus = () =>
 
 export const updateRootFolder = (folderIdOrUrl: string) =>
   unwrap(api.put<GoogleDriveStatus>('/google-drive/root-folder', { folderIdOrUrl }))
+
+export interface GoogleDriveOAuthStart {
+  authorizationUrl: string
+  state: string
+  redirectUri: string
+  scopes: string[]
+}
+
+export const startGoogleDriveOAuth = () =>
+  unwrap(api.post<GoogleDriveOAuthStart>('/google-drive/oauth/start'))
+
+export const disconnectGoogleDrive = () =>
+  api.delete('/google-drive/connection')
