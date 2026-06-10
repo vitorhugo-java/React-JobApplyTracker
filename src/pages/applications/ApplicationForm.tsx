@@ -8,7 +8,7 @@ import { Switch, Checkbox, ToggleRow } from '@/components/ui/Toggle'
 import { Dialog } from '@/components/ui/Dialog'
 import { CenteredSpinner, ErrorNote, Spinner } from '@/components/ui/feedback'
 import { useAsync } from '@/hooks/useAsync'
-import { toDateInputValue } from '@/lib/format'
+import { toApiDate, toDateInputValue } from '@/lib/format'
 import { type ApplicationRequest } from '@/types'
 import {
   createApplication,
@@ -66,7 +66,7 @@ function buildRequest(
     organization: values.organization.trim() || undefined,
     vacancyLink: values.vacancyLink.trim() || undefined,
     status: values.toSendLater ? null : values.status,
-    applicationDate: values.applicationDate || null,
+    applicationDate: toApiDate(values.applicationDate),
     nextStepDateTime: nextStep,
     note: values.note.trim() || undefined,
     interviewScheduled,
