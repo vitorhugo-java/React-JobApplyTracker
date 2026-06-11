@@ -90,6 +90,14 @@ export async function installMockApi(page: Page, options: MockOptions = {}): Pro
       const recruiter = q.get('recruiterName')
       if (recruiter)
         list = list.filter((a) => (a.recruiterName ?? '').toLowerCase().includes(recruiter.toLowerCase()))
+      const search = q.get('search')
+      if (search) {
+        const needle = search.toLowerCase()
+        list = list.filter((a) =>
+          [a.vacancyName, a.organization, a.recruiterName, a.status, a.note]
+            .some((field) => (field ?? '').toLowerCase().includes(needle)),
+        )
+      }
 
       const page = Number(q.get('page') ?? '0')
       const size = Number(q.get('size') ?? '12')

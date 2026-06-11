@@ -14,7 +14,7 @@ test.describe('Applications list', () => {
     await setupAuthed(page)
     await page.goto('/applications')
 
-    await page.getByPlaceholder('Search recruiter…').fill('Marcus')
+    await page.getByPlaceholder('Search every field…').fill('Marcus')
     await expect(page.getByRole('cell', { name: 'Product Designer, Growth' })).toBeVisible()
     await expect(page.getByRole('cell', { name: 'Senior Frontend Engineer' })).toHaveCount(0)
   })
