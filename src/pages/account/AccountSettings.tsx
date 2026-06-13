@@ -13,6 +13,9 @@ import {
   getBaseResumes,
   createBaseResume,
   deleteBaseResume,
+  getBaseInformation,
+  createBaseInformation,
+  deleteBaseInformation,
   updateRootFolder,
   startGoogleDriveOAuth,
   disconnectGoogleDrive,
@@ -20,7 +23,7 @@ import {
 } from '@/api/resumes'
 import { getPasskeyStatus, registerPasskey, isPasskeySupported } from '@/api/passkey'
 import { useAuthStore } from '@/store/authStore'
-import type { BaseResume } from '@/types'
+import type { BaseResume, BaseInformation } from '@/types'
 
 function SetCard({
   title,
@@ -296,6 +299,95 @@ function ResumeManager() {
   )
 }
 
+function BaseInfoManager() {
+  const { data: docs, loading, reload } = useAsync<BaseInformation[]>(
+    () => getBaseInformation().catch(() => []),
+    [],
+  )
+  const [docInput, setDocInput] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleAdd = async () => {
+    if (!docInput.trim()) return
+    setAdding(true)
+    setError(null)
+    try {
+      await createBaseInformation({ documentIdOrUrl: docInput.trim() })
+      setDocInput('')
+      reload()
+    } catch {
+      setError('Could not add document. Make sure the Drive link or ID is a Google Doc, PDF, DOCX, or Markdown file.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    setError(null)
+    try {
+      await deleteBaseInformation(id)
+      reload()
+    } catch {
+      setError('Could not delete document.')
+    }
+  }
+
+  return (
+    <div className="mt-5 border-t border-mono-e5 pt-5">
+      <div className="mb-1 text-[13px] font-semibold">Base information about me</div>
+      <div className="mb-3 text-[12px] text-mono-9">
+        Documents (Google Docs, PDF, DOCX, or Markdown) the AI reads first to learn about you.
+      </div>
+
+      {error && (
+        <div className="mb-3">
+          <ErrorNote message={error} />
+        </div>
+      )}
+
+      {/* Add form */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input
+          className="field-input min-w-[220px] flex-1"
+          placeholder="Drive link or file ID (Google Doc, PDF, DOCX, MD)…"
+          value={docInput}
+          onChange={(e) => setDocInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <Button onClick={handleAdd} disabled={adding || !docInput.trim()} size="sm">
+          {adding ? <Spinner /> : '+ Add'}
+        </Button>
+      </div>
+
+      {/* Document list */}
+      {loading ? (
+        <CenteredSpinner />
+      ) : docs && docs.length > 0 ? (
+        <div className="flex flex-col divide-y divide-mono-e5 overflow-hidden rounded border border-mono-e5">
+          {docs.map((d) => (
+            <div key={d.id} className="flex min-w-0 items-center gap-3 px-3.5 py-2.5">
+              <div className="min-w-0 flex-1 truncate text-[13px] text-mono-1">{d.name}</div>
+              {d.docType && (
+                <span className="shrink-0 rounded border border-mono-e5 px-2 py-0.5 font-mono text-[11px] uppercase text-mono-9">
+                  {d.docType}
+                </span>
+              )}
+              <Button size="sm" className="shrink-0 text-danger" onClick={() => handleDelete(d.id)}>
+                Delete
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-3 text-center font-mono text-[11.5px] text-mono-9">
+          No base information added yet.
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GoogleDriveSection() {
   const { data, loading, reload } = useAsync<GoogleDriveStatus>(
     () => getGoogleDriveStatus().catch(() => ({ connected: false })),
@@ -416,6 +508,8 @@ function GoogleDriveSection() {
       )}
 
       {connected && <ResumeManager />}
+
+      {connected && <BaseInfoManager />}
 
       <ConfirmDialog
         open={confirmDisconnect}

@@ -163,6 +163,14 @@ export interface BaseResume {
   createdAt?: string
 }
 
+export interface BaseInformation {
+  id: string
+  name: string
+  docType?: string
+  webViewLink?: string
+  createdAt?: string
+}
+
 export interface LinkMetadata {
   title?: string
   description?: string

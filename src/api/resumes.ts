@@ -1,5 +1,5 @@
 import { api, unwrap } from '@/lib/api'
-import type { BaseResume } from '@/types'
+import type { BaseResume, BaseInformation } from '@/types'
 
 export const getBaseResumes = () =>
   unwrap(api.get<BaseResume[]>('/google-drive/base-resumes'))
@@ -12,6 +12,15 @@ export const createBaseResume = (data: {
 
 export const deleteBaseResume = (id: string) =>
   api.delete(`/google-drive/base-resumes/${id}`)
+
+export const getBaseInformation = () =>
+  unwrap(api.get<BaseInformation[]>('/google-drive/base-information'))
+
+export const createBaseInformation = (data: { documentIdOrUrl: string }) =>
+  unwrap(api.post<BaseInformation>('/google-drive/base-information', data))
+
+export const deleteBaseInformation = (id: string) =>
+  api.delete(`/google-drive/base-information/${id}`)
 
 export interface GoogleDriveStatus {
   connected: boolean
