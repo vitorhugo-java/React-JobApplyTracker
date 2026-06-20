@@ -8,7 +8,7 @@ import { Switch, Checkbox, ToggleRow } from '@/components/ui/Toggle'
 import { Dialog } from '@/components/ui/Dialog'
 import { CenteredSpinner, ErrorNote, Spinner } from '@/components/ui/feedback'
 import { useAsync } from '@/hooks/useAsync'
-import { toApiDate, toDateInputValue } from '@/lib/format'
+import { formatDateTime, toApiDate, toDateInputValue } from '@/lib/format'
 import { type ApplicationRequest } from '@/types'
 import {
   createApplication,
@@ -277,6 +277,30 @@ export default function ApplicationForm() {
             </Select>
           </Field>
         </div>
+
+        {isEdit && (existing.data?.driveResumeDocumentUrl || existing.data?.driveResumeFileId) && (
+          <div className="mt-5 rounded border border-mono-e5 border-l-[3px] border-l-mono-2 bg-[#fafaf7] px-3.5 py-3">
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-mono-9">Generated CV</div>
+            <div className="text-[13px] text-mono-2">
+              {existing.data?.driveResumeFileName ?? 'Generated resume'}
+            </div>
+            {existing.data?.driveResumeGeneratedAt && (
+              <div className="mt-0.5 text-xs text-mono-9">
+                Generated {formatDateTime(existing.data.driveResumeGeneratedAt)}
+              </div>
+            )}
+            {existing.data?.driveResumeDocumentUrl && (
+              <a
+                href={existing.data.driveResumeDocumentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-[13px] text-mono-2 underline underline-offset-2 hover:text-mono-0"
+              >
+                Open in Google Docs ↗
+              </a>
+            )}
+          </div>
+        )}
 
         <div className="mt-5 border-t border-mono-e5">
           <ToggleRow title="Recruiter Accepted Connection" sub="The recruiter accepted my LinkedIn connection request">

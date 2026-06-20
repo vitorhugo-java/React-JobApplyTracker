@@ -9,7 +9,7 @@ function parse(value?: string | null): Date | null {
     const [y, m, d] = value.split('-').map(Number)
     return new Date(y, m - 1, d)
   }
-  // "DD/MM/YYYY" — the date format the backend uses for applicationDate
+  // "DD/MM/YYYY" — tolerated for backwards compatibility with older payloads
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     const [d, m, y] = value.split('/').map(Number)
     return new Date(y, m - 1, d)
@@ -41,12 +41,12 @@ export function toDateInputValue(value?: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** "value" formatted as "dd/MM/yyyy" for the backend. Returns null for empty/invalid input. */
+/** "value" formatted as "yyyy-MM-dd" for the backend. Returns null for empty/invalid input. */
 export function toApiDate(value?: string | null): string | null {
   const d = parse(value)
   if (!d) return null
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 /** "value" formatted for a datetime-local input. */
